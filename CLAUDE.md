@@ -63,7 +63,25 @@ byggesteg. Playwright er kun testavhengighet.
 - **Er en modellparameter et anslag, skal spilleren se det.** Skjermingsfaktoren
   på 0,35 i `MINI.N` sto bare i en kodekommentar. Alt annet i spillet sier fra
   når en modell er en modell.
-- **Nye samleobjekter må gjennom `sjekk-kort.js`** før de anses plassert.
+- **Nye samleobjekter må gjennom `sjekk-kort.js`** før de anses plassert — og
+  **nye rekvisitter må gjennom den samme sjekken**, fordi en rekvisitt kan legge
+  seg oppå et kort. OKSEN havnet 32 px fra kort 31 og gjorde det uplukkelig;
+  sjekken fanget det på første kjøring.
+- **Skygger, lys og natt leser fra `lys()` og `nattMengde()`, ikke fra faste
+  tall.** Hver bygning kastet før samme skygge — 7 px høyre, 11 px ned — hele
+  døgnet, så klokka 00:49 pekte skyggene som om sola sto høyt. Tegner du noe nytt
+  som skal kaste skygge, bruk `L.dx`, `L.dy` og `L.styrke`. Rekvisittløkka har en
+  `skygge()`-hjelper som gjør det for deg.
+- **Et vindu skal ikke lyse i en stengt bygning.** `apentNaa(b)` avgjør det.
+  Kasino Fortuna er åpen 16–04, kontorene 08–17.
+- **Severdigheter som viser tilstand er verdt tre som bare står der.** Oksen og
+  bjørnen leser `markedStemning`, klokketårnet viser klokka, rentesøyla viser
+  styringsrenta, tickersøyla viser indeksen. Legger du til en severdighet, spør
+  først om den kan si noe.
+- **Byen har en tegnebudsjett-sjekk.** `test-verden.js` måler `RR.maalTegning()`
+  per bydel, dag og natt, og krever under 4 ms av de 16,7 som finnes ved 60 fps.
+  Målt etter at lys, skygge, seks severdigheter, sju bymøbler og 62 lyktestolper
+  kom inn: 0,68 ms i verste tilfelle. Det er plass til mer.
 - **Nytt interaktivt element skal være en `<button>` eller en `<input>`**, ikke en
   `<div>` med `onclick`. `test-tilgjengelighet.js` krever at alt klikkbart i alle
   fjorten oppdrag kan nås med Tab.
@@ -87,7 +105,7 @@ byggesteg. Playwright er kun testavhengighet.
 ## Før noe skrives av som ferdig
 
 `bash test-alle.sh` **og** `bash test-alle.sh --http` skal begge være helt grønne:
-åtte filer, 926 sjekker. HTTP-modus er ikke pynt: siden serveres over HTTPS i
+åtte filer, 967 sjekker. HTTP-modus er ikke pynt: siden serveres over HTTPS i
 produksjon, og `file://` har sitt eget origo-oppsett for `localStorage`.
 
 Legger du til innhold, legg til sjekken som beviser at det virker. Fire spillfeil i

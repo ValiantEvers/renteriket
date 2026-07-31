@@ -16,6 +16,36 @@ diversifisering står side om side med aksjeskatt på 37,84 %, egenkapitalkrav p
 
 ## Byen
 
+Byen tegnes i canvas 2D ovenfra, og alt som er dyrt er bakt på forhånd: bakken
+til ett eget lerret, glødene til sprites, vignetten til ett lerret per
+vindusstørrelse. **Tyngste tegnede ramme er 0,68 ms av de 16,7 som finnes ved
+60 fps** — målt per bydel, dag og natt, av `test-verden.js`. Det er rundt
+tjuefem ganger hodeplass, og det er meningen: detaljnivået skal kunne vokse uten
+at noen må måle på nytt.
+
+**Lyset.** Skyggen følger sola: retningen roterer gjennom døgnet, lengden vokser
+når sola står lavt, og styrken faller mot natta. Natta er et kaldt blått lag med
+en varm strek over ved gry og skumring, og den er dypere i januar enn i juli —
+lyse sommernetter, som i Norge. Vinduene tennes bare i bygninger som er åpne, så
+Jobbsenteret er mørkt klokka to mens Kasino Fortuna lyser. Bakgata har lykter som
+flimrer, alltid de samme.
+
+**Elleve severdigheter, og fire av dem viser noe.** Oksen og bjørnen står vendt
+mot hverandre på Børstorget, og den ene lyser etter markedsstemningen: oksen
+grønt i oppgang, bjørnen i nedgang. Klokketårnet på Rentetorget har visere som
+viser den faktiske klokka. Rentesøyla viser styringsrenta som en fysisk søyle mot
+en skala som slutter på 8 %, der bankens stressgulv ligger. Tickersøyla viser
+indeksnivået. Tigeren står i Bakgata, ikke på torget — «Tigerstaden» er
+Bjørnsons bilde av den kalde, rovgriske byen, og det er den bydelen det handler
+om. Børshuset er den ene bygningen med en silhuett folk kjenner igjen: seks
+søyler, gavl og en flaggstang der flagget blafrer.
+
+**62 lyktestolper**, generert fra gatenettet og ikke plassert for hånd, så en ny
+gate får lys uten at noen må huske det. Ingen bydel er mer enn 520 px fra en
+lykt. Hver bydel har sitt eget møbelvokabular: marmorpullerter og granittkasser i
+Bankgata, sperrebånd og sykkelstativ i Skattekvartalet, containere og graffiti i
+Bakgata, bussholdeplass og en sykkel i Startgata.
+
 | Bydel | Hva som bor der | Tema |
 |---|---|---|
 | **STARTGATA** | Leiligheten, Jobbsenteret, Kafé Krona, Butikken | lønn, budsjett, kjøpekraft, alternativkostnad |
@@ -258,7 +288,7 @@ ikke at spilleren regner etter.
 
 ## Testing
 
-Åtte filer, 926 sjekker. `bash test-alle.sh` kjører alt over `file://`,
+Åtte filer, 967 sjekker. `bash test-alle.sh` kjører alt over `file://`,
 `bash test-alle.sh --http` starter en lokal server og kjører alt på nytt over HTTP.
 Begge må være grønne: siden serveres over HTTPS i produksjon, og `file://` har sitt
 eget origo-oppsett for `localStorage`.
@@ -266,7 +296,7 @@ eget origo-oppsett for `localStorage`.
 | Fil | Hva den beviser |
 |---|---|
 | `test-matte.js` | Finansmotoren mot **uavhengig regnede** fasitverdier: samme svar, andre formler. Måler også at driftkorreksjonen faktisk gjør medianen lik den oppgitte avkastningen — innenfor 0,05 pp, på de tre kombinasjonene spillet bruker — og at `F.nominell` er Fisher og ikke `r + i`. Skatt på ni inntektsnivåer, annuitetsplaner, IRR med gebyr, ASK-uttak, formuesskatt, Fisher, lånerammer, stresstest, diversifiseringsgrense. Sjekker også hver tallpåstand spillet gjør i **tekst**. |
-| `test-verden.js` | At byen har inflasjon og lønnsvekst, og at ingenting sprekker over førti år. At Fondsbutikken trekker skatten den lover. Bevegelse i seks retninger, at Shift faktisk er raskere, at vegger stopper og dører ikke gjør det, at **alle åtte bydeler kan nås til fots** (bredde-først-søk gjennom spillets egen kollisjon), at hver av de 25 dørene svarer med minst 160 tegn innhold, og at hver figur har minst to dialoglinjer. Og siden juli 2026: at en spiller som *står inne i en vegg* kommer seg ut med tastene, at `start()` aldri setter spillet i gang på et blokkert punkt, og at dialogtelleren teller linjene som er igjen, ikke den du leser. |
+| `test-verden.js` | At skyggene peker vestover om morgenen og østover om kvelden, er kortest og hardest midt på dagen og nesten borte om natta. At natta er dypere i januar enn i juli. At Jobbsenteret er mørkt kl. 02 og Kasino Fortuna lyser. At alle elleve severdighetene kan nås til fots, står i minst fire bydeler, og at oksen lyser i oppgang og bjørnen i nedgang. At ingen bydel er mer enn 520 px fra en lyktestolpe. At tyngste tegnede ramme er under 4 ms av de 16,7 som finnes. At byen har inflasjon og lønnsvekst, og at ingenting sprekker over førti år. At Fondsbutikken trekker skatten den lover. Bevegelse i seks retninger, at Shift faktisk er raskere, at vegger stopper og dører ikke gjør det, at **alle åtte bydeler kan nås til fots** (bredde-først-søk gjennom spillets egen kollisjon), at hver av de 25 dørene svarer med minst 160 tegn innhold, og at hver figur har minst to dialoglinjer. Og siden juli 2026: at en spiller som *står inne i en vegg* kommer seg ut med tastene, at `start()` aldri setter spillet i gang på et blokkert punkt, og at dialogtelleren teller linjene som er igjen, ikke den du leser. |
 | `sjekk-kort.js` | Alle førti kort er fysisk mulige å plukke opp, ligger inne på kartet, er spredt over bydelene, og plukkes faktisk opp når man går dit. |
 | `test-oppdrag.js` | **Alle fjorten oppdrag spilles gjennom med ekte klikk.** For hvert av dem sjekkes også at et *feil* svar ikke gir seier, og at fasitteksten sier det den skal. Til slutt: at fjorten oppdrag gir nivå 12, og at alt løst pluss alle kort gir INVESTOR. Siden juli 2026 også: at oppdrag J-banen faktisk henter seg inn igjen fire ganger og treffer spillets egen avkastning, at oppdrag N dømmer på medianen av 500 løp og at tabellen går opp krone for krone, at oppdrag H ikke kan klares med flaks og gir de samme fem årene ved omstart, at oppdrag D regner 42 år, at spillerens gjeld spiser av gjeldstaket i oppdrag L, at **ingenting skriver «NaN», «undefined» eller «Infinity»** i noen av de fjorten oppdragene eller de 25 bygningsskjermene, verken for en fersk eller en ferdig spiller; at **ingen oppdrag er løst i det det åpnes** og at ingen (unntatt D, som er ett tall) løses ved å flytte én enkelt skyver; at **ingen bygning tilbyr et oppdrag før kravene er løst**; og at oppdrag C sitt eget regnskap bunner ut der teksten sier at det gjør. |
 | `test-mobil.js` | Ingen HUD-overlapp på tre skjermstørrelser, ingen flate utenfor skjermen, alle knapper minst 44×44, at styrekorset faktisk flytter spilleren, og at MENY lukker minispillet i stedet for å legge menyen oppå det. |
