@@ -6,7 +6,7 @@ byggesteg. Playwright er kun testavhengighet.
 
 ## Regler som er lette å bryte
 
-- **Alle tallfestede satser hører i `SATSER`-blokka øverst**, med årstall — aldri
+- **Alle tallfestede satser hører i `SATSER`-blokka øverst**, med årstall, aldri
   skrevet inn i en tekststreng. Skal en tekst nevne et tall, skal den regne det ut
   fra `SATSER` eller fra `F`. Bryter man dette, råtner spillet stille når satsene
   endres.
@@ -18,7 +18,7 @@ byggesteg. Playwright er kun testavhengighet.
 - **Nye minispill må ikke kunne vinnes ved åpning.** `MINI.N` gjorde det i første
   utgave. Krever spillet et valg, må valget faktisk tas. Den milde varianten er
   like ille: `MINI.G` startet på `[50,50,50]`, som var riktig for to av tre mål,
-  så oppdraget løste seg ved å dra én skyver — og spilleren fikk aldri se det
+  så oppdraget løste seg ved å dra én skyver, og spilleren fikk aldri se det
   vinduet oppdraget handler om. **Startstillingen skal være feil for hvert enkelt
   valg spilleren skal ta.**
 - **Ingen tall skal vises uten at noe har regnet det ut.** `MINI.F` skrev
@@ -31,7 +31,7 @@ byggesteg. Playwright er kun testavhengighet.
   oppdrag M først av alt og få 450 XP før Jobbsenteret.
 - **En modell som skal begrunne en tommelfingerregel, må faktisk gi den.**
   `MINI.C` påsto at bufferkostnaden «bunner ut rundt tre måneders utgifter», mens
-  modellens egne tall ga én måned — fordi stormen bare hadde husholdningsuhell,
+  modellens egne tall ga én måned, fordi stormen bare hadde husholdningsuhell,
   og tremånedersregelen handler om å miste inntekten. Sier teksten hvor
   regnestykket bunner ut, skal en sjekk måle bunnpunktet.
 - **Er en modellparameter et anslag, skal spilleren se det.** Skjermingsfaktoren
@@ -60,14 +60,14 @@ byggesteg. Playwright er kun testavhengighet.
 
 ## Før noe skrives av som ferdig
 
-`bash test-alle.sh` **og** `bash test-alle.sh --http` skal begge være helt grønne —
+`bash test-alle.sh` **og** `bash test-alle.sh --http` skal begge være helt grønne:
 åtte filer, 878 sjekker. HTTP-modus er ikke pynt: siden serveres over HTTPS i
 produksjon, og `file://` har sitt eget origo-oppsett for `localStorage`.
 
 Legger du til innhold, legg til sjekken som beviser at det virker. Fire spillfeil i
 første utgave ble funnet av testene og ikke av øyet, nitten av en faglig gjennomgang,
 to av å faktisk spille, og **sju av å spille gjennom hele spillet i produksjon etter
-at det var ute** — mens alle 854 sjekker var grønne (se README, «Testing»).
+at det var ute**, mens alle 854 sjekker var grønne (se README, «Testing»).
 
 **Og spill det.** To av de verste feilene i første utgave var usynlige for alle
 sjekkene og åpenbare i det noen faktisk spilte: at utforsking ga 21 000 kr i gjeld
@@ -75,8 +75,8 @@ i måneden før man hadde funnet Jobbsenteret, og at **startposisjonen lå inne 
 bygning, så spilleren ikke kunne bevege seg i det hele tatt.**
 
 Lærdommen fra den siste er verdt å skrive ned: en test som flytter spilleren før
-den måler noe, måler ikke spillet. Gjør minst én test som gjør det en spiller gjør —
-last siden, klikk START, trykk mellomrom, gå — uten et eneste programmatisk grep.
+den måler noe, måler ikke spillet. Gjør minst én test som gjør det en spiller gjør:
+last siden, klikk START, trykk mellomrom, gå, uten et eneste programmatisk grep.
 
 ## Årlig ettersyn
 

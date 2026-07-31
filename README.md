@@ -6,7 +6,7 @@ senere vet du hvordan penger faktisk virker.
 
 Åtte bydeler, tjuefem bygninger du kan gå inn i, femten figurer, **fjorten
 oppdrag med hvert sitt minispill**, og **førti kunnskapskort** gjemt rundt om.
-Én `index.html`, ingen avhengigheter, ingen eksterne ressurser, ingen byggesteg —
+Én `index.html`, ingen avhengigheter, ingen eksterne ressurser, ingen byggesteg:
 du åpner fila og spiller.
 
 Universelle prinsipper i bunn, norsk virkelighet oppå: renters rente og
@@ -30,7 +30,7 @@ diversifisering står side om side med aksjeskatt på 37,84 %, egenkapitalkrav p
 **Rentetreet** på torget er like høyt som formuen din. Det er hele HUD-en i ett
 bilde, og det er ikke pynt: du ser på det og vet hvor du står.
 
-Verdenen går sin egen gang. **Klokka** løper — ett døgn på seksten minutter, sola
+Verdenen går sin egen gang. **Klokka** løper: ett døgn på seksten minutter, sola
 går ned og gatelysene tennes. **Kalenderen** går også: hver syttifemte sekund
 kommer en ny måned med lønn inn, faste utgifter ut, avkastning på porteføljen,
 renter på gjelden, og av og til et uhell. Har du buffer, blir uhellet en utgift.
@@ -40,13 +40,13 @@ og indeksen står på MEGA-SKJERMEN over Børshuset enten du ser på den eller i
 ## Oppdragene
 
 Fjorten oppdrag, A til N. Hvert av dem er et minispill der du må gjøre noe som
-faktisk krever forståelse — ikke en flervalgsprøve med tekst rundt.
+faktisk krever forståelse, ikke en flervalgsprøve med tekst rundt.
 
 | | Oppdrag | Hva du gjør | Hva det lærer |
 |---|---|---|---|
 | **A** | Den første lønnsslippen | Gjett nettolønna før du åpner slippen, og finn ut hva den neste tusenlappen er verdt | brutto mot netto, gjennomsnittsskatt mot marginalskatt |
 | **B** | Budsjettet som holder | Et ryggsekkproblem: maksimer livskvalitet med minst 20 % sparing | at riktig svar ikke er «kutt alt» |
-| **C** | Bufferstormen | Velg buffer, kjør tolv måneder med uhell | at bufferen koster noe uansett — renter eller tapt avkastning |
+| **C** | Bufferstormen | Velg buffer, kjør tolv måneder med uhell | at bufferen koster noe uansett: renter eller tapt avkastning |
 | **D** | Rentetrappa | Finn beløpet Bodil må spare for å ende likt med Ada | at ti års forsprang er verdt mer enn dobbelt så mye penger |
 | **E** | Gjeldsraset | Sett nedbetalingsrekkefølgen på fire lån | at dyreste rente først alltid vinner, og hvor mye |
 | **F** | Inflasjonstyven | Følg kjøpekraften i 25 år, fire steder å legge pengene | Fisher-formelen, og at sparekonto etter skatt taper realt |
@@ -69,7 +69,7 @@ på hvorfor det var feil, og lov til å prøve igjen.
 ## Kunnskapskortene
 
 Førti kort ligger gjemt rundt i byen, fem per bydel. Hvert kort er én setning som
-står på egne bein — «Aksjeskatten er 37,84 %», «Et fall på 50 % krever 100 % opp»,
+står på egne bein: «Aksjeskatten er 37,84 %», «Et fall på 50 % krever 100 % opp»,
 «Banken ber deg aldri flytte penger». Finner du dem, henger de på veggen i
 Leiligheten, og de går inn i krøniken.
 
@@ -81,7 +81,7 @@ plukkeradiusen. Tre av de førti måtte flyttes etter første måling.
 
 XP fra oppdrag, kort, bygninger du besøker og innskudd du gjør. Femten titler fra
 **BLAKK** til **INVESTOR**, og hele stigen er 8 540 XP mot ca. 9 800 tilgjengelige
-— en spiller som gjør alt, når toppen. (Første forsøk hadde en kurve der man
+en spiller som gjør alt, når toppen. (Første forsøk hadde en kurve der man
 havnet på nivå 8 av 15 med alt løst. Det øverste nivået sto i menyen som noe
 ingen kunne nå.)
 
@@ -90,9 +90,9 @@ du finner. Til slutt er den en lesbar oppsummering av alt spillet har lært deg.
 
 ## Kontroller
 
-- **WASD / piltaster** — gå · **Shift** — løp
-- **Mellomrom / Enter** — snakk, gå inn, handle
-- **Esc** — meny · **M** — lyd av/på
+- **WASD / piltaster**: gå · **Shift**: løp
+- **Mellomrom / Enter**: snakk, gå inn, handle
+- **Esc**: meny · **M**: lyd av/på
 - **Mobil:** styrekors nede til venstre, HANDLE og MENY nede til høyre. Formue,
   kontanter og klokke oppe til venstre, klar av minikartet; XP og hintstripe over
   knappene.
@@ -101,7 +101,7 @@ du finner. Til slutt er den en lesbar oppsummering av alt spillet har lært deg.
 
 Seks faner: **oppdrag** med låst/åpen/løst-status, **kunnskapskort** med funn per
 bydel, **krøniken**, **statistikk** (formue, måneder spilt, skritt, riktige svar),
-**lyd og innstillinger** med nullstilling, og **satser og kilder** — hele
+**lyd og innstillinger** med nullstilling, og **satser og kilder**, hele
 SATSER-blokka i lesbar form, med årstall og forbehold.
 
 ## Satser og kilder
@@ -125,7 +125,7 @@ Kartverket.
 | BSU | 10 % av inntil 27 500 kr, tak 300 000 kr | t.o.m. året du fyller 33 |
 | Formuesskatt | bunnfradrag 1 900 000 kr, 1,0 % | omlagt mellom stat og kommune i 2026, samlet sats uendret |
 | Egenkapitalkrav bolig | 10 % | ned fra 15 % ved årsskiftet 2024/25 |
-| Maks gjeldsgrad | 5 × brutto årsinntekt | uendret — og det er ofte denne som binder |
+| Maks gjeldsgrad | 5 × brutto årsinntekt | uendret, og det er ofte denne som binder |
 | Rentestresstest | +3 prosentpoeng, minimum 7 % | brukes i betjeningsevnekravet |
 | Dokumentavgift | 2,5 % | fritak: nybygg ikke tatt i bruk, og borettslagsandeler |
 | Rentefradrag | 22 % | |
@@ -141,7 +141,7 @@ Kartverket.
 **Årlig ettersyn.** Sjekk `SATSER` mot Skatteetaten hver januar. Det som endres
 oftest: trinnskattens innslagspunkt, personfradrag, minstefradrag, skjermingsrente,
 grunnbeløpet (1. mai) og styringsrenten. Endrer du ett tall der, følger hele
-spillet etter — ingen tall er skrevet inn i noen tekst.
+spillet etter, og ingen tall er skrevet inn i noen tekst.
 
 Tre forbehold står også i spillet selv, fordi de er ærligere enn å late som:
 skjermingsrenten for inneværende år **finnes ikke** før januar året etter;
@@ -162,16 +162,16 @@ lærer bort. Målt av `test-matte.js` over 4 000 forløp på tretti år: uten
 korreksjonen ligger medianen på 3,78 %, med den på 5,29 %.
 
 **Fire lånskranker, ikke to.** Utlånsforskriften § 5 er et krav om *betjeningsevne*
-— du skal ha nok igjen til å leve etter at renta har steget tre prosentpoeng — og
+at du skal ha nok igjen til å leve etter at renta har steget tre prosentpoeng, og
 i praksis er det ofte den som stopper folk, ikke egenkapitalen. `F.laaneramme`
 regner derfor egenkapital, gjeldsgrad *og* betjeningsevne, og lar eksisterende
 gjeld spise av gjeldstaket. Ved startlønna i spillet ligger gjeldsgraden på
-2 280 000 og betjeningsevnen på 2 301 590 — tjueen tusen fra hverandre. Det er
+2 280 000 og betjeningsevnen på 2 301 590, altså tjueen tusen fra hverandre. Det er
 nettopp derfor banker sier nei til lån de to første kravene godtar.
 
 **Indeksfondet er ikke et gratis aktivum.** I oppdrag H er indeksfondets
 avkastning definert som den likevektede snittet av de fem sektorene. Det betyr at
-det ikke er immunt mot at en sektor faller — det er bare aldri avhengig av at én
+det ikke er immunt mot at en sektor faller. Det er bare aldri avhengig av at én
 av dem ikke gjør det. Første utgave ga indeksfondet sin egen, mildere avkastning,
 og «beviste» dermed diversifisering ved å dele ut noe gratis. Den varianten tåler
 ikke at spilleren regner etter.
@@ -186,7 +186,7 @@ ikke at spilleren regner etter.
   `test-matte.js` kan bevise 162 påstander uten å åpne spillet.
 - **Rentekonvensjon, holdt fra hverandre med vilje:** avkastning regnes
   geometrisk (`mndRente`), fordi den oppgitte avkastningen *er* den årlige. Lån
-  regnes nominelt/12 (`mndFraNominell`), fordi det er slik norske lån oppgis — og
+  regnes nominelt/12 (`mndFraNominell`), fordi det er slik norske lån oppgis, og
   differansen er ikke avrunding: 22,9 % nominelt er 25,5 % effektivt. Effektiv
   rente **med** termingebyr løses numerisk som en IRR, fordi den ikke har lukket form.
 - **Spillet startet ved midnatt.** Døgnfasen manglet en forskyvning, så
@@ -205,9 +205,9 @@ ikke at spilleren regner etter.
 - **Musikken planlegges én takt av gangen** med ca. to sekunders forsprang. Legger
   man ut hele runden, ligger hundrevis av noder i lydgrafen samtidig og lydtråden
   går gjennom alle for hver sampleblokk. Fire temaer, ett per bydelstype, alt i en
-  liten WebAudio-synth — ingen lydfiler. Forgasserdalens etterkommer: Startgata er
+  liten WebAudio-synth, ingen lydfiler. Forgasserdalens etterkommer: Startgata er
   varm og enkel, Bankgata kjølig og ordnet, Børstorget har puls, Bakgata er urolig.
-- **Lagring skjer på timer, ikke i løkka** — hvert sjette sekund. Målt: 15
+- **Lagring skjer på timer, ikke i løkka**: hvert sjette sekund. Målt: 15
   skrivinger på 391 rammer. All lesing går gjennom `lesTall`/`lesSett`/`lesObj`,
   som gir standardverdien i stedet for å krasje. `test-lagring.js` planter 294
   kombinasjoner av ødelagte nøkler og krever at spillet fortsatt starter og at alle
@@ -231,7 +231,7 @@ ikke at spilleren regner etter.
   budsjettpuslespillet er `<button>` og ikke `<div>`, og det finnes en
   `:focus-visible`-regel så man ser hvor man står. Lerretet har en
   alternativtekst som sier hvordan man kommer til innholdet, siden et canvas
-  ikke kan leses. To farger måtte lysnes for å komme over 4,5:1 — `--fare`
+  ikke kan leses. To farger måtte lysnes for å komme over 4,5:1: `--fare`
   lå på 4,44 og småteksten på tittelskjermen på 3,57. Fare-knappen har sin egen,
   mørkere bakgrunn, fordi hvit tekst på den lysere rødfargen bare gir 3,7:1.
 - Én kjent begrensning: `user-scalable=no` i viewport-taggen. Touch-kontrollene
@@ -247,25 +247,25 @@ eget origo-oppsett for `localStorage`.
 
 | Fil | Hva den beviser |
 |---|---|
-| `test-matte.js` | Finansmotoren mot **uavhengig regnede** fasitverdier — samme svar, andre formler. Skatt på ni inntektsnivåer, annuitetsplaner, IRR med gebyr, ASK-uttak, formuesskatt, Fisher, lånerammer, stresstest, diversifiseringsgrense. Sjekker også hver tallpåstand spillet gjør i **tekst**. |
-| `test-verden.js` | Bevegelse i seks retninger, at Shift faktisk er raskere, at vegger stopper og dører ikke gjør det, at **alle åtte bydeler kan nås til fots** (bredde-først-søk gjennom spillets egen kollisjon), at hver av de 25 dørene svarer med minst 160 tegn innhold, og at hver figur har minst to dialoglinjer. Og siden juli 2026: at en spiller som *står inne i en vegg* kommer seg ut med tastene, at `start()` aldri setter spillet i gang på et blokkert punkt, og at dialogtelleren teller linjene som er igjen — ikke den du leser. |
-| `sjekk-kort.js` | Alle førti kort er fysisk mulige å plukke opp, ligger inne på kartet, er spredt over bydelene — og plukkes faktisk opp når man går dit. |
+| `test-matte.js` | Finansmotoren mot **uavhengig regnede** fasitverdier: samme svar, andre formler. Skatt på ni inntektsnivåer, annuitetsplaner, IRR med gebyr, ASK-uttak, formuesskatt, Fisher, lånerammer, stresstest, diversifiseringsgrense. Sjekker også hver tallpåstand spillet gjør i **tekst**. |
+| `test-verden.js` | Bevegelse i seks retninger, at Shift faktisk er raskere, at vegger stopper og dører ikke gjør det, at **alle åtte bydeler kan nås til fots** (bredde-først-søk gjennom spillets egen kollisjon), at hver av de 25 dørene svarer med minst 160 tegn innhold, og at hver figur har minst to dialoglinjer. Og siden juli 2026: at en spiller som *står inne i en vegg* kommer seg ut med tastene, at `start()` aldri setter spillet i gang på et blokkert punkt, og at dialogtelleren teller linjene som er igjen, ikke den du leser. |
+| `sjekk-kort.js` | Alle førti kort er fysisk mulige å plukke opp, ligger inne på kartet, er spredt over bydelene, og plukkes faktisk opp når man går dit. |
 | `test-oppdrag.js` | **Alle fjorten oppdrag spilles gjennom med ekte klikk.** For hvert av dem sjekkes også at et *feil* svar ikke gir seier, og at fasitteksten sier det den skal. Til slutt: at fjorten oppdrag gir nivå 12, og at alt løst pluss alle kort gir INVESTOR. Siden juli 2026 også: at **ingenting skriver «NaN», «undefined» eller «Infinity»** i noen av de fjorten oppdragene eller de 25 bygningsskjermene, verken for en fersk eller en ferdig spiller; at **ingen oppdrag er løst i det det åpnes** og at ingen (unntatt D, som er ett tall) løses ved å flytte én enkelt skyver; at **ingen bygning tilbyr et oppdrag før kravene er løst**; og at oppdrag C sitt eget regnskap bunner ut der teksten sier at det gjør. |
 | `test-mobil.js` | Ingen HUD-overlapp på tre skjermstørrelser, ingen flate utenfor skjermen, alle knapper minst 44×44, at styrekorset faktisk flytter spilleren, og at MENY lukker minispillet i stedet for å legge menyen oppå det. |
 | `test-lagring.js` | Fremgang overlever omlasting; 294 kombinasjoner av ødelagt lagring tar ikke ned spillet; nullstilling rydder minne så vel som lagring og skriver ikke tilbake etterpå; lagring skjer på timer. |
-| `test-tilgjengelighet.js` | Kontrast regnet ut fra de **faktiske** fargene i DOM-en, ikke fra CSS-en man tror står der — 22 elementer mot WCGA 2.1 AA. At alle klikkbare elementer i alle fjorten oppdrag kan nås med Tab, at brikkene er ekte knapper, at det finnes en `:focus-visible`-regel, at grønt og rødt alltid har tekst ved siden av, og at spillet starter med `prefers-reduced-motion`. |
+| `test-tilgjengelighet.js` | Kontrast regnet ut fra de **faktiske** fargene i DOM-en, ikke fra CSS-en man tror står der: 22 elementer mot WCGA 2.1 AA. At alle klikkbare elementer i alle fjorten oppdrag kan nås med Tab, at brikkene er ekte knapper, at det finnes en `:focus-visible`-regel, at grønt og rødt alltid har tekst ved siden av, og at spillet starter med `prefers-reduced-motion`. |
 | `test-fps.js` | Fps per bydel med musikk på, i løp, om natta, og med hvert graftunge minispill åpent. Måler også spillets egen rammetid og at et skyvedrag i oppdrag G — som kjører 3 × 1 200 simuleringer — tar under 400 ms. |
 
 ### Fire spillfeil funnet av testene, ikke av øyet
 
 1. **Oppdrag D var uløselig.** Skyveren gikk i steg på 100 kroner, og fasiten på
-   1 645 lå 2,7 % fra nærmeste posisjon — mens kravet var 2 %. Ingen kunne klare det.
+   1 645 lå 2,7 % fra nærmeste posisjon, mens kravet var 2 %. Ingen kunne klare det.
 2. **Oppdrag G hadde mål som ikke kunne nås.** Depositumet krevde 120 000 kroner
    av 108 000 innbetalt, uansett aksjeandel. Målene og kravene er nå satt etter å
-   ha *målt* fordelingen for hver aksjeandel, så hvert mål har et vindu — og
+   ha *målt* fordelingen for hver aksjeandel, så hvert mål har et vindu, og
    vinduene flytter seg oppover med horisonten: 0–35 %, 40–60 %, 65–90 %.
 3. **Finalen løste seg selv.** `MINI.N` tegnet forhåndsvisningen ved åpning, og
-   standardvalgene nådde målet — så oppdraget var fullført før spilleren rørte
+   standardvalgene nådde målet, så oppdraget var fullført før spilleren rørte
    noe. Nå må du trekke i spaken.
 4. **Diversifisering var jukset til.** Indeksfondet i oppdrag H hadde sin egen,
    mildere avkastning, uavhengig av sektorene. Se «Modellvalg» over.
@@ -274,7 +274,7 @@ eget origo-oppsett for `localStorage`.
 
 Den viktigste av dem alle, og den mest ydmykende: **spilleren kunne ikke bevege
 seg.** Startposisjonen (470, 2020) lå inne i BUTIKKENs kollisjonsboks. Begge akser
-blokkert, bom fast fra første sekund — i et spill som handler om å gå rundt i en by.
+blokkert, bom fast fra første sekund, i et spill som handler om å gå rundt i en by.
 
 854 sjekker gikk grønt over den, fordi hver enkelt av dem kalte `RR.flyttTil()`
 eller `RR.lukkAlt()` først og dermed flyttet spilleren vekk fra startpunktet før
@@ -283,12 +283,12 @@ virker *der spilleren faktisk begynner*.
 
 Verre: symptomet dukket opp i en tidligere spilletest, der både gange og løping
 tok «3,4 sekunder» over samme strekning. Det ble forklart bort som at testen var
-for kort. Den var ikke for kort — spilleren rørte seg aldri.
+for kort. Den var ikke for kort. Spilleren rørte seg aldri.
 
 `test-verden.js` har nå en seksjon som gjør det en spiller gjør, uten et eneste
 programmatisk grep: last siden, klikk START, les åpningsdialogen med mellomrom,
 og gå i alle fire retninger fra der du står. Den krever også at startpunktet er
-fritt i alle fire retninger, og at ingen figur står inni en vegg — som fanget at
+fritt i alle fire retninger, og at ingen figur står inni en vegg, som fanget at
 politibetjent Odd sto inne i telefonkiosken.
 
 ### To funnet ved å spille
@@ -299,8 +299,8 @@ av de første minuttene fant to ting ingen sjekk så etter:
 - **Å utforske ble straffet.** Faste utgifter løp fra første måned, også før man
   hadde tatt jobben på Jobbsenteret. Uten inntekt ble de overtrekk, og overtrekk
   ble forbruksgjeld til 22,9 %. En spiller som gjorde nøyaktig det spillet ber om
-  — se deg rundt — sto etter fem spilte måneder med **106 000 kroner i gjeld og
-  negativ formue**. Nå starter økonomien når du blir ansatt; før det bor du på
+  — «se deg rundt» — sto etter fem spilte måneder med **106 000 kroner i gjeld
+  og negativ formue**. Nå starter økonomien når du blir ansatt; før det bor du på
   ingenting. `test-verden.js` har fått en seksjon som holder fella ute.
 - **Oppdrag G møtte deg med 409 ord.** Nesten to minutters lesing før du fikk røre
   en skyver, mot 42–178 ord i de tretten andre. Kuttet til 288; kravene sto
@@ -309,7 +309,7 @@ av de første minuttene fant to ting ingen sjekk så etter:
 ### Og nitten funnet av en uavhengig gjennomgang
 
 Da spillet var ferdig og testpakken grønn, gikk en egen gjennomgang over alt
-faglig innhold — hver sats mot kilden, hver formel, og hvert tall som står i
+faglig innhold: hver sats mot kilden, hver formel, og hvert tall som står i
 *tekst* mot det motoren faktisk regner. Den fant nitten ting. De alvorligste var
 ikke kodefeil, men steder der spillet lærte noe galt:
 
@@ -322,13 +322,13 @@ ikke kodefeil, men steder der spillet lærte noe galt:
 - **ASK-gevinsten var fem ganger for stor.** Tabellen sammenlignet beløpet på ASK
   *før* uttak med en vanlig konto *etter* skatt, og oppga differansen som
   gevinsten ved utsatt skatt. Latent skatt er ikke formue. Riktig sammenligning
-  gir en femtedel av tallet — og gevinsten er fortsatt reell.
+  gir en femtedel av tallet, og gevinsten er fortsatt reell.
 - **Stresstesten var oppført som et feil svar.** Oppdrag L lærte at
   betjeningsevnen ikke betyr noe, i et regnestykke der stressterminen var 56 % av
   nettolønna. Løsningen var å modellere kravet, ikke å omskrive teksten.
 - **IPS ble begrunnet med skattetrinn.** Fradraget gis i alminnelig inntekt med
   22 % uansett hvilket trinn du er i, og uttaket beskattes med de samme 22 %.
-  Gevinsten ligger i formuesskattefritaket og den utsatte skatten — spillet sa det
+  Gevinsten ligger i formuesskattefritaket og den utsatte skatten. Spillet sa det
   riktig ett sted og galt et annet.
 - **All gjeld kostet boliglånsrente.** Låner du 50 000 av Rolf i Kvikklån til
   22,9 %, tok månedsoppgjøret 5,08 %. Spillet gjorde forbruksgjeld fire og en halv
@@ -336,7 +336,7 @@ ikke kodefeil, men steder der spillet lærte noe galt:
   nettopp det.
 - **BSU og IPS var ikke bundet.** BSU-innskudd havnet i bufferen, så et uhell
   kunne betale tannlegen med dem; IPS havnet i porteføljen og kunne selges i
-  Fondsbutikken — samtidig som skjermen sa «låst til 62 år». Begge har nå egne
+  Fondsbutikken, samtidig som skjermen sa «låst til 62 år». Begge har nå egne
   saldoer som teller i formuen, men ikke kan brukes.
 - **Kryptoveddemålet hadde positiv forventningsverdi.** De sju utfallene ga et
   aritmetisk snitt på 1,22. Bakgata belønnet altså spekulasjon med 22 % forventet
@@ -345,7 +345,7 @@ ikke kodefeil, men steder der spillet lærte noe galt:
 - **Rasmetoden og snøballmetoden ga identisk svar** i oppdrag E, fordi
   kredittkortet var både det dyreste og det minste lånet. Fasitsetningen om hva
   snøballmetoden koster skrev «0 kr». Beløpene er endret, og startrekkefølgen er
-  ikke lenger den riktige — tre av fjorten oppdrag kunne løses med ett klikk.
+  ikke lenger den riktige: tre av fjorten oppdrag kunne løses med ett klikk.
 - **«KJØP MER» vant på penger, ikke på atferd.** Valget skjøt inn kapital som
   aldri ble bokført, og fasiten krediterte differansen til mot. Nå er det tørt
   krutt du har én gang, det telles med, og benken får det samme liggende i
@@ -356,7 +356,7 @@ ikke kodefeil, men steder der spillet lærte noe galt:
 - **Vedlikeholdstabellen summerte til 1,4 %** under en tekst som sa at
   tommelfingerregelen på 1 % «stemmer». Nå står det at 1 % er den snille enden.
 - **«Eie er ofte billigere enn å leie»** sto rett under en tabell som viste det
-  motsatte, og begrunnelsen pekte på avdraget — nettopp posten som var holdt
+  motsatte, og begrunnelsen pekte på avdraget, nettopp posten som var holdt
   utenfor. Regnestykket er ferdigregnet nå, med alternativkostnaden på
   egenkapitalen, og konklusjonen er at spørsmålet ikke avgjøres av
   månedskostnaden.
@@ -368,7 +368,7 @@ omtalt som «de fem prosent verste», og et par etterlatte tall i krøniken.
 
 Gjennomgangen bekreftet samtidig at hele `SATSER`-blokka stemmer mot kilde, at
 finansmotorens formler er riktige, og at rentekonvensjonene er konsekvente. Det
-var innholdet rundt tallene som trengte arbeid — ikke tallene.
+var innholdet rundt tallene som trengte arbeid, ikke tallene.
 
 ### Sju funnet av å spille gjennom hele spillet i produksjon
 
@@ -383,14 +383,14 @@ kom fram, kom fram fordi noen så på skjermen.
    oppdrag og alle bygninger.
 2. **Oppdrag M kunne tas først av alt.** `HUS.kiosk` var den eneste bygningen
    uten `laastOpp()`-sjekk. En fersk spiller uten jobb kunne gå til Bakgata, ta
-   svindelsjekken og få 450 XP og nivå 2 før Jobbsenteret — mens M står oppført
+   svindelsjekken og få 450 XP og nivå 2 før Jobbsenteret, mens M står oppført
    med `krav: ['C']`. Sjekken går nå gjennom alle oppdrag med krav og alle
    bygninger som tilbyr dem.
 3. **Oppdrag G løste seg ved å flytte én av tre skyvere.** Startstillingen
    `[50,50,50]` var alt riktig for både sabbatsåret og pensjonen; bare
    depositumet feilet. Spilleren fikk dermed aldri se at pensjonsvinduet
    begynner på 45 %, som er hele poenget med oppdraget. Nå starter de tre på
-   `[90,10,20]` — utenfor alle tre vinduene, og de må flyttes i *ulik* retning.
+   `[90,10,20]`, utenfor alle tre vinduene, og de må flyttes i *ulik* retning.
    Dette er samme feil som `MINI.H` og `MINI.N` hadde i første utgave, i mildere
    form, og den nye sjekken fanger alle tre variantene.
 4. **Oppdrag C konkluderte mot sin egen tabell.** Tipset sa at kostnaden «bunner
@@ -398,8 +398,8 @@ kom fram, kom fram fordi noen så på skjermen.
    holdt også over 2 000 tilfeldige stormår og med lånet betalt helt ned.
    Årsaken var at stormen bare inneholdt husholdningsuhell på 2 000–16 000 kr,
    mens tremånedersregelen handler om å **miste inntekten**. Stormen har nå tre
-   måneder med permittering og dagpenger — 62,4 % av grunnlaget, folketrygdloven
-   § 4-12 — og da bunner regnskapet ut på nøyaktig tre måneder, målt. Lånet
+   måneder med permittering og dagpenger, 62,4 % av grunnlaget etter
+   folketrygdloven § 4-12, og da bunner regnskapet ut på nøyaktig tre måneder, målt. Lånet
    telles dessuten helt ned nå: fasiten sa alltid at «renta løper videre etter at
    oppdraget er over», men regnskapet stoppet ved tolvte måned og lot bufferen
    betale et helt års tapt avkastning mens lånet slapp unna med under et år med
@@ -410,19 +410,19 @@ kom fram, kom fram fordi noen så på skjermen.
    til å flytte: var begge akser blokkert, var spilleren frosset for godt, uten
    et eneste signal. Det var nøyaktig feilen som gjorde spillet uspillbart i
    første utgave. Posisjonen lagres ikke, så `START_POS` var den eneste
-   inngangen — men seks av åtte bydelsmidtpunkt ligger inne i en bygning, så
+   inngangen, men seks av åtte bydelsmidtpunkt ligger inne i en bygning, så
    marginen var tynn. Nødutgangen ligger nå *før* akse-testene, og rekkefølgen
    er ikke likegyldig: lagt etter dem hadde `sp.vx*=-0.15` alt drept farten, og
    spilleren krøp 32 px på 2,4 sekunder i stedet for 291.
 7. **`RR.loesAlle()` ga ingen XP.** `taAlleKort()` har en kommentar over seg om
    at den *skal* gi samme XP som å plukke kortene opp, «ellers måler testen noe
    annet enn det spilleren opplever». `loesAlle()` fulgte ikke regelen, og en
-   test som brukte den målte nivå 8 av 15 med alt gjort — som ser ut som en
+   test som brukte den målte nivå 8 av 15 med alt gjort, som ser ut som en
    ødelagt XP-kurve. Kurven var i orden: 9 200 XP tilgjengelig, 8 540 kreves.
 
 I tillegg, funnet i samme gjennomgang og rettet: `blokkert()` returnerte `false`
 fra dørhullet og hoppet dermed ut av hele funksjonen, så resten av bygningene og
-alle landemerkene ble aldri sjekket så lenge du sto i en dør (latent — ingen dør
+alle landemerkene ble aldri sjekket så lenge du sto i en dør (latent: ingen dør
 overlapper noe i dag); Kvikklåns banner oppgav effektiv rente regnet for
 100 000 kr på et lån på 50 000; `MINI.N` lot skjermingsanslaget på 0,35 stå bare
 i en kodekommentar, mens spilleren fikk se «37,84 % av gevinst utover skjerming»
@@ -435,7 +435,7 @@ navnelappene; banneret sloss med bygningen bak; og siden manglet favicon, som ga
 
 Alle personer, firmaer og steder er oppdiktet for dette spillet: Solveig, Halvard,
 Gro, Rolf «Rask», Ingrid, Tobias, Fru Åkre, Kjell, Nervøse Nils, Amina, Bente, Odd,
-Signe, Vera og Primus — og Kvikklån AS, Opptur Nettverk og Kasino Fortuna.
+Signe, Vera og Primus, og Kvikklån AS, Opptur Nettverk og Kasino Fortuna.
 Statuen på torget er **Den ukjente spareren**: hun satte av litt, hver måned, i
 førti år, og ingen skrev om henne i avisen. Det er ingen historie der, og det er
 poenget.
@@ -448,7 +448,7 @@ Finanstilsynet beskriver, ikke etter virkelige enkeltsaker.
 ## Ansvar
 
 Renteriket er en lærebok med føtter, ikke finansiell rådgivning. Tallene er ekte,
-men forenklet der forenklingen ikke endrer poenget — og der den *kunne* endret
+men forenklet der forenklingen ikke endrer poenget, og der den *kunne* endret
 poenget, står forbeholdet i teksten. Simuleringene bruker historisk avkastning og
 volatilitet; virkeligheten har fetere haler enn en normalfordeling, så de virkelig
 dårlige årene er verre og kommer oftere enn modellen tror. Bruk tallene til å
