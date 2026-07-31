@@ -254,7 +254,9 @@ sant('stressrenten er alltid minst 7 %',
     t > (await K(()=>RR.F.terminbelop(2280000,0.0508/12,360))));
 }
 er('dokumentavgift 2,5 %', await K(()=>RR.F.dokumentavgift(3800000,false)), 95000, 0.01);
-er('nybygg: ingen dokumentavgift', await K(()=>RR.F.dokumentavgift(3800000,true)), 0, 0);
+er('nybygg: avgift av tomteverdien, ikke fritak',
+   await K(()=>RR.F.dokumentavgift(3800000,true)),
+   3800000*S.tomteandelNybygg*S.dokumentavgift, 0.01);
 er('netto rente etter 22 % fradrag', await K(()=>RR.F.netterente(0.0508)), 0.0508*0.78, 1e-12);
 
 console.log('\n=== BETJENINGSEVNE OG DRIFTKORREKSJON ===');
@@ -294,8 +296,15 @@ console.log('\n=== BETJENINGSEVNE OG DRIFTKORREKSJON ===');
   // Driftkorreksjonen: en tilfeldig gang med drift g + σ²/2 skal ha g som
   // ANNUALISERT median. Uten den leverer simuleringen systematisk mindre enn
   // tabellen ved siden av påstår.
-  er('drift(g, 0) = g', await K(()=>RR.F.drift(0.052,0)), 0.052, 1e-12);
-  er('drift legger til σ²/2', await K(()=>RR.F.drift(0.052,0.17)), 0.052+0.17*0.17/2, 1e-12);
+  er('mndDrift(g, 0) = månedlig geometrisk av g',
+     await K(()=>RR.F.mndDrift(0.052,0)), Math.pow(1.052,1/12)-1, 1e-12);
+  er('mndDrift legger til σ²/24 i logrom',
+     await K(()=>RR.F.mndDrift(0.052,0.17)), Math.pow(1.052,1/12)*Math.exp(0.17*0.17/24)-1, 1e-12);
+  // Den forrige utgaven het drift() og ga (g + σ²/2), som kallerne delte på 12.
+  // Det behandler g som en log-avkastning og bommer oppover når g og σ blir
+  // store: målt +0,28 pp på 7,9 % og σ 16 % over førti år, altså 471 208 kr på
+  // medianen i oppdrag N. Ingen skal kalle drift() igjen.
+  sant('den gamle drift() finnes ikke lenger', await K(()=>typeof RR.F.drift==='undefined'));
   const g=await K(()=>{
     // 4 000 forløp på 30 år, månedlige steg, og mål den annualiserte medianen
     const lagRnd=(s)=>{let a=s>>>0;return function(){a+=0x6D2B79F5;let t=a;
@@ -309,13 +318,70 @@ console.log('\n=== BETJENINGSEVNE OG DRIFTKORREKSJON ===');
         for (let t=0;t<AAR*12;t++) x*=(1+mu/12+S/Math.sqrt(12)*gauss(r));
         ut.push(Math.pow(Math.max(1e-9,x),1/AAR)-1); }
       ut.sort((a,b)=>a-b); return ut[Math.floor(N*0.5)]; };
-    return {uten:kjor(G), med:kjor(RR.F.drift(G,S))};
+    return {uten:kjor(G), med:kjor(RR.F.mndDrift(G,S)*12)};
   });
   console.log('    (median annualisert over 30 år: uten korreksjon '+(g.uten*100).toFixed(2)+
     ' %, med korreksjon '+(g.med*100).toFixed(2)+' % — målet er 5,20 %)');
   sant('uten korreksjon ligger medianen klart under målet', g.uten < 0.052-0.008);
-  sant('med korreksjon treffer medianen målet innenfor 0,8 pp',
-    Math.abs(g.med-0.052) < 0.008);
+  // Kravet var 0,8 pp, altså så løst at feilen på 0,28 pp gikk gjennom.
+  sant('med korreksjon treffer medianen målet innenfor 0,05 pp',
+    Math.abs(g.med-0.052) < 0.0005);
+  // Og den skal treffe på de kombinasjonene spillet faktisk bruker, ikke bare på én.
+  const flere=await p.evaluate(()=>{
+    const lagRnd=(s)=>{ let a=s>>>0; return function(){
+      a+=0x6D2B79F5; let t=a; t=Math.imul(t^t>>>15,t|1); t^=t+Math.imul(t^t>>>7,t|61);
+      return ((t^t>>>14)>>>0)/4294967296; }; };
+    const gauss=(r)=>{ let u=0,v=0; while(u===0)u=r(); while(v===0)v=r();
+      return Math.sqrt(-2*Math.log(u))*Math.cos(Math.PI*2*v); };
+    const median=(G,S,AAR)=>{ const mu=RR.F.mndDrift(G,S), sd=S/Math.sqrt(12);
+      const r=lagRnd(4242), ut=[];
+      for (let k=0;k<6000;k++){ let x=1;
+        for (let t=0;t<AAR*12;t++) x*=(1+mu+sd*gauss(r));
+        ut.push(Math.pow(Math.max(1e-9,x),1/AAR)-1); }
+      ut.sort((a,b)=>a-b); return ut[3000]; };
+    const S=RR.SATSER, F=RR.F;
+    return [
+      ['byens marked, 40 år', F.nominell(S.realAksjer,S.kpi), S.volAksjer, 40],
+      ['oppdrag N, 80 % aksjer', F.nominell(F.miks(0.8).avkastning,S.kpi), F.miks(0.8).risiko, 40],
+      ['oppdrag G, pensjon 70 %', F.miks(0.7).avkastning, F.miks(0.7).risiko, 35]
+    ].map(([n,G,S2,A])=>({n,mal:G,fikk:median(G,S2,A)}));
+  });
+  flere.forEach(x=>{
+    console.log('    '+x.n+': mål '+(x.mal*100).toFixed(3)+' %, median '+(x.fikk*100).toFixed(3)+' %');
+    sant('  medianen treffer innenfor 0,08 pp — '+x.n, Math.abs(x.fikk-x.mal)<0.0008);
+  });
+}
+
+console.log('\n=== NOMINELL AV REAL: FISHER, IKKE r + i ===');
+// Spillet lærer bort i oppdrag F at realrenten ikke er «rente minus inflasjon»,
+// og brukte likevel realAksjer + kpi som nominell drift i tre simuleringer.
+{
+  er('nominell(r, i) = (1+r)(1+i) − 1',
+     await K(()=>RR.F.nominell(0.052,0.027)), 1.052*1.027-1, 1e-12);
+  er('nominell er invers av kjopekraft over ett år',
+     await K(()=>RR.F.kjopekraft(1+RR.F.nominell(0.052,0.027),0.027,1)), 1.052, 1e-12);
+  const n=await K(()=>RR.F.nominell(RR.SATSER.realAksjer,RR.SATSER.kpi));
+  const flat=await K(()=>RR.SATSER.realAksjer+RR.SATSER.kpi);
+  console.log('    Fisher '+(n*100).toFixed(2)+' % mot r+i '+(flat*100).toFixed(2)+' % — differanse '+
+    ((n-flat)*100).toFixed(2)+' pp');
+  sant('Fisher gir mer enn r + i', n>flat);
+  const kilde=await p.evaluate(()=>RR.kildekode?RR.kildekode():null);
+}
+
+console.log('\n=== DOKUMENTAVGIFT VED NYBYGG ===');
+// Kort 13 og F sa fullt fritak; Visningsboligen sa «du betaler av tomteverdien».
+{
+  const S=await K(()=>RR.SATSER);
+  er('vanlig kjøp: 2,5 % av hele prisen',
+     await K(()=>RR.F.dokumentavgift(4000000,false)), 4000000*S.dokumentavgift, 0.01);
+  er('nybygg: 2,5 % av tomteverdien',
+     await K(()=>RR.F.dokumentavgift(4000000,true)),
+     4000000*S.tomteandelNybygg*S.dokumentavgift, 0.01);
+  sant('nybygg er billigere, men ikke gratis',
+     (await K(()=>RR.F.dokumentavgift(4000000,true)))>0 &&
+     (await K(()=>RR.F.dokumentavgift(4000000,true)))<(await K(()=>RR.F.dokumentavgift(4000000,false))));
+  er('tomteandelen kan overstyres',
+     await K(()=>RR.F.dokumentavgift(4000000,true,0.5)), 4000000*0.5*S.dokumentavgift, 0.01);
 }
 
 console.log('\n=== GEBYRER ===');

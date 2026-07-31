@@ -747,6 +747,202 @@ console.log('\n=== HVERT OPPDRAG STÅR BAK KRAVENE SINE ===');
   await p.evaluate(()=>RR.lukkAlt());
 }
 
+console.log('\n=== J: BANEN GJØR DET FASITEN PÅSTÅR ===');
+// Første utgave hadde fall på ~55 % og opphentinger på +44 %: tre av fire kom
+// aldri tilbake til forrige topp, tretti år ga −0,02 % realt, og fasiten sa at
+// «alle fire fallene i denne banen hentet seg inn igjen». Banen er nå konstruert
+// til å oppfylle påstanden, og dette er sjekken som holder den til det.
+{
+  const b=await p.evaluate(()=>{
+    // Bygg banen på nytt med samme oppskrift som MINI.J, og mål den.
+    const S=RR.SATSER, F=RR.F;
+    const lagRnd=(s)=>{ let a=s>>>0; return function(){
+      a+=0x6D2B79F5; let t=a; t=Math.imul(t^t>>>15,t|1); t^=t+Math.imul(t^t>>>7,t|61);
+      return ((t^t>>>14)>>>0)/4294967296; }; };
+    const gauss=(r)=>{ let u=0,v=0; while(u===0)u=r(); while(v===0)v=r();
+      return Math.sqrt(-2*Math.log(u))*Math.cos(Math.PI*2*v); };
+    const KRAKK=[42,116,205,289], DYBDE=[0.38,0.45,0.30,0.34], FALL=7, OPP=18;
+    const sig=S.volAksjer/Math.sqrt(12), maal=F.nominell(S.realAksjer,S.kpi);
+    const lag=(mu)=>{ const r=lagRnd(19291024), d=[];
+      for (let m=0;m<360;m++){ let x=mu+sig*gauss(r);
+        for (let i=0;i<KRAKK.length;i++){ const k=KRAKK[i], dyp=DYBDE[i];
+          if (m>=k && m<k+FALL) x=Math.pow(1-dyp,1/FALL)-1-Math.abs(gauss(r))*0.012;
+          else if (m>=k+FALL && m<k+FALL+OPP) x=Math.pow(1/(1-dyp),1/OPP)-1+gauss(r)*0.010; }
+        d.push(x); } return d; };
+    const ann=(d)=>{ let n=1; d.forEach(x=>n*=(1+x)); return Math.pow(n,1/30)-1; };
+    let lo=0,hi=0.03,mu=0;
+    for (let i=0;i<50;i++){ mu=(lo+hi)/2; if (ann(lag(mu))<maal) lo=mu; else hi=mu; }
+    const d=lag(mu);
+    let n=100; const niv=[100]; d.forEach(x=>{ n*=(1+x); niv.push(n); });
+    const kr2=KRAKK.map(k=>{
+      const topp=Math.max(...niv.slice(0,k+1));
+      const bunn=Math.min(...niv.slice(k,k+FALL+1));
+      const bunnM=k+niv.slice(k,k+FALL+1).indexOf(bunn);
+      let tilbake=null;
+      for (let m2=bunnM;m2<=360;m2++) if (niv[m2]>=topp){ tilbake=m2; break; }
+      return {k,fall:bunn/topp-1,tilbake};
+    });
+    let hold=0; d.forEach(x=>{ hold=(hold+3000)*(1+x); });
+    return {aarlig:ann(d), maal, kr:kr2, hold,
+            real:F.kjopekraft(hold,S.kpi,30), realAvk:F.realrente(ann(d),S.kpi),
+            nervemnd:d.filter(x=>x<-0.05).length};
+  });
+  console.log('    30 år: '+(b.aarlig*100).toFixed(2)+' % nominelt = '+
+    (b.realAvk*100).toFixed(2)+' % realt (mål '+(b.maal*100).toFixed(2)+' %)');
+  b.kr.forEach(x=>console.log('    krakk mnd '+x.k+': '+(x.fall*100).toFixed(1)+
+    ' % · tilbake til toppen '+(x.tilbake===null?'ALDRI':'mnd '+x.tilbake)));
+  sant('banen treffer spillets egen forventning innenfor 0,05 pp',
+    Math.abs(b.aarlig-b.maal)<0.0005);
+  b.kr.forEach((x,i)=>sant('  krakk '+(i+1)+' henter seg inn igjen', x.tilbake!==null));
+  sant('hvert fall er dypere enn 25 %', b.kr.every(x=>x.fall<-0.25));
+  sant('nervemåleren har noe å reagere på', b.nervemnd>20);
+  sant('«ikke rør» gir mer kjøpekraft enn det som ble satt inn', b.real>3000*360);
+  console.log('    «ikke rør» i 30 år: '+Math.round(b.hold).toLocaleString('nb')+
+    ' kr = '+Math.round(b.real).toLocaleString('nb')+' kr i dagens kjøpekraft');
+  // og valget skal komme på BUNNEN, ikke etter at oppgangen har startet
+  await apne(p,'J');
+  await klikkTekst(p,'Start de tretti årene');
+  let mnd1=null;
+  for (let i=0;i<80 && mnd1===null;i++){
+    await p.waitForTimeout(200);
+    mnd1=await p.evaluate(()=>{
+      if (!document.querySelector('#spillinner .valgkort[data-v]')) return null;
+      const m=RR.minispillTekst().match(/Måned (\d+) av 360/); return m?+m[1]:-1;
+    });
+  }
+  console.log('    første valg kommer i måned '+mnd1+' (fallet starter i 42, bunner i 48)');
+  sant('valget kommer på bunnen av fallet, ikke etter', mnd1===48);
+  await p.evaluate(()=>RR.lukkAlt());
+}
+
+console.log('\n=== N: DET ER MEDIANEN SOM GJELDER, IKKE ETT LØP ===');
+// Første utgave kjørte lagRnd(556677) og viste det ene løpet som resultatet.
+// Målt mot 4 000 tilfeldige baner lå den på 84. persentil uansett innstilling,
+// og finalen lærte bort en sparerate sju prosentpoeng for lav.
+{
+  await apne(p,'N');
+  const t=await tekst(p);
+  sant('overskriften sier at det er medianen som gjelder', /medianen/i.test(t));
+  sant('tabellen viser 5.-persentilen', /I 5 av 100 løp fikk du mindre enn/.test(t));
+  sant('tabellen viser 95.-persentilen', /I 5 av 100 løp fikk du mer enn/.test(t));
+  sant('tabellen viser hvor mange løp som nådde målet', /Løp som nådde/.test(t));
+  // regnestykket i tabellen skal gå opp
+  // Les VERDICELLA, ikke innerText: labelen inneholder selv tall («utover et
+  // skjermingsfradrag på 1 146 095 kr»), og et tekstsøk plukket det i stedet for
+  // beløpet. Da målte testen noe annet enn den trodde.
+  const rad=async (navn)=>await p.evaluate(n=>{
+    for (const tr of document.querySelectorAll('#spillinner table.tab tbody tr')){
+      const c=tr.querySelectorAll('td');
+      if (c.length<2) continue;
+      if (c[0].textContent.indexOf(n)!==0) continue;
+      const v=c[1].textContent.replace(/\u00a0|\u202f/g,' ');
+      const m=v.match(/([\d ]+)/);
+      if (!m) return null;
+      const tall=parseInt(m[1].replace(/ /g,''),10);
+      return /−/.test(v) ? -tall : tall;
+    }
+    return null;
+  },navn);
+  const inn=await rad('Du har satt inn'), avk=await rad('Avkastning etter gebyr'),
+        sk=await rad('Skatt ved uttak'), uh=await rad('Uhell underveis'),
+        nom=await rad('Etter skatt, i kroner');
+  sant('alle radene i tabellen kan leses', [inn,avk,sk,uh,nom].every(x=>x!==null&&!isNaN(x)));
+  if ([inn,avk,sk,uh,nom].every(x=>x!==null)){
+    const sum=inn+avk+sk+uh;          // sk og uh leses alt som negative
+    console.log('    innskutt '+inn+' + avkastning '+avk+' + skatt '+sk+' + uhell '+uh+' = '+sum+
+      ', tabellen sier '+nom+' (avvik '+(nom-sum)+')');
+    sant('tabellen går opp krone for krone', Math.abs(nom-sum)<=2);
+  }
+  // og medianen skal kreve mer enn den gamle heldige banen gjorde
+  const s2=await p.evaluate(()=>[...document.querySelectorAll('#spillinner input[type=range]')].map(e=>e.id));
+  await skyv(p,s2[0],0.13); await skyv(p,s2[1],80);
+  await p.waitForTimeout(200);
+  sant('13 % sparerate og 80 % aksjer er IKKE nok (den gamle banen sa ja)',
+    !/Målet er nådd/.test(await tekst(p)));
+  await skyv(p,s2[0],0.25); await skyv(p,s2[1],100);
+  await p.waitForTimeout(200);
+  sant('25 % sparerate og 100 % aksjer er nok', /Målet er nådd/.test(await tekst(p)));
+  await p.evaluate(()=>RR.lukkAlt());
+}
+
+console.log('\n=== H: VERDIKTET HENGER IKKE PÅ FLAKS ===');
+// «Over startverdien etter fem år» var 67 % flaks, og «Start på nytt» ga nye
+// fem år hver gang — så oppdraget kunne trykkes gjennom uten å flytte en brikke.
+{
+  const spillH=async (vekt)=>{
+    await apne(p,'H');
+    const ider=await p.evaluate(()=>[...document.querySelectorAll('#spillinner input[type=range]')].map(e=>e.id));
+    for (let i=0;i<6;i++) await skyv(p,ider[i],vekt[i]);
+    await p.waitForTimeout(80);
+    for (let r2=0;r2<5;r2++){ await klikkTekst(p,'Neste år'); await p.waitForTimeout(90); }
+    return {vant:await harSeier(p), t:await tekst(p),
+      verdi:await p.evaluate(()=>{
+        const m=RR.minispillTekst().replace(/ | /g,' ').match(/Din\s*\n?\s*([\d ]+) kr/);
+        return m?parseInt(m[1].replace(/ /g,''),10):null; })};
+  };
+  const spredt=await spillH([20,20,20,20,20,0]);
+  sant('20 % i hver sektor klarer oppdraget', spredt.vant);
+  sant('fordelingen over mange femårsperioder vises', /ANDRE FEMÅRSPERIODER/.test(spredt.t));
+  sant('nedsiden sammenlignes med den som satset alt på én', /5 av 100 under/.test(spredt.t));
+  const kons=await spillH([10,10,10,60,10,0]);
+  sant('60 % i én sektor klarer det ikke, uansett hvordan de fem årene gikk', !kons.vant);
+  sant('  og begrunnelsen peker på konsentrasjonen, ikke på utfallet',
+    /% i én sektor/.test(kons.t));
+  // samme fem år hver gang: «Start på nytt» skal nullstille frøet
+  await apne(p,'H');
+  const ider=await p.evaluate(()=>[...document.querySelectorAll('#spillinner input[type=range]')].map(e=>e.id));
+  for (let i=0;i<6;i++) await skyv(p,ider[i],[20,20,20,20,20,0][i]);
+  await p.waitForTimeout(80);
+  const kjorFem=async ()=>{ for (let r2=0;r2<5;r2++){ await klikkTekst(p,'Neste år'); await p.waitForTimeout(80); }
+    return await p.evaluate(()=>{
+      const m=RR.minispillTekst().replace(/ | /g,' ').match(/Din\s*\n?\s*([\d ]+) kr/);
+      return m?parseInt(m[1].replace(/ /g,''),10):null; }); };
+  const forste=await kjorFem();
+  await klikkTekst(p,'Start på nytt'); await p.waitForTimeout(120);
+  const andre=await kjorFem();
+  console.log('    første forsøk '+forste+' kr, etter «Start på nytt» '+andre+' kr');
+  sant('«Start på nytt» gir de SAMME fem årene', forste===andre);
+  await p.evaluate(()=>RR.lukkAlt());
+}
+
+console.log('\n=== D: GRAFEN REGNER 42 ÅR, IKKE 43 ===');
+{
+  await apne(p,'D');
+  const d=await p.evaluate(()=>{
+    const F=RR.F, r=RR.SATSER.realAksjer;
+    const lukket=F.sluttverdi(F.sluttverdiSerie(2000,F.mndRente(r),120,true),r,32);
+    const t=RR.minispillTekst().replace(/ | /g,' ');
+    const m=t.match(/Ada ender med ([\d ]+) kr/);
+    return {vist:m?parseInt(m[1].replace(/ /g,''),10):null, lukket};
+  });
+  console.log('    Ada i grafen: '+d.vist+' kr · lukket form 42 år: '+Math.round(d.lukket)+' kr');
+  sant('grafens sluttpunkt er lukket form for 42 år, ikke 43',
+    d.vist!==null && Math.abs(d.vist-d.lukket)<2);
+  await p.evaluate(()=>RR.lukkAlt());
+}
+
+console.log('\n=== L: SPILLERENS EGEN GJELD SPISER AV GJELDSTAKET ===');
+// Fasiten sier at gjeldstaket gjelder ALL gjeld. Oppdraget sendte ikke inn
+// spillerens gjeld, mens Meglerkontoret bak samme dør gjorde det.
+{
+  await p.evaluate(()=>{ RR.sett({gjeld:0}); });
+  await apne(p,'L');
+  const uten=await p.evaluate(()=>{
+    const t=RR.minispillTekst().replace(/ | /g,' ');
+    const m=t.match(/Gjeldsgrad \([\d,]+ × brutto\)\s*\n?\s*([\d ]+) kr/);
+    return m?parseInt(m[1].replace(/ /g,''),10):null; });
+  await p.evaluate(()=>{ RR.sett({gjeld:200000}); });
+  await apne(p,'L');
+  const med=await p.evaluate(()=>{
+    const t=RR.minispillTekst().replace(/ | /g,' ');
+    const m=t.match(/Gjeldsgrad \([\d,]+ × brutto\)\s*\n?\s*([\d ]+) kr/);
+    return m?parseInt(m[1].replace(/ /g,''),10):null; });
+  console.log('    gjeldstak uten gjeld: '+uten+' · med 200 000 i gjeld: '+med);
+  sant('200 000 i gjeld senker gjeldstaket med 200 000',
+    uten!==null && med!==null && Math.abs((uten-med)-200000)<1);
+  await p.evaluate(()=>{ RR.sett({gjeld:0}); RR.lukkAlt(); });
+}
+
 console.log('\n=== INGEN SIDEFEIL UNDERVEIS ===');
 sant('ingen JavaScript-feil under hele gjennomspillingen ('+sideFeil.length+')', sideFeil.length===0);
 if (sideFeil.length) sideFeil.slice(0,8).forEach(f=>console.log('      '+f));

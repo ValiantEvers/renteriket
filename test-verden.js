@@ -438,6 +438,100 @@ console.log('\n=== DIALOGTELLEREN TELLER GJENSTÅENDE, IKKE DEN DU LESER ===');
   await p.evaluate(()=>RR.lukkAlt());
 }
 
+console.log('\n=== BYEN HAR INFLASJON OG LØNNSVEKST ===');
+// Uten dette var overskuddet konstant 10 000 kr i måneden i førti år, i et spill
+// der oppdrag F handler om at kroner lyver over tid og oppdrag N regner med
+// 3,2 % lønnsvekst. Byen motsa pensum.
+{
+  await p.evaluate(()=>{ RR.nullstill(); });
+  await p.reload(); await p.waitForTimeout(250);
+  await p.evaluate(()=>{ RR.start(); RR.sett({harJobb:true,bruttoAar:456000,
+    kontanter:0,portefolje:0,gjeld:0}); });
+  await p.waitForTimeout(300);
+  await p.evaluate(()=>RR.lukkAlt());
+  const S=await p.evaluate(()=>RR.SATSER);
+  const start=await p.evaluate(()=>RR.tilstand);
+  sant('prisnivået starter på 100 %', Math.abs(start.prisniva-1)<1e-9);
+  sant('formue i startkroner er lik formue i måned 0',
+    Math.abs(start.formueReal-start.formue)<1);
+  await p.evaluate(()=>{ for (let i=0;i<120;i++) RR.nyMaaned(); });
+  const ti=await p.evaluate(()=>RR.tilstand);
+  console.log('    etter ti år: lønn '+Math.round(ti.bruttoAar)+
+    ', utgifter '+Math.round(ti.utgiftNaa)+'/mnd, prisnivå '+(ti.prisniva*100).toFixed(0)+' %');
+  console.log('    formue '+Math.round(ti.formue)+' kr = '+Math.round(ti.formueReal)+' kr i startkroner');
+  const ventetPris=Math.pow(1+S.kpi,10);
+  sant('prisnivået har fulgt KPI i ti år', Math.abs(ti.prisniva-ventetPris)<0.01);
+  sant('utgiftene har fulgt prisnivået',
+    Math.abs(ti.utgiftNaa-start.utgiftNaa*ventetPris)<50);
+  const ventetLonn=456000*Math.pow(1+S.lonnsvekst,10);
+  sant('lønna har vokst med lønnsveksten (±1 %)',
+    Math.abs(ti.bruttoAar-ventetLonn)<ventetLonn*0.01);
+  sant('lønna vokser raskere enn prisene', ti.bruttoAar/456000 > ti.prisniva);
+  sant('formuen i startkroner er lavere enn i kroner', ti.formueReal<ti.formue);
+  // og over førti år skal ingenting sprekke
+  await p.evaluate(()=>{ for (let i=0;i<360;i++) RR.nyMaaned(); });
+  const f=await p.evaluate(()=>RR.tilstand);
+  console.log('    etter førti år: formue '+Math.round(f.formue)+' kr = '+
+    Math.round(f.formueReal)+' kr i startkroner · gjeld '+Math.round(f.gjeld));
+  sant('ingen gjeldsspiral over førti år med jobb', f.gjeld<1);
+  sant('kontantene går ikke i minus', f.kontanter>=0);
+  sant('formuen vokser fortsatt realt', f.formueReal>ti.formueReal);
+  await p.evaluate(()=>{ RR.nullstill(); });
+  await p.reload(); await p.waitForTimeout(250);
+  await p.evaluate(()=>{ RR.start(); RR.sett({harJobb:true,bruttoAar:456000,kontanter:250000}); });
+  await p.waitForTimeout(300);
+  await p.evaluate(()=>RR.lukkAlt());
+}
+
+console.log('\n=== FONDSBUTIKKEN TREKKER SKATTEN DEN LOVER ===');
+// Skjermen sa «over innskutt beløp beskattes gevinsten med 37,84 %» og flyttet
+// så pengene uten å trekke en krone.
+{
+  const S=await p.evaluate(()=>RR.SATSER);
+  // kjøp for 100 000, la porteføljen vokse til 200 000, selg alt
+  const f=await p.evaluate(([sats])=>{
+    RR.sett({kontanter:300000,portefolje:0,gjeld:0});
+    RR.lukkAlt(); RR.aapneMinispill('hus-fond',RR.HUS.fond);
+    // kjøp via skjemaet slik en spiller gjør
+    const inp=document.querySelector('#spillinner input[type=range]');
+    if (!inp) return {feil:'fant ikke skyveren'};
+    inp.value=100000; inp.dispatchEvent(new Event('input',{bubbles:true}));
+    const knapp=[...document.querySelectorAll('#spillinner button')]
+      .find(b=>b.textContent.indexOf('Flytt kontanter')===0);
+    if (!knapp) return {feil:'fant ikke kjøpsknappen', knapper:
+      [...document.querySelectorAll('#spillinner button')].map(b=>b.textContent)};
+    knapp.click();
+    return {etterKjop:RR.tilstand};
+  },[S.aksjeskatt]);
+  if (f.feil){ console.log('    ('+f.feil+' — '+JSON.stringify(f.knapper||'')+')'); }
+  sant('kjøp av fond flytter penger fra kontanter til portefølje',
+    !f.feil && f.etterKjop.portefolje>0);
+  if (!f.feil){
+    const ut=await p.evaluate(()=>{
+      RR.sett({portefolje:200000});
+      RR.lukkAlt(); RR.aapneMinispill('hus-fond',RR.HUS.fond);
+      const foer=RR.tilstand;
+      const sk=document.getElementById('flytt-portefølje-kontanter');
+      if (!sk) return {feil:'fant ikke selg-skyveren'};
+      sk.value=200000; sk.dispatchEvent(new Event('input',{bubbles:true}));
+      const selg=[...document.querySelectorAll('#spillinner button')]
+        .find(b=>b.textContent.indexOf('Flytt portefølje')===0);
+      if (!selg) return {feil:'fant ikke selg-knappen'};
+      selg.click();
+      return {foer, etter:RR.tilstand};
+    });
+    if (ut.feil){ console.log('    ('+ut.feil+')'); }
+    const gevinst=200000-ut.foer.innskutt;
+    const ventetSkatt=Math.round(Math.max(0,gevinst)*S.aksjeskatt);
+    const fikk=200000-(ut.etter.kontanter-ut.foer.kontanter);
+    console.log('    innskutt '+Math.round(ut.foer.innskutt)+', solgte 200 000, gevinst '+
+      Math.round(gevinst)+' → skatt trukket '+Math.round(fikk)+' (ventet '+ventetSkatt+')');
+    sant('skatten trekkes ved uttak over innskutt beløp',
+      Math.abs(fikk-ventetSkatt)<=2);
+  }
+  await p.evaluate(()=>RR.lukkAlt());
+}
+
 await b.close();
 console.log('\n'+'='.repeat(58));
 console.log(feil? ('✗ '+feil+' feil av '+(ok+feil)) : ('✓ alle '+ok+' sjekker OK'));
