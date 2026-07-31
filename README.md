@@ -240,7 +240,7 @@ ikke at spilleren regner etter.
 
 ## Testing
 
-Åtte filer, 838 sjekker. `bash test-alle.sh` kjører alt over `file://`,
+Åtte filer, 854 sjekker. `bash test-alle.sh` kjører alt over `file://`,
 `bash test-alle.sh --http` starter en lokal server og kjører alt på nytt over HTTP.
 Begge må være grønne: siden serveres over HTTPS i produksjon, og `file://` har sitt
 eget origo-oppsett for `localStorage`.
@@ -269,6 +269,27 @@ eget origo-oppsett for `localStorage`.
    noe. Nå må du trekke i spaken.
 4. **Diversifisering var jukset til.** Indeksfondet i oppdrag H hadde sin egen,
    mildere avkastning, uavhengig av sektorene. Se «Modellvalg» over.
+
+### Én funnet av å bli fortalt om den
+
+Den viktigste av dem alle, og den mest ydmykende: **spilleren kunne ikke bevege
+seg.** Startposisjonen (470, 2020) lå inne i BUTIKKENs kollisjonsboks. Begge akser
+blokkert, bom fast fra første sekund — i et spill som handler om å gå rundt i en by.
+
+854 sjekker gikk grønt over den, fordi hver enkelt av dem kalte `RR.flyttTil()`
+eller `RR.lukkAlt()` først og dermed flyttet spilleren vekk fra startpunktet før
+den prøvde noe. Bevegelsestesten målte at tastene virker. Den målte ikke at de
+virker *der spilleren faktisk begynner*.
+
+Verre: symptomet dukket opp i en tidligere spilletest, der både gange og løping
+tok «3,4 sekunder» over samme strekning. Det ble forklart bort som at testen var
+for kort. Den var ikke for kort — spilleren rørte seg aldri.
+
+`test-verden.js` har nå en seksjon som gjør det en spiller gjør, uten et eneste
+programmatisk grep: last siden, klikk START, les åpningsdialogen med mellomrom,
+og gå i alle fire retninger fra der du står. Den krever også at startpunktet er
+fritt i alle fire retninger, og at ingen figur står inni en vegg — som fanget at
+politibetjent Odd sto inne i telefonkiosken.
 
 ### To funnet ved å spille
 

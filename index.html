@@ -1219,7 +1219,7 @@ const FOLK=[
   figur('nils','NERVØSE NILS','småsparer',1980,1180,'#d8d08a',{oppdrag:'J'}),
   figur('amina','AMINA','skatterådgiver',1540,835,'#8ad8d0',{oppdrag:'K'}),
   figur('bente','BENTE','eiendomsmegler',445,615,'#d8b48a',{oppdrag:'L'}),
-  figur('odd','ODD','politibetjent',1950,1975,'#8a9ed8',{oppdrag:'M'}),
+  figur('odd','ODD','politibetjent',1975,2020,'#8a9ed8',{oppdrag:'M'}),   // sto inni kiosken før
   figur('signe','SIGNE','byens eldste',2515,645,'#d8c8b4',{oppdrag:'N'}),
   figur('vera','VERA','sju år, spør alt',1700,1180,'#f0b0a0',{}),
   figur('primus','PRIMUS','statuens vokter',1620,1310,'#b0b8c0',{})
@@ -1231,7 +1231,13 @@ const folk=(id)=>FOLK.find(p=>p.id===id);
 //  Alt som lagres har prefiks rr-. Alt lesing går gjennom lesTall/
 //  lesSett/lesObj, som gir standardverdien hvis lagringen er ødelagt.
 // =====================================================================
-const sp={x:470,y:2020,vx:0,vy:0,ang:Math.PI*1.5,fart:0,steg:0};
+// Startposisjonen SKAL være et fritt punkt, og den skal stå ett sted.
+// Første utgave hadde (470, 2020), som ligger inne i BUTIKKENs kollisjonsboks:
+// begge akser blokkert, spilleren bom fast fra første sekund. Nå står den rett
+// foran Jobbsenterets dør, som er dit spillet ber deg gå.
+// test-verden.js krever at punktet er fritt, og at det er fritt i alle fire retninger.
+const START_POS={x:760,y:2010};
+const sp={x:START_POS.x,y:START_POS.y,vx:0,vy:0,ang:Math.PI*1.5,fart:0,steg:0};
 
 let kontanter = lesTall('rr-kontant',0);
 let buffer    = lesTall('rr-buffer',0);
@@ -4599,7 +4605,7 @@ function tegnPause(){
         stat={skritt:0,mnd:0,kaffe:0,tapt:0,tjent:0,forsok:0,riktig:0};
         mnd=0; besokt=new Set(); bruttoAar=LONN_START*12; harJobb=false;
         indeks=100; indeksHist=[100]; aktivt=null;
-        sp.x=470; sp.y=2020;
+        sp.x=START_POS.x; sp.y=START_POS.y;
         pauseEl.style.display='none'; dempMusikk(false);
         oppdaterHud(); banner('NULLSTILT','Du er blakk igjen');
       },'fare'))));
@@ -4853,7 +4859,8 @@ window.RR={
   minispillTekst(){ return spillEl.style.display==='none'?'':innerEl.textContent; },
   fasitAntall(){ return innerEl.querySelectorAll('.fasit').length; },
   harSeier(){ return [...innerEl.querySelectorAll('.fasit.ja')].length>0; },
-  antallOppdrag:OPPDRAG.length, antallKort:KORT.length, antallBygg:BYGG.length
+  antallOppdrag:OPPDRAG.length, antallKort:KORT.length, antallBygg:BYGG.length,
+  START_POS
 };
 </script>
 </body>

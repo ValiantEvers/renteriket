@@ -50,6 +50,78 @@ sant('ingen oppdrag krever seg selv', OPPDRAG.every(o=>!o.krav.includes(o.id)));
   sant('minst ett oppdrag er åpent fra start', OPPDRAG.some(o=>o.krav.length===0));
 }
 
+console.log('\n=== SLIK EN SPILLER FAKTISK STARTER ===');
+// Denne testen manglet, og det er derfor «det går ikke an å bevege seg» slapp
+// gjennom 838 sjekker: alle de andre kaller RR.flyttTil() eller RR.lukkAlt()
+// først, og flytter dermed spilleren vekk fra startposisjonen før de prøver noe.
+// Startposisjonen lå inne i BUTIKKENs kollisjonsboks — begge akser blokkert,
+// spilleren bom fast fra første sekund.
+{
+  const start=await p.evaluate(()=>RR.START_POS);
+  const blokk=await p.evaluate(s=>RR.blokkert(s.x,s.y),start);
+  sant('startposisjonen ('+start.x+','+start.y+') er et fritt punkt', !blokk);
+  if (blokk) console.log('      blokkert av: '+(await p.evaluate(s=>RR.BYGG.filter(b=>
+    s.x>b.x-14&&s.x<b.x+b.w+14&&s.y>b.y-14&&s.y<b.y+b.h+14).map(b=>b.id),start)).join(', '));
+  // og det skal være fritt i alle fire retninger, ikke bare i punktet
+  for (const [dx,dy,navn] of [[40,0,'øst'],[-40,0,'vest'],[0,-40,'nord'],[0,40,'sør']]){
+    const fri=!(await p.evaluate(([x,y])=>RR.blokkert(x,y),[start.x+dx,start.y+dy]));
+    sant('  det er fritt '+navn+' for startposisjonen', fri);
+  }
+
+  // Hele spillerens åpning: last på nytt, klikk START, les dialogen med
+  // mellomrom, og gå — uten et eneste programmatisk grep.
+  await p.evaluate(()=>RR.nullstill());
+  await p.reload();
+  await p.waitForTimeout(300);
+  await p.click('#startknapp');
+  await p.waitForTimeout(1100);
+  sant('spillet kjører etter klikk på START', await p.evaluate(()=>RR.tilstand.kjorer));
+  sant('åpningsdialogen vises', await p.evaluate(()=>RR.tilstand.dAapen));
+  const laast=await p.evaluate(()=>RR.tilstand.pos);
+  await p.keyboard.down('d'); await p.waitForTimeout(300); await p.keyboard.up('d');
+  const laast2=await p.evaluate(()=>RR.tilstand.pos);
+  sant('man kan ikke gå mens dialogen er åpen', Math.abs(laast2[0]-laast[0])<1);
+  // mellomrom gjennom dialogen, slik en spiller gjør
+  let trykk=0;
+  for (let i=0;i<8;i++){
+    if (!(await p.evaluate(()=>RR.tilstand.dAapen))) break;
+    await p.keyboard.press('Space'); trykk++;
+    await p.waitForTimeout(140);
+  }
+  sant('mellomrom lukker åpningsdialogen ('+trykk+' trykk)',
+    !(await p.evaluate(()=>RR.tilstand.dAapen)));
+  // og NÅ skal alle fem retninger virke, fra der spilleren faktisk står
+  for (const [tast,akse,retning] of [['d',0,1],['a',0,-1],['s',1,1],['w',1,-1],['ArrowRight',0,1]]){
+    const f=await p.evaluate(()=>RR.tilstand.pos);
+    await p.keyboard.down(tast); await p.waitForTimeout(400); await p.keyboard.up(tast);
+    const e=await p.evaluate(()=>RR.tilstand.pos);
+    const d=(e[akse]-f[akse])*retning;
+    sant(tast+' virker fra startposisjonen ('+Math.round(d)+' px)', d>25);
+  }
+  // tilbake til utgangspunktet for resten av testene
+  await p.evaluate(()=>RR.lukkAlt());
+}
+
+console.log('\n=== INGEN FIGUR STÅR INNI EN VEGG ===');
+{
+  const inni=await p.evaluate(()=>RR.FOLK.filter(f=>!f.skjul && RR.blokkert(f.x0||f.x, f.y0||f.y))
+    .map(f=>f.id+' ('+Math.round(f.x0||f.x)+','+Math.round(f.y0||f.y)+')'));
+  sant('ingen figur står inni en bygning eller rekvisitt', inni.length===0);
+  if (inni.length) console.log('      inni vegg: '+inni.join(', '));
+  // og de skal kunne nås: fritt punkt innenfor snakkeradien (46 px)
+  const uten=await p.evaluate(()=>RR.FOLK.filter(f=>{
+    if (f.skjul) return false;
+    const x0=f.x0||f.x, y0=f.y0||f.y;
+    for (let r=0;r<=40;r+=8) for (let a=0;a<12;a++){
+      const x=x0+Math.cos(a/12*Math.PI*2)*r, y=y0+Math.sin(a/12*Math.PI*2)*r;
+      if (!RR.blokkert(x,y,16)) return false;
+    }
+    return true;
+  }).map(f=>f.id));
+  sant('alle figurer kan nås til fots', uten.length===0);
+  if (uten.length) console.log('      uten adkomst: '+uten.join(', '));
+}
+
 console.log('\n=== BEVEGELSE ===');
 for (const [tast,akse,retning] of [['d',0,1],['a',0,-1],['s',1,1],['w',1,-1],
                                    ['ArrowRight',0,1],['ArrowUp',1,-1]]){
@@ -108,7 +180,7 @@ console.log('\n=== ALLE ÅTTE BYDELER NÅS TIL FOTS ===');
     const R=20;                              // rutestørrelse
     const bredde=Math.ceil(3200/R), hoyde=Math.ceil(2400/R);
     const set=new Set();
-    const start=[Math.round(470/R),Math.round(2020/R)];
+    const start=[Math.round(RR.START_POS.x/R),Math.round(RR.START_POS.y/R)];
     const ko=[start]; set.add(start[0]+','+start[1]);
     const sonerNaadd=new Set();
     while (ko.length){

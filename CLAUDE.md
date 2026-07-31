@@ -30,16 +30,21 @@ byggesteg. Playwright er kun testavhengighet.
 ## Før noe skrives av som ferdig
 
 `bash test-alle.sh` **og** `bash test-alle.sh --http` skal begge være helt grønne —
-åtte filer, 838 sjekker. HTTP-modus er ikke pynt: siden serveres over HTTPS i
+åtte filer, 854 sjekker. HTTP-modus er ikke pynt: siden serveres over HTTPS i
 produksjon, og `file://` har sitt eget origo-oppsett for `localStorage`.
 
 Legger du til innhold, legg til sjekken som beviser at det virker. Fire spillfeil i
 første utgave ble funnet av testene og ikke av øyet, nitten av en faglig gjennomgang,
 og to av å faktisk spille (se README, «Testing»).
 
-**Og spill det.** Den verste feilen i første utgave — at utforsking ga 21 000 kr i
-gjeld i måneden før man hadde funnet Jobbsenteret — var usynlig for alle de andre sjekkene og
-åpenbar etter to minutters spilling.
+**Og spill det.** To av de verste feilene i første utgave var usynlige for alle
+sjekkene og åpenbare i det noen faktisk spilte: at utforsking ga 21 000 kr i gjeld
+i måneden før man hadde funnet Jobbsenteret, og at **startposisjonen lå inne i en
+bygning, så spilleren ikke kunne bevege seg i det hele tatt.**
+
+Lærdommen fra den siste er verdt å skrive ned: en test som flytter spilleren før
+den måler noe, måler ikke spillet. Gjør minst én test som gjør det en spiller gjør —
+last siden, klikk START, trykk mellomrom, gå — uten et eneste programmatisk grep.
 
 ## Årlig ettersyn
 
