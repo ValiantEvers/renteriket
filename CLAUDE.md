@@ -16,7 +16,27 @@ byggesteg. Playwright er kun testavhengighet.
   avkastning, `mndFraNominell` (nominell/12) for lån. Blander man dem, blir
   tallene subtilt gale på en måte ingen oppdager.
 - **Nye minispill må ikke kunne vinnes ved åpning.** `MINI.N` gjorde det i første
-  utgave. Krever spillet et valg, må valget faktisk tas.
+  utgave. Krever spillet et valg, må valget faktisk tas. Den milde varianten er
+  like ille: `MINI.G` startet på `[50,50,50]`, som var riktig for to av tre mål,
+  så oppdraget løste seg ved å dra én skyver — og spilleren fikk aldri se det
+  vinduet oppdraget handler om. **Startstillingen skal være feil for hvert enkelt
+  valg spilleren skal ta.**
+- **Ingen tall skal vises uten at noe har regnet det ut.** `MINI.F` skrev
+  «NaN % nominelt i året» på alle fire valgkortene i tre uker fordi feltet het
+  `brutto` og kortet leste `s.nom`. Sjekken som fanger det leser den *rendrede*
+  teksten i alle fjorten oppdrag og alle 25 bygninger, for både en fersk og en
+  ferdig spiller. 854 sjekker hadde sett på tallene og ingen på skjermen.
+- **Alt som slipper inn i et oppdrag skal stå bak `laastOpp()`.** `HUS.kiosk` var
+  den eneste bygningen uten sjekken, og en fersk spiller uten jobb kunne ta
+  oppdrag M først av alt og få 450 XP før Jobbsenteret.
+- **En modell som skal begrunne en tommelfingerregel, må faktisk gi den.**
+  `MINI.C` påsto at bufferkostnaden «bunner ut rundt tre måneders utgifter», mens
+  modellens egne tall ga én måned — fordi stormen bare hadde husholdningsuhell,
+  og tremånedersregelen handler om å miste inntekten. Sier teksten hvor
+  regnestykket bunner ut, skal en sjekk måle bunnpunktet.
+- **Er en modellparameter et anslag, skal spilleren se det.** Skjermingsfaktoren
+  på 0,35 i `MINI.N` sto bare i en kodekommentar. Alt annet i spillet sier fra
+  når en modell er en modell.
 - **Nye samleobjekter må gjennom `sjekk-kort.js`** før de anses plassert.
 - **Nytt interaktivt element skal være en `<button>` eller en `<input>`**, ikke en
   `<div>` med `onclick`. `test-tilgjengelighet.js` krever at alt klikkbart i alle
@@ -25,17 +45,29 @@ byggesteg. Playwright er kun testavhengighet.
   DOM-en, så en variabel som endres ett sted slår ut der.
 - **Nullstilling må rydde både lagring og tilstanden i minnet.** Sletter man bare
   nøklene, skriver spillet den gamle tilstanden tilbake ved neste lagring.
+- **Spilleren skal alltid kunne komme seg ut av en vegg.** Nødutgangen i
+  `oppdater()` ligger *før* akse-testene, og rekkefølgen er ikke likegyldig: lagt
+  etter dem har `sp.vx*=-0.15` alt drept farten, og spilleren kryper 32 px på
+  2,4 sekunder i stedet for 291. `start()` har i tillegg en vaktpost mot en
+  blokkert startposisjon. Fjern ingen av dem: seks av åtte bydelsmidtpunkt ligger
+  inne i en bygning, og ett feilplassert tall gjorde hele spillet uspillbart én
+  gang alt.
+- **Test-API-et må gi samme utfall som å spille.** `taAlleKort()` gir XP fordi en
+  test ellers måler et annet spill; `loesAlle()` gjorde det ikke, og «alt løst»
+  målte nivå 8 av 15. Legger du til en snarvei i `RR`, skal den gi samme
+  sidevirkninger som veien spilleren går.
 - **Ingen `Co-Authored-By`-trailer i commits. Push aldri uten godkjenning.**
 
 ## Før noe skrives av som ferdig
 
 `bash test-alle.sh` **og** `bash test-alle.sh --http` skal begge være helt grønne —
-åtte filer, 854 sjekker. HTTP-modus er ikke pynt: siden serveres over HTTPS i
+åtte filer, 878 sjekker. HTTP-modus er ikke pynt: siden serveres over HTTPS i
 produksjon, og `file://` har sitt eget origo-oppsett for `localStorage`.
 
 Legger du til innhold, legg til sjekken som beviser at det virker. Fire spillfeil i
 første utgave ble funnet av testene og ikke av øyet, nitten av en faglig gjennomgang,
-og to av å faktisk spille (se README, «Testing»).
+to av å faktisk spille, og **sju av å spille gjennom hele spillet i produksjon etter
+at det var ute** — mens alle 854 sjekker var grønne (se README, «Testing»).
 
 **Og spill det.** To av de verste feilene i første utgave var usynlige for alle
 sjekkene og åpenbare i det noen faktisk spilte: at utforsking ga 21 000 kr i gjeld

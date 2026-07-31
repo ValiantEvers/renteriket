@@ -240,7 +240,7 @@ ikke at spilleren regner etter.
 
 ## Testing
 
-Åtte filer, 854 sjekker. `bash test-alle.sh` kjører alt over `file://`,
+Åtte filer, 878 sjekker. `bash test-alle.sh` kjører alt over `file://`,
 `bash test-alle.sh --http` starter en lokal server og kjører alt på nytt over HTTP.
 Begge må være grønne: siden serveres over HTTPS i produksjon, og `file://` har sitt
 eget origo-oppsett for `localStorage`.
@@ -248,9 +248,9 @@ eget origo-oppsett for `localStorage`.
 | Fil | Hva den beviser |
 |---|---|
 | `test-matte.js` | Finansmotoren mot **uavhengig regnede** fasitverdier — samme svar, andre formler. Skatt på ni inntektsnivåer, annuitetsplaner, IRR med gebyr, ASK-uttak, formuesskatt, Fisher, lånerammer, stresstest, diversifiseringsgrense. Sjekker også hver tallpåstand spillet gjør i **tekst**. |
-| `test-verden.js` | Bevegelse i seks retninger, at Shift faktisk er raskere, at vegger stopper og dører ikke gjør det, at **alle åtte bydeler kan nås til fots** (bredde-først-søk gjennom spillets egen kollisjon), at hver av de 25 dørene svarer med minst 160 tegn innhold, og at hver figur har minst to dialoglinjer. |
+| `test-verden.js` | Bevegelse i seks retninger, at Shift faktisk er raskere, at vegger stopper og dører ikke gjør det, at **alle åtte bydeler kan nås til fots** (bredde-først-søk gjennom spillets egen kollisjon), at hver av de 25 dørene svarer med minst 160 tegn innhold, og at hver figur har minst to dialoglinjer. Og siden juli 2026: at en spiller som *står inne i en vegg* kommer seg ut med tastene, at `start()` aldri setter spillet i gang på et blokkert punkt, og at dialogtelleren teller linjene som er igjen — ikke den du leser. |
 | `sjekk-kort.js` | Alle førti kort er fysisk mulige å plukke opp, ligger inne på kartet, er spredt over bydelene — og plukkes faktisk opp når man går dit. |
-| `test-oppdrag.js` | **Alle fjorten oppdrag spilles gjennom med ekte klikk.** For hvert av dem sjekkes også at et *feil* svar ikke gir seier, og at fasitteksten sier det den skal. Til slutt: at fjorten oppdrag gir nivå 12, og at alt løst pluss alle kort gir INVESTOR. |
+| `test-oppdrag.js` | **Alle fjorten oppdrag spilles gjennom med ekte klikk.** For hvert av dem sjekkes også at et *feil* svar ikke gir seier, og at fasitteksten sier det den skal. Til slutt: at fjorten oppdrag gir nivå 12, og at alt løst pluss alle kort gir INVESTOR. Siden juli 2026 også: at **ingenting skriver «NaN», «undefined» eller «Infinity»** i noen av de fjorten oppdragene eller de 25 bygningsskjermene, verken for en fersk eller en ferdig spiller; at **ingen oppdrag er løst i det det åpnes** og at ingen (unntatt D, som er ett tall) løses ved å flytte én enkelt skyver; at **ingen bygning tilbyr et oppdrag før kravene er løst**; og at oppdrag C sitt eget regnskap bunner ut der teksten sier at det gjør. |
 | `test-mobil.js` | Ingen HUD-overlapp på tre skjermstørrelser, ingen flate utenfor skjermen, alle knapper minst 44×44, at styrekorset faktisk flytter spilleren, og at MENY lukker minispillet i stedet for å legge menyen oppå det. |
 | `test-lagring.js` | Fremgang overlever omlasting; 294 kombinasjoner av ødelagt lagring tar ikke ned spillet; nullstilling rydder minne så vel som lagring og skriver ikke tilbake etterpå; lagring skjer på timer. |
 | `test-tilgjengelighet.js` | Kontrast regnet ut fra de **faktiske** fargene i DOM-en, ikke fra CSS-en man tror står der — 22 elementer mot WCGA 2.1 AA. At alle klikkbare elementer i alle fjorten oppdrag kan nås med Tab, at brikkene er ekte knapper, at det finnes en `:focus-visible`-regel, at grønt og rødt alltid har tekst ved siden av, og at spillet starter med `prefers-reduced-motion`. |
@@ -369,6 +369,67 @@ omtalt som «de fem prosent verste», og et par etterlatte tall i krøniken.
 Gjennomgangen bekreftet samtidig at hele `SATSER`-blokka stemmer mot kilde, at
 finansmotorens formler er riktige, og at rentekonvensjonene er konsekvente. Det
 var innholdet rundt tallene som trengte arbeid — ikke tallene.
+
+### Sju funnet av å spille gjennom hele spillet i produksjon
+
+Etter at spillet var ute, ble det spilt gjennom på `evers.no/renteriket` som en
+spiller: last siden, klikk START, mellomrom gjennom dialogen, gå med WASD, klikk
+gjennom alle fjorten oppdrag. Alle 854 sjekker var grønne hele tiden. Det som
+kom fram, kom fram fordi noen så på skjermen.
+
+1. **Oppdrag F skrev «NaN %» på alle fire valgkortene.** Feltet het `brutto` i
+   `STED`-lista, kortet leste `s.nom`. Første skjerm i oppdraget, live. Ingen av
+   sjekkene så på teksten som faktisk sto der; nå gjør én av dem det, for alle
+   oppdrag og alle bygninger.
+2. **Oppdrag M kunne tas først av alt.** `HUS.kiosk` var den eneste bygningen
+   uten `laastOpp()`-sjekk. En fersk spiller uten jobb kunne gå til Bakgata, ta
+   svindelsjekken og få 450 XP og nivå 2 før Jobbsenteret — mens M står oppført
+   med `krav: ['C']`. Sjekken går nå gjennom alle oppdrag med krav og alle
+   bygninger som tilbyr dem.
+3. **Oppdrag G løste seg ved å flytte én av tre skyvere.** Startstillingen
+   `[50,50,50]` var alt riktig for både sabbatsåret og pensjonen; bare
+   depositumet feilet. Spilleren fikk dermed aldri se at pensjonsvinduet
+   begynner på 45 %, som er hele poenget med oppdraget. Nå starter de tre på
+   `[90,10,20]` — utenfor alle tre vinduene, og de må flyttes i *ulik* retning.
+   Dette er samme feil som `MINI.H` og `MINI.N` hadde i første utgave, i mildere
+   form, og den nye sjekken fanger alle tre variantene.
+4. **Oppdrag C konkluderte mot sin egen tabell.** Tipset sa at kostnaden «bunner
+   ut rundt tre måneders utgifter». Modellens egne tall ga **én** måned, og det
+   holdt også over 2 000 tilfeldige stormår og med lånet betalt helt ned.
+   Årsaken var at stormen bare inneholdt husholdningsuhell på 2 000–16 000 kr,
+   mens tremånedersregelen handler om å **miste inntekten**. Stormen har nå tre
+   måneder med permittering og dagpenger — 62,4 % av grunnlaget, folketrygdloven
+   § 4-12 — og da bunner regnskapet ut på nøyaktig tre måneder, målt. Lånet
+   telles dessuten helt ned nå: fasiten sa alltid at «renta løper videre etter at
+   oppdraget er over», men regnskapet stoppet ved tolvte måned og lot bufferen
+   betale et helt års tapt avkastning mens lånet slapp unna med under et år med
+   renter.
+5. **Dialogtelleren sto én for høyt.** «3 igjen» på linje 1 av 3. Den regnet
+   linja du leser som gjenstående.
+6. **Ingenting hentet spilleren ut av en vegg.** Spillløkka ga bare *tillatelse*
+   til å flytte: var begge akser blokkert, var spilleren frosset for godt, uten
+   et eneste signal. Det var nøyaktig feilen som gjorde spillet uspillbart i
+   første utgave. Posisjonen lagres ikke, så `START_POS` var den eneste
+   inngangen — men seks av åtte bydelsmidtpunkt ligger inne i en bygning, så
+   marginen var tynn. Nødutgangen ligger nå *før* akse-testene, og rekkefølgen
+   er ikke likegyldig: lagt etter dem hadde `sp.vx*=-0.15` alt drept farten, og
+   spilleren krøp 32 px på 2,4 sekunder i stedet for 291.
+7. **`RR.loesAlle()` ga ingen XP.** `taAlleKort()` har en kommentar over seg om
+   at den *skal* gi samme XP som å plukke kortene opp, «ellers måler testen noe
+   annet enn det spilleren opplever». `loesAlle()` fulgte ikke regelen, og en
+   test som brukte den målte nivå 8 av 15 med alt gjort — som ser ut som en
+   ødelagt XP-kurve. Kurven var i orden: 9 200 XP tilgjengelig, 8 540 kreves.
+
+I tillegg, funnet i samme gjennomgang og rettet: `blokkert()` returnerte `false`
+fra dørhullet og hoppet dermed ut av hele funksjonen, så resten av bygningene og
+alle landemerkene ble aldri sjekket så lenge du sto i en dør (latent — ingen dør
+overlapper noe i dag); Kvikklåns banner oppgav effektiv rente regnet for
+100 000 kr på et lån på 50 000; `MINI.N` lot skjermingsanslaget på 0,35 stå bare
+i en kodekommentar, mens spilleren fikk se «37,84 % av gevinst utover skjerming»
+uten forbehold; `MINI.N` foreslo «lengre horisont i aksjer» i et oppdrag uten
+horisontkontroll; `kr()` skrev «−0 kr» for negativ null; XP-floaten lå oppå
+navnelappene; banneret sloss med bygningen bak; og siden manglet favicon, som ga
+én 404 i konsollen ved hver lasting.
 
 ## Om universet
 
