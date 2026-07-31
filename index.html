@@ -26,7 +26,11 @@
   --ink:#0d1117; --ink2:#151d27; --line:#2a3644;
   --paper:#f4f1e8; --paper2:#e8e3d5;
   --gro:#2fbf7a; --gro2:#1e8f58;
-  --gull:#f0b429; --fare:#e0524f; --kald:#4aa3df;
+  --gull:#f0b429;
+  /* Kontrast målt mot #151d27: #e0524f ga 4,44:1 — under AA for brødtekst.
+     #e35552 gir 4,60:1. Egen, mørkere variant til knapper, der HVIT tekst
+     står på fargen: hvit på #c0392b er 5,44:1, hvit på #e35552 bare 3,7:1. */
+  --fare:#e35552; --fare-bg:#c0392b; --kald:#4aa3df;
   --tekst:#e9eef4; --dim:#9aa8b8;
   --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
   --tall:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
@@ -143,10 +147,17 @@ input:focus{outline:none;border-color:var(--gro)}
   padding:12px 26px;font-size:14.5px;font-weight:850;cursor:pointer;font-family:var(--sans);
   letter-spacing:.2px;transition:transform .1s,filter .15s}
 .knapp:hover{filter:brightness(1.09)} .knapp:active{transform:scale(.97)}
+/* Fokusring på alt som kan nås med Tab. Minispillene ER innholdet i dette
+   spillet, og de er ekte DOM — da må de også kunne betjenes uten mus, og man
+   må se hvor man står. :focus-visible, så musebrukere ikke får ringen. */
+.knapp:focus-visible,.valgkort:focus-visible,.brikke:focus-visible,
+.fane button:focus-visible,#ctl button:focus-visible,#pauseknapp:focus-visible,
+#startknapp:focus-visible{outline:3px solid #7cc7ff;outline-offset:2px}
+input[type=range]:focus-visible{outline:3px solid #7cc7ff;outline-offset:4px;border-radius:99px}
 .knapp:disabled{opacity:.4;cursor:not-allowed}
 .knapp.sek{background:transparent;color:var(--tekst);border:1.5px solid var(--line)}
 .knapp.sek:hover{border-color:var(--dim);filter:none}
-.knapp.fare{background:var(--fare);color:#fff}
+.knapp.fare{background:var(--fare-bg);color:#fff}
 .knapp.rad2{margin:3px 7px 3px 0}
 .mfot{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:6px}
 .mfot .fyll{flex:1}
@@ -176,8 +187,9 @@ canvas.graf{width:100%;height:auto;display:block;border-radius:9px;background:#0
 /* dra-og-slipp (budsjett, kurv, konto) */
 .brikker{display:flex;flex-wrap:wrap;gap:7px;min-height:46px}
 .brikke{background:#20303f;border:1.5px solid var(--line);border-radius:8px;
-  padding:8px 12px;font-size:13px;font-weight:700;cursor:grab;user-select:none;
-  display:flex;align-items:center;gap:8px;transition:transform .1s}
+  padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;user-select:none;
+  display:flex;align-items:center;gap:8px;transition:transform .1s;
+  font-family:var(--sans);color:var(--tekst);text-align:left}
 .brikke:active{cursor:grabbing;transform:scale(.96)}
 .brikke.valgt{border-color:var(--gull);background:#33291a}
 .brikke .kr{font-family:var(--tall);font-size:12px;color:var(--gull)}
@@ -237,7 +249,8 @@ canvas.graf{width:100%;height:auto;display:block;border-radius:9px;background:#0
   -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 #tittel .und{font-size:clamp(13px,3vw,18px);color:var(--dim);margin:14px 0 4px;
   font-weight:600;max-width:44ch;line-height:1.55}
-#tittel .liten{font-size:12px;color:#5f6d7c;margin-top:26px;line-height:1.7}
+/* #5f6d7c ga 3,57:1 mot #0d1117 — for lite for 12px. #707e8d gir 4,56:1. */
+#tittel .liten{font-size:12px;color:#707e8d;margin-top:26px;line-height:1.7}
 #tittel .knapp{margin-top:26px;padding:15px 40px;font-size:16px}
 #tittel .tast{font-size:12.5px;color:var(--dim);margin-top:18px;line-height:1.9}
 #tittel .tast kbd{font-family:var(--tall);background:rgba(255,255,255,.11);border-radius:4px;
@@ -281,7 +294,10 @@ body.touch #pauseknapp{display:none}
 </style>
 </head>
 <body>
-<canvas id="cv"></canvas>
+<canvas id="cv" role="img" aria-label="Kart over Renteriket. Byen navigeres med
+  piltaster eller WASD. Alt læringsinnholdet — de fjorten oppdragene, satstabellene
+  og kunnskapskortene — ligger i vanlige tekstvinduer du åpner med mellomrom, og de
+  kan leses og betjenes med tastatur og skjermleser."></canvas>
 
 <div id="hud">
   <span class="chip" id="formue"><span class="ikon">🌳</span>Formue <b>0 kr</b></span>
@@ -292,8 +308,8 @@ body.touch #pauseknapp{display:none}
 <canvas id="minimap" width="236" height="196"></canvas>
 <div id="oppdragsboks"><div class="tit" id="obtit">Oppdrag</div><div class="mal" id="obmal"></div></div>
 <div id="xpwrap"><div id="xptitle">BLAKK</div><div id="xpbar"><i id="xpfill"></i></div></div>
-<div id="banner"><div class="b1"></div><div class="b2"></div></div>
-<div id="hint"></div>
+<div id="banner" role="status" aria-live="polite"><div class="b1"></div><div class="b2"></div></div>
+<div id="hint" role="status" aria-live="polite"></div>
 
 <div id="dialog">
   <div class="who"><span class="dot"></span><span class="navn"></span></div>
@@ -302,8 +318,8 @@ body.touch #pauseknapp{display:none}
   <div class="neste"><span class="n1"></span><span class="n2"></span></div>
 </div>
 
-<div id="spill"><div id="spillinner"></div></div>
-<div class="ark" id="pause"><div class="arkinner" id="pauseinner"></div></div>
+<div id="spill" role="dialog" aria-modal="true" aria-label="Oppdrag"><div id="spillinner"></div></div>
+<div class="ark" id="pause" role="dialog" aria-modal="true" aria-label="Meny"><div class="arkinner" id="pauseinner"></div></div>
 
 <div id="ctl">
   <div class="pad">
@@ -1344,12 +1360,19 @@ function datoLang(){ const m=mnd%12, a=2026+Math.floor(mnd/12); return MNDLANG[m
 function nyMaaned(){
   mnd++; stat.mnd++;
   const hendelser=[];
-  // 1) lønn inn
-  if (harJobb){
-    const netto=F.lonnsskatt(bruttoAar).netto/12;
-    kontanter+=netto; stat.tjent+=netto;
-    hendelser.push({t:'Lønn etter skatt',v:netto});
+  // Økonomien starter når du blir ansatt. Uten dette ble utforsking straffet:
+  // faste utgifter uten inntekt ble overtrekk, som ble forbruksgjeld til 22,9 %,
+  // og en spiller som ruslet rundt i fem måneder før hen fant Jobbsenteret sto
+  // med 106 000 kr i gjeld og negativ formue. Funnet i spilletest, ikke i testene.
+  if (!harJobb){
+    markedSteg();                    // markedet går uansett — det venter ikke på deg
+    oppdaterHud(); lagre();
+    return hendelser;
   }
+  // 1) lønn inn
+  const netto=F.lonnsskatt(bruttoAar).netto/12;
+  kontanter+=netto; stat.tjent+=netto;
+  hendelser.push({t:'Lønn etter skatt',v:netto});
   // 2) faste utgifter ut
   const u=utgiftSum(); kontanter-=u; stat.tapt+=u;
   hendelser.push({t:'Faste utgifter',v:-u});
@@ -1760,7 +1783,7 @@ MINI.B=(v)=>{
   const status=U.el('div','kort');
   const brikker=U.el('div','brikker');
   KAN.forEach((k,i)=>{
-    const b=U.el('div','brikke');
+    const b=U.el('button','brikke');       // knapp, ikke div: må kunne nås med Tab
     b.innerHTML='<span>'+k.n+'</span><span class="kr">'+kr(k.kr)+'</span>'+
                 '<span class="pill y">'+k.q+' liv</span>';
     b.dataset.i=String(i);
@@ -2079,7 +2102,7 @@ MINI.E=(v)=>{
     liste.innerHTML='';
     rekke.forEach((li,pos)=>{
       const l=LAAN[li];
-      const row=U.el('div','brikke');
+      const row=U.el('button','brikke');   // knapp, ikke div: må kunne nås med Tab
       row.style.width='100%'; row.style.justifyContent='space-between';
       row.innerHTML='<span><b>'+(pos+1)+'.</b> '+l.n+'</span>'+
         '<span class="kr">'+kr(l.b)+'</span>'+
@@ -2233,32 +2256,26 @@ MINI.G=(v)=>{
   const MAAL=[
     {n:'Depositum til leilighet',aar:2, sum:108000, inn:4500,
      medianMin:105000, p5Min:100000,
-     forkl:'Skal brukes om to år, og beløpet er avtalt. Du kan tåle å komme litt kort, '+
-       'men ikke å miste ti prosent — da ryker leiligheten.'},
+     forkl:'Beløpet er avtalt. Du kan komme litt kort, men ikke miste ti prosent.'},
     {n:'Sabbatsår',            aar:7, sum:315000, inn:3400,
      medianMin:315000, p5Min:240000,
-     forkl:'Sju år fram. Du må faktisk nå beløpet for at året skal bli noe av, '+
-       'men et dårlig utfall betyr bare at du utsetter et halvår.'},
+     forkl:'Du må nå beløpet for at året skal bli noe av — men et dårlig utfall '+
+       'betyr bare at du utsetter et halvår.'},
     {n:'Pensjon',              aar:35,sum:2400000,inn:3000,
      medianMin:2400000, p5Min:1200000,
-     forkl:'Trettifem år. Her er den store risikoen å ligge for trygt og tape kjøpekraft — '+
-       'og et dårlig utfall har du tid til å komme tilbake fra.'}
+     forkl:'Her er den store risikoen å ligge for trygt og tape kjøpekraft.'}
   ];
   const andel=[50,50,50];
   v.appendChild(U.hode('OPPDRAG G','Kurven som lurer',
-    'Tre sparemål, tre horisonter, samme person. For hvert mål velger du hvor stor del som skal '+
-    'ligge i aksjer. Tobias kjører <b>1 200 simulerte utfall</b> per mål og viser to tall: '+
-    '<b>medianen</b> — det midterste utfallet — og <b>5.-persentilen</b>, altså '+
-    'beløpet du får minst av i 95 av 100 utfall. '+
-    'Kravene er ikke like for de tre målene, og det er nettopp saken: penger som skal '+
-    'brukes snart har et annet krav enn penger som skal ligge i tretti år.'));
+    'Tre sparemål, samme person, tre horisonter. Velg aksjeandel for hvert. '+
+    'Tobias kjører <b>1 200 utfall</b> per mål og viser <b>medianen</b> og '+
+    '<b>5.-persentilen</b> — beløpet du får minst av i 95 av 100 utfall.<br><br>'+
+    '<b>Kravene er ikke like for de tre.</b> Det er hele saken.'));
 
   const kort=MAAL.map((m,i)=>{
     const k=U.kort(m.n.toUpperCase()+' — '+m.aar+' ÅR');
-    k.appendChild(U.el('div','tips',m.forkl+'<br><br>Du sparer <b>'+kr(m.inn)+
-      '</b> i måneden, altså '+kr(m.inn*12*m.aar)+' innbetalt i alt. Mål: <b>'+kr(m.sum)+'</b>.<br>'+
-      '<b>Kravet her:</b> medianen minst '+kr(m.medianMin)+
-      ', og de 5 % verste minst '+kr(m.p5Min)+'.'));
+    k.appendChild(U.el('div','tips',m.forkl+' <b>'+kr(m.inn)+'</b>/mnd i '+m.aar+
+      ' år = '+kr(m.inn*12*m.aar)+' innbetalt. Mål <b>'+kr(m.sum)+'</b>.'));
     const ut=U.el('div'); 
     const sk=U.skyv('a'+i,'Aksjeandel',0,100,5,andel[i],x=>x+' % aksjer',x=>{andel[i]=x;tegn();});
     k.appendChild(sk); k.appendChild(ut);
