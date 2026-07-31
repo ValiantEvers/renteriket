@@ -6,9 +6,21 @@
 <title>RENTERIKET — spillet som gjør deg til investor</title>
 <meta name="description" content="Et spill som lærer deg privatøkonomi og investering fra null: budsjett, buffer, renters rente, fond, skatt, bolig og svindel — gjennom oppdrag og puslespill.">
 <meta name="theme-color" content="#0d1117">
-<meta property="og:title" content="RENTERIKET">
-<meta property="og:description" content="Fjorten oppdrag, førti kunnskapskort og en by der renters rente er et tre som vokser.">
+<link rel="canonical" href="https://www.evers.no/renteriket/">
+<meta property="og:title" content="RENTERIKET — spillet som gjør deg til investor">
+<meta property="og:description" content="Fjorten oppdrag, førti kunnskapskort og en by der renters rente er et tre som vokser. Norske satser, med kilde og årstall.">
 <meta property="og:type" content="website">
+<meta property="og:url" content="https://www.evers.no/renteriket/">
+<meta property="og:site_name" content="evers.no">
+<meta property="og:locale" content="nb_NO">
+<meta property="og:image" content="https://www.evers.no/renteriket/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="RENTERIKET — tittelskjermen, med undertittelen om å komme til byen med tom lommebok.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="RENTERIKET — spillet som gjør deg til investor">
+<meta name="twitter:description" content="Fjorten oppdrag, førti kunnskapskort og en by der renters rente er et tre som vokser.">
+<meta name="twitter:image" content="https://www.evers.no/renteriket/og.png">
 <style>
 :root{
   --ink:#0d1117; --ink2:#151d27; --line:#2a3644;
@@ -1161,8 +1173,8 @@ const KORT=[
   {n:35,x:2050,y:1040, t:'Tid i markedet, ikke timing av det',
    s:'Går du glipp av de beste dagene fordi du sto utenfor, forsvinner mye av avkastningen. Ingen vet når de kommer.'},
   // --- BAKGATA ---
-  {n:36,x:1400,y:2110, t:'Manipuleringssvindel er størst nå',
-   s:'Finans Norge peker på den for 2026: du flytter pengene selv, etter å ha blitt overbevist. Banken ser en helt vanlig overføring.'},
+  {n:36,x:1400,y:2110, t:'Manipuleringssvindel vokser raskest',
+   s:'Finans Norge peker den ut for 2026, særlig kjærlighets- og investeringssvindel: du flytter pengene selv, etter å ha blitt overbevist. Banken ser en helt vanlig overføring.'},
   {n:37,x:1780,y:2120, t:'Banken ber deg aldri flytte penger',
    s:'«Trygg konto»-svindel: noen utgir seg for banken eller politiet, sier du er svindelutsatt, og ber deg overføre. Legg på.'},
   {n:38,x:2250,y:2110, t:'Sjekk konsesjonen',
@@ -2996,21 +3008,31 @@ MINI.M=(v)=>{
       '3. <b>Er avkastningen garantert?</b> Da er det ikke en investering.<br>'+
       '4. <b>Står de i Finanstilsynets virksomhetsregister?</b> Ikke der = ingen konsesjon.<br>'+
       '5. <b>Hvor kommer pengene fra?</b> Hvis svaret er «nye deltakere», er det en pyramide.'),
-      U.tab(['Tall fra 2025','Verdi'],[
-        ['Svindel via kontooverføring og kort',kr(962000000)],
-        ['Endring fra 2024','−'+kr(265000000)],
-        ['Beløp bankene stanset før det nådde kriminelle',kr(1500000000)],
-        ['Nordmenn som opplevde svindelforsøk','nesten 1 av 5']
+      U.tab(['Tall for 2025','Verdi'],[
+        ['Rapportert svindel, kontooverføring og kort',kr(962000000)],
+        ['Samme tall for 2024',kr(1228000000)],
+        ['Endring','−'+kr(266000000)+'  (−21,7 %)'],
+        ['Stanset av betalingstjenestetilbyderne',kr(3537000000)],
+        ['Nordmenn som opplever svindel<b>forsøk</b>','ca. 9 av 10'],
+        ['Nordmenn som faktisk <b>blir</b> svindlet','ca. 12 %']
       ]),
-      U.tips('Kilde: Finanstilsynets svindelstatistikk for andre halvår 2025 og Finans Norges '+
-        'statusrapport for 2026. Beløpene er brutto rapportert svindel, ikke faktisk tap — '+
-        'noe reverseres og erstattes.')));
+      U.tips('<b>Legg merke til de to siste linjene.</b> Nesten alle blir forsøkt svindlet; '+
+        'de fleste ser det. Å blande de to tallene er den vanligste feilen i svindeloverskrifter '+
+        '— og forskjellen mellom dem er nettopp det du nettopp har øvd på.<br><br>'+
+        'Kilder: Finanstilsynets svindelstatistikk H1 og H2 2024 og 2025 (halvårstallene lagt '+
+        'sammen til årstall), Nkom for andelen som opplever forsøk, og Tietoevrys '+
+        'befolkningsundersøkelse for andelen som faktisk rammes. Beløpene er brutto rapportert '+
+        'svindel, ikke faktisk tap — noe reverseres og erstattes.<br><br>'+
+        '<b>Og et forbehold om tall:</b> Finans Norge oppgir at bankene hindret 1,5 milliarder '+
+        'i 2025, mens Finanstilsynet oppgir 3 537 millioner. Tallene måler ikke det samme — '+
+        'Finanstilsynet teller alle betalingstjenestetilbydere, ikke bare bankene. '+
+        'Sjekk alltid hva som er talt før du sammenligner to statistikker.')));
     svar.appendChild(fasit(ok,
       ok?'Du tok '+riktig+' av '+MELD.length+'. Odd nikker.'
         :'Du tok '+riktig+' av '+MELD.length+'. Kravet er 12 — prøv igjen, nå med de fem '+
          'spørsmålene i hodet. Merk at «svindel» på alt gir '+
          MELD.filter(m=>m.svindel).length+' riktige, og det er ikke nok.',
-      'Det viktigste å ta med seg: den største svindeltypen i Norge nå er den der '+
+      'Det viktigste å ta med seg: den svindeltypen som vokser raskest i Norge nå, er den der '+
       '<b>du selv gjennomfører overføringen</b>. Banken ser en helt vanlig transaksjon '+
       'du har godkjent, og har derfor mye mindre å gripe fatt i etterpå. '+
       'Forsvaret ligger i sekundene før du trykker, ikke i systemene etterpå.<br><br>'+
@@ -3941,7 +3963,7 @@ const PRAT={
   bente:['«Denne leiligheten er helt perfekt for deg! Fire komma to.»',
     'Hun sier det uten å ha spurt hva du tjener. «Det ordner seg med banken.» '+
     'Det gjør det ikke, men <em>du</em> kan regne ut hvorfor.'],
-  odd:['«Nesten én av fem nordmenn opplevde et svindelforsøk i fjor.»',
+  odd:['«Ni av ti nordmenn opplever et svindelforsøk. Tolv prosent blir faktisk svindlet.»',
     '«Det handler ikke om å være smart. Metodene er bygget for å slå ut vurderingsevnen '+
     'med tidspress og autoritet. Kom, jeg har fjorten meldinger i permen.»'],
   signe:['«Jeg har sett folk komme til denne byen i femti år.»',
