@@ -151,6 +151,24 @@ annen starttid.
 
 ## Modellvalg som er verdt å vite om
 
+**Oppdrag J-banen er konstruert, ikke tilfeldig.** Fire fall på 38–52 % ligger på
+faste måneder, hver med en opphenting som tar igjen forrige topp, og grunndriften
+løses numerisk ved åpning slik at de tretti årene lander på `F.nominell(realAksjer,
+kpi)`. Det er et bevisst valg: oppdraget påstår i fasiten at fallene henter seg
+inn, og en tilfeldig bane kan ikke garantere det. Prisen er at banen er én
+historie og ikke et anslag, og teksten sier det.
+
+**Oppdrag N og G dømmer på medianen av mange løp, ikke på ett.** N kjører 500
+førtiårsløp, G kjører 1 200 per sparemål. Frøene er faste, så tallene er
+deterministiske og hopper ikke av seg selv. 5.- og 95.-persentilen vises, fordi
+medianen alene skjuler det som gjør sparing vanskelig.
+
+**Oppdrag H dømmer på fordelingen, ikke på de fem årene du så.** De fem årene er
+der for dramaet og for loggen; verdiktet kommer fra 2 000 femårsperioder med
+samme fordeling. Grunnen er at fem år er støy: alle seks alternativene har samme
+forventede avkastning i modellen, så et krav om positiv avkastning etter fem år er
+et krav om flaks.
+
 Tre steder gjør spillet noe som ikke er åpenbart, og der et enklere valg ville
 gjort tallene subtilt gale.
 
@@ -240,17 +258,17 @@ ikke at spilleren regner etter.
 
 ## Testing
 
-Åtte filer, 878 sjekker. `bash test-alle.sh` kjører alt over `file://`,
+Åtte filer, 926 sjekker. `bash test-alle.sh` kjører alt over `file://`,
 `bash test-alle.sh --http` starter en lokal server og kjører alt på nytt over HTTP.
 Begge må være grønne: siden serveres over HTTPS i produksjon, og `file://` har sitt
 eget origo-oppsett for `localStorage`.
 
 | Fil | Hva den beviser |
 |---|---|
-| `test-matte.js` | Finansmotoren mot **uavhengig regnede** fasitverdier: samme svar, andre formler. Skatt på ni inntektsnivåer, annuitetsplaner, IRR med gebyr, ASK-uttak, formuesskatt, Fisher, lånerammer, stresstest, diversifiseringsgrense. Sjekker også hver tallpåstand spillet gjør i **tekst**. |
-| `test-verden.js` | Bevegelse i seks retninger, at Shift faktisk er raskere, at vegger stopper og dører ikke gjør det, at **alle åtte bydeler kan nås til fots** (bredde-først-søk gjennom spillets egen kollisjon), at hver av de 25 dørene svarer med minst 160 tegn innhold, og at hver figur har minst to dialoglinjer. Og siden juli 2026: at en spiller som *står inne i en vegg* kommer seg ut med tastene, at `start()` aldri setter spillet i gang på et blokkert punkt, og at dialogtelleren teller linjene som er igjen, ikke den du leser. |
+| `test-matte.js` | Finansmotoren mot **uavhengig regnede** fasitverdier: samme svar, andre formler. Måler også at driftkorreksjonen faktisk gjør medianen lik den oppgitte avkastningen — innenfor 0,05 pp, på de tre kombinasjonene spillet bruker — og at `F.nominell` er Fisher og ikke `r + i`. Skatt på ni inntektsnivåer, annuitetsplaner, IRR med gebyr, ASK-uttak, formuesskatt, Fisher, lånerammer, stresstest, diversifiseringsgrense. Sjekker også hver tallpåstand spillet gjør i **tekst**. |
+| `test-verden.js` | At byen har inflasjon og lønnsvekst, og at ingenting sprekker over førti år. At Fondsbutikken trekker skatten den lover. Bevegelse i seks retninger, at Shift faktisk er raskere, at vegger stopper og dører ikke gjør det, at **alle åtte bydeler kan nås til fots** (bredde-først-søk gjennom spillets egen kollisjon), at hver av de 25 dørene svarer med minst 160 tegn innhold, og at hver figur har minst to dialoglinjer. Og siden juli 2026: at en spiller som *står inne i en vegg* kommer seg ut med tastene, at `start()` aldri setter spillet i gang på et blokkert punkt, og at dialogtelleren teller linjene som er igjen, ikke den du leser. |
 | `sjekk-kort.js` | Alle førti kort er fysisk mulige å plukke opp, ligger inne på kartet, er spredt over bydelene, og plukkes faktisk opp når man går dit. |
-| `test-oppdrag.js` | **Alle fjorten oppdrag spilles gjennom med ekte klikk.** For hvert av dem sjekkes også at et *feil* svar ikke gir seier, og at fasitteksten sier det den skal. Til slutt: at fjorten oppdrag gir nivå 12, og at alt løst pluss alle kort gir INVESTOR. Siden juli 2026 også: at **ingenting skriver «NaN», «undefined» eller «Infinity»** i noen av de fjorten oppdragene eller de 25 bygningsskjermene, verken for en fersk eller en ferdig spiller; at **ingen oppdrag er løst i det det åpnes** og at ingen (unntatt D, som er ett tall) løses ved å flytte én enkelt skyver; at **ingen bygning tilbyr et oppdrag før kravene er løst**; og at oppdrag C sitt eget regnskap bunner ut der teksten sier at det gjør. |
+| `test-oppdrag.js` | **Alle fjorten oppdrag spilles gjennom med ekte klikk.** For hvert av dem sjekkes også at et *feil* svar ikke gir seier, og at fasitteksten sier det den skal. Til slutt: at fjorten oppdrag gir nivå 12, og at alt løst pluss alle kort gir INVESTOR. Siden juli 2026 også: at oppdrag J-banen faktisk henter seg inn igjen fire ganger og treffer spillets egen avkastning, at oppdrag N dømmer på medianen av 500 løp og at tabellen går opp krone for krone, at oppdrag H ikke kan klares med flaks og gir de samme fem årene ved omstart, at oppdrag D regner 42 år, at spillerens gjeld spiser av gjeldstaket i oppdrag L, at **ingenting skriver «NaN», «undefined» eller «Infinity»** i noen av de fjorten oppdragene eller de 25 bygningsskjermene, verken for en fersk eller en ferdig spiller; at **ingen oppdrag er løst i det det åpnes** og at ingen (unntatt D, som er ett tall) løses ved å flytte én enkelt skyver; at **ingen bygning tilbyr et oppdrag før kravene er løst**; og at oppdrag C sitt eget regnskap bunner ut der teksten sier at det gjør. |
 | `test-mobil.js` | Ingen HUD-overlapp på tre skjermstørrelser, ingen flate utenfor skjermen, alle knapper minst 44×44, at styrekorset faktisk flytter spilleren, og at MENY lukker minispillet i stedet for å legge menyen oppå det. |
 | `test-lagring.js` | Fremgang overlever omlasting; 294 kombinasjoner av ødelagt lagring tar ikke ned spillet; nullstilling rydder minne så vel som lagring og skriver ikke tilbake etterpå; lagring skjer på timer. |
 | `test-tilgjengelighet.js` | Kontrast regnet ut fra de **faktiske** fargene i DOM-en, ikke fra CSS-en man tror står der: 22 elementer mot WCGA 2.1 AA. At alle klikkbare elementer i alle fjorten oppdrag kan nås med Tab, at brikkene er ekte knapper, at det finnes en `:focus-visible`-regel, at grønt og rødt alltid har tekst ved siden av, og at spillet starter med `prefers-reduced-motion`. |
@@ -430,6 +448,109 @@ uten forbehold; `MINI.N` foreslo «lengre horisont i aksjer» i et oppdrag uten
 horisontkontroll; `kr()` skrev «−0 kr» for negativ null; XP-floaten lå oppå
 navnelappene; banneret sloss med bygningen bak; og siden manglet favicon, som ga
 én 404 i konsollen ved hver lasting.
+
+### Fjorten funnet av en systematisk jakt på logiske brister
+
+Etter at spillet var ute og alle 878 sjekker var grønne, ble det satt tre
+uavhengige gjennomganger på fila — kryssjekk av hver faktapåstand, revisjon av
+hver simuleringsløkke, og egne målinger av utfallene. Alt under er *kjørt*:
+`SATSER`, `F`, `lagRnd` og `gauss` ble trukket uendret ut av fila og hver
+simulering bygget om i Node, med uavhengige kontrollformler.
+
+**Tre oppdrag lærte bort noe annet enn de trodde.**
+
+1. **Oppdrag J: markedet hentet seg ikke inn igjen.** Fasiten sa at «alle fire
+   fallene i denne banen hentet seg inn igjen». Målt: krakkene var på rundt 55 %
+   (sju måneder à −7,5 til −12 %) og opphentingene på +44 % (tretten måneder), så
+   hver krakksyklus ganget indeksen med 0,64. **Tre av fire kom aldri tilbake til
+   forrige topp.** Tretti år med 3 000 kr i måneden ga 2,68 % nominelt, altså
+   −0,02 % realt: 818 000 kr i kjøpekraft av 1 080 000 innskutt. Oppdraget som
+   skal vise at man skal sitte stille, kjørte på den ene banen der det ikke lønner
+   seg.
+   Banen er nå **konstruert** til å oppfylle påstanden: fire fall på 38–52 % med
+   historisk plausible dybder, hver med en opphenting som faktisk tar igjen
+   forrige topp, og en grunndrift som løses numerisk slik at de tretti årene
+   lander på 8,04 % nominelt = 5,20 % realt — spillets egen forventning. Ingen
+   hardkodet drift: endres `SATSER`, retuner banen seg selv. Valget kommer nå på
+   bunnen av fallet og ikke etter at oppgangen har startet, og «ikke rør» hele
+   veien gir 1 787 000 kr i dagens kjøpekraft.
+2. **Oppdrag N: den faste banen lå på 84. persentil.** Finalen kjørte
+   `lagRnd(556677)` og viste det ene løpet som *resultatet* av spillerens seks
+   valg. Målt mot 4 000 tilfeldige baner var persentilen 83–84 uansett
+   innstilling, altså systematisk. Konsekvensen: den faste banen nådde seks
+   millioner med 13 % sparerate og 80 % aksjer, mens **medianbanen krever 20 %** —
+   sju prosentpoeng av nettolønn, 2 100 kr i måneden, på den ene skjermen som
+   finnes for å svare på hva valgene dine er verdt.
+   Nå kjøres 500 løp med faste frø, og det er **medianen** som gjelder. 5.- og
+   95.-persentilen og treffandelen står i tabellen. Kostnaden er 20 ms per
+   skyvedrag.
+3. **Oppdrag H krevde flaks.** Vilkåret var «kom ut over startverdien». Målt over
+   20 000 femårsperioder klarer 20 % i hver sektor det i **67 %** av tilfellene —
+   og i denne modellen har alle seks alternativene samme forventede avkastning, så
+   spredning slår «alt i teknologi» bare 55 % av gangene. En spiller som spredte
+   helt riktig fikk «Du endte under startverdien» i én av tre forsøk. «Start på
+   nytt» nullstilte heller ikke tilfeldighetskilden, så hvert forsøk ga *nye* fem
+   år: målt BESTÅTT·BESTÅTT·BESTÅTT·BESTÅTT·STRYK·STRYK med samme vekting.
+   Det spredning faktisk leverer er nedsiden: 5.-persentilen går fra 37 831 kr
+   (alt i teknologi) til 75 903 kr (spredt), og standardavviket fra 56 950 til
+   25 238. Vilkåret er nå regelen spilleren styrer selv — maks 40 % i én sektor —
+   og fordelingen over 2 000 femårsperioder er det som beviser hvorfor regelen er
+   verdt å følge. «Start på nytt» gir de samme fem årene, så man kan endre
+   fordelingen og se hva den gjorde.
+
+**Fire steder gikk ikke tallene opp.**
+
+4. **Oppdrag N skattla spillerens egne innskudd.** `aarsgevinst = s - forrigeAar`
+   er årets innskudd *pluss* gevinst, ikke gevinsten — og første år var
+   `forrigeAar = 0`, så en femtedel av hele saldoen ble regnet som realisert.
+   Spilleren uten ASK betalte 37,84 % skatt på sparepengene sine: 221 189 kr, og
+   ASK-fordelen oppdraget skal demonstrere ble blåst opp fra 396 774 til
+   617 963 kr — **56 % for stor**.
+5. **Oppdrag N teller uhellene to ganger i tabellen.** «Avkastning» var netto
+   etter uhell, og uhellene sto også som egen minuslinje; skjermingsfradraget sto
+   som en pengelinje enda det bare senker skattegrunnlaget. Kolonnen bommet med
+   nøyaktig uhellskostnaden. Den går nå opp krone for krone, og sjekken leser
+   tabellcellene.
+6. **Oppdrag D tegnet 43 år, ikke 42.** `for (let a=25;a<=67;a++)` ga 43 vekstår,
+   så Adas sluttpunkt lå 82 481 kr — presis ett år à 5,20 % — over lukket form,
+   mens fasitteksten på samme skjerm brukte 42/32 år.
+7. **Oppdrag L så bort fra spillerens gjeld** — i oppdraget hvis fasit sier at
+   gjeldstaket gjelder *all* gjeld. `F.laaneramme(bruttoAar,300000)` fikk ikke
+   `annenGjeld`, mens Meglerkontoret bak samme dør sendte det inn. Med 50 000 tatt
+   opp hos Kvikklån viste de to skjermene ulikt tak for samme spiller.
+
+**Sju påstander ble motsagt et annet sted:** kaffen (12 → 52 kr på tretti år er
+5,01 % i året, ikke de 2,70 % Ingrid tilskrev inflasjonen — historien er flyttet
+til 55 år, som er det KPI faktisk gir); kort 21 (7,1 G «ca. 954 000» er 7,1 ×
+*gjennomsnittlig* G, som bare NAV-skjermen nevnte); oppdrag K («IPS er den eneste
+kontoen der avkastningen ikke beskattes løpende» — elleve linjer over sto ASK og
+gjorde det samme); skjermingsforbeholdet i N (som sa at anslaget trakk i
+spillerens favør, mens både kodekommentaren og regnestykket sa motsatt);
+krønikelinjen for D (som sa at den som sparer lite slår den som sparer mye, mens
+fasiten utløses bare når de ender likt); dokumentavgiften (fullt fritak ved
+nybygg på kort 13 og i `F`, «du betaler bare av tomteverdien» i Visningsboligen);
+og Fondsbutikken, som lovet 37,84 % på uttak over innskutt beløp og flyttet
+pengene uten å trekke en krone.
+
+**To ting i motoren var feil på en måte ingen ville sett.**
+
+`F.drift(g,σ) = g + σ²/2` behandlet den aritmetiske avkastningen som en
+log-avkastning. Kommentaren lovet at medianen traff den oppgitte annualiserte
+avkastningen; målt bommet den med 0,05–0,08 pp i oppdrag G og **0,23–0,33 pp i
+oppdrag N** — 471 208 kr på medianen ved 80 % aksjer. Riktig er å regne i logrom
+og tilbake: `ln(1+µ) = ln(1+g)/12 + σ²/24`. Funksjonen heter nå `F.mndDrift`,
+returnerer en månedlig forventning, og treffer innenfor 0,02 pp. Toleransen i
+testen var 0,8 pp — så løs at feilen gikk gjennom; den er nå 0,05.
+
+Og spillet regnet nominell avkastning som `realAksjer + kpi` i tre simuleringer —
+nøyaktig den tilnærmingen oppdrag F advarer mot i klartekst. `F.nominell` bruker
+Fisher: 8,04 % mot 7,90 %.
+
+**Byen fikk inflasjon og lønnsvekst.** Overskuddet var konstant 10 000 kr i
+måneden i førti år, i et spill der oppdrag F handler om at kroner lyver over tid
+og oppdrag N regner med 3,2 % lønnsvekst. Nå følger utgiftene KPI og lønna
+lønnsveksten, og både statistikken og banken viser formuen i kroner fra da du
+begynte: etter førti år 7 466 442 kr, som er 2 572 148 kr i startkroner.
 
 ## Om universet
 

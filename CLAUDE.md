@@ -15,6 +15,14 @@ byggesteg. Playwright er kun testavhengighet.
 - **Rentekonvensjonene er ikke utbyttbare:** `mndRente` (geometrisk) for
   avkastning, `mndFraNominell` (nominell/12) for lån. Blander man dem, blir
   tallene subtilt gale på en måte ingen oppdager.
+- **Nominell av real er `F.nominell`, aldri `real + kpi`.** Spillet lærer bort i
+  oppdrag F at realrenten ikke er «rente minus inflasjon», og brukte likevel
+  `realAksjer + kpi` som drift i tre simuleringer. 8,04 % mot 7,90 %.
+- **`F.mndDrift` returnerer en MÅNEDLIG forventning, ikke en årlig.** Den forrige
+  utgaven het `drift()` og ga `g + σ²/2`, som kallerne delte på 12 — en
+  førsteordens tilnærming som behandler `g` som en log-avkastning og bommer
+  oppover: målt +0,28 pp på 7,9 % og σ 16 % over førti år, altså 471 208 kr på
+  medianen i oppdrag N. Sjekken krever nå 0,05 pp, ikke 0,8.
 - **Nye minispill må ikke kunne vinnes ved åpning.** `MINI.N` gjorde det i første
   utgave. Krever spillet et valg, må valget faktisk tas. Den milde varianten er
   like ille: `MINI.G` startet på `[50,50,50]`, som var riktig for to av tre mål,
@@ -29,6 +37,24 @@ byggesteg. Playwright er kun testavhengighet.
 - **Alt som slipper inn i et oppdrag skal stå bak `laastOpp()`.** `HUS.kiosk` var
   den eneste bygningen uten sjekken, og en fersk spiller uten jobb kunne ta
   oppdrag M først av alt og få 450 XP før Jobbsenteret.
+- **Én tilfeldig bane er ikke et svar.** Oppdrag N viste ett løp som RESULTATET
+  av spillerens seks valg; målt mot 4 000 baner lå det på 84. persentil uansett
+  innstilling, og finalen lærte bort en sparerate sju prosentpoeng for lav.
+  Oppdrag J kjørte en bane der tre av fire krakk aldri hentet seg inn, mens
+  fasiten påsto at alle fire gjorde det — og tretti år ga −0,02 % realt i
+  oppdraget som skal vise at man skal sitte stille. **Sier et oppdrag noe om en
+  bane, skal en sjekk måle banen. Sier det noe om et utfall, skal utfallet være
+  medianen av mange.**
+- **Krev aldri flaks for å klare et oppdrag.** Oppdrag H krevde «over startverdien
+  etter fem år». Målt over 20 000 femårsperioder klarte riktig spredning det i
+  67 % av tilfellene, og alle seks alternativene har samme forventede avkastning
+  i modellen — spredning slår «alt i teknologi» bare 55 % av gangene. Det
+  spredning faktisk leverer, er nedsiden. Vinnervilkåret skal være noe spilleren
+  styrer selv; fordelingen er det som beviser hvorfor regelen er verdt å følge.
+- **Kolonner med kroner skal kunne legges sammen.** Oppdrag N viste «Avkastning»
+  netto etter uhell OG uhellene som egen minuslinje, og skjermingsfradraget som
+  en pengelinje enda det bare senker skattegrunnlaget. Tabellen bommet med
+  nøyaktig uhellskostnaden.
 - **En modell som skal begrunne en tommelfingerregel, må faktisk gi den.**
   `MINI.C` påsto at bufferkostnaden «bunner ut rundt tre måneders utgifter», mens
   modellens egne tall ga én måned, fordi stormen bare hadde husholdningsuhell,
@@ -61,13 +87,15 @@ byggesteg. Playwright er kun testavhengighet.
 ## Før noe skrives av som ferdig
 
 `bash test-alle.sh` **og** `bash test-alle.sh --http` skal begge være helt grønne:
-åtte filer, 878 sjekker. HTTP-modus er ikke pynt: siden serveres over HTTPS i
+åtte filer, 926 sjekker. HTTP-modus er ikke pynt: siden serveres over HTTPS i
 produksjon, og `file://` har sitt eget origo-oppsett for `localStorage`.
 
 Legger du til innhold, legg til sjekken som beviser at det virker. Fire spillfeil i
 første utgave ble funnet av testene og ikke av øyet, nitten av en faglig gjennomgang,
-to av å faktisk spille, og **sju av å spille gjennom hele spillet i produksjon etter
-at det var ute**, mens alle 854 sjekker var grønne (se README, «Testing»).
+to av å faktisk spille, sju av å spille gjennom hele spillet i produksjon etter at
+det var ute, og **fjorten av en systematisk jakt på logiske brister** — der tre
+oppdrag lærte bort noe annet enn de trodde (se README, «Testing»). Hver gang var
+alle sjekkene grønne.
 
 **Og spill det.** To av de verste feilene i første utgave var usynlige for alle
 sjekkene og åpenbare i det noen faktisk spilte: at utforsking ga 21 000 kr i gjeld
