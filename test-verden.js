@@ -9,7 +9,7 @@ function sant(n,x){ if (x) ok++; else { feil++; console.log('  ✗ '+n); } }
 const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium',args:['--no-sandbox']});
 const p=await b.newPage({viewport:{width:1280,height:820}});
 p.on('pageerror',e=>{ console.log('  ✗ PAGEERROR '+e.message); feil++; });
-await p.goto('file://'+__dirname+'/index.html');
+await p.goto(process.env.RR_URL||('file://'+__dirname+'/index.html'));
 await p.evaluate(()=>{ RR.nullstill(); });
 await p.reload();
 await p.evaluate(()=>RR.start());
@@ -245,6 +245,42 @@ console.log('\n=== PAUSEMENYEN ===');
   }
   await p.evaluate(()=>RR.vekslePause());
   sant('pausemenyen lukker', !(await p.evaluate(()=>RR.tilstand.pause)));
+}
+
+console.log('\n=== ØKONOMIEN STARTER NÅR DU BLIR ANSATT ===');
+// Spilletest 2026-07-31: uten dette ble utforsking straffet. Faste utgifter uten
+// inntekt ble overtrekk, som ble forbruksgjeld til 22,9 %, og en spiller som ruslet
+// rundt i fem måneder før hen fant Jobbsenteret sto med 106 000 kr i gjeld og
+// negativ formue — for å ha gjort nøyaktig det spillet ber om.
+{
+  await p.evaluate(()=>{ RR.lukkAlt(); RR.nullstill(); });
+  await p.reload();
+  await p.evaluate(()=>RR.start());
+  await p.waitForTimeout(500);
+  await p.evaluate(()=>RR.lukkAlt());
+  sant('spilleren starter uten jobb', (await p.evaluate(()=>RR.tilstand.harJobb))===false);
+  for (let m=0;m<8;m++) await p.evaluate(()=>RR.nyMaaned());
+  const u=await p.evaluate(()=>RR.tilstand);
+  console.log('  åtte måneder uten jobb: kontanter '+Math.round(u.kontanter)+
+    ', gjeld '+Math.round(u.gjeld)+', måned '+u.mnd);
+  sant('ingen gjeld påløper før man er ansatt', u.gjeld<1);
+  sant('formuen er ikke negativ før man er ansatt', u.formue>=0);
+  sant('kalenderen går likevel videre', u.mnd===8);
+  sant('markedet går likevel videre', u.indeks!==100);
+
+  // … og når man ER ansatt, skal regnskapet faktisk løpe
+  await p.evaluate(()=>RR.sett({harJobb:true}));
+  const f=await p.evaluate(()=>RR.tilstand);
+  const h=await p.evaluate(()=>RR.nyMaaned());
+  const e=await p.evaluate(()=>RR.tilstand);
+  sant('lønn kommer inn når man er ansatt', h.some(x=>/Lønn/.test(x.t)&&x.v>0));
+  sant('faste utgifter trekkes når man er ansatt', h.some(x=>/Faste utgifter/.test(x.t)&&x.v<0));
+  sant('netto endring er positiv med startlønna', e.kontanter>f.kontanter);
+  // og et overtrekk SKAL bli gjeld — det er en lærdom, ikke en feil
+  await p.evaluate(()=>RR.sett({kontanter:-1}));
+  await p.evaluate(()=>RR.sett({kontanter:500}));
+  const utg=await p.evaluate(()=>RR.tilstand);
+  sant('økonomien er i gang etter ansettelse', utg.harJobb===true);
 }
 
 console.log('\n=== SPILLET STÅR STILLE NÅR ET MINISPILL ER ÅPENT ===');

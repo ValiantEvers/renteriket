@@ -28,7 +28,7 @@ const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium',
   args:['--no-sandbox','--autoplay-policy=no-user-gesture-required']});
 const p=await b.newPage({viewport:{width:1440,height:900}});
 p.on('pageerror',e=>{ console.log('  ✗ PAGEERROR '+e.message); feil++; });
-await p.goto('file://'+__dirname+'/index.html');
+await p.goto(process.env.RR_URL||('file://'+__dirname+'/index.html'));
 await p.evaluate(()=>RR.nullstill());
 await p.reload();
 await p.evaluate(()=>{ RR.start(); RR.sett({harJobb:true,portefolje:1500000}); });

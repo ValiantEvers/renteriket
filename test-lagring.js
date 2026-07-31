@@ -14,7 +14,7 @@ const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium',args:[
 const p=await b.newPage({viewport:{width:1200,height:800}});
 let sideFeil=[];
 p.on('pageerror',e=>sideFeil.push(e.message));
-await p.goto('file://'+__dirname+'/index.html');
+await p.goto(process.env.RR_URL||('file://'+__dirname+'/index.html'));
 
 console.log('\n=== FREMGANG OVERLEVER OMLASTING ===');
 await p.evaluate(()=>RR.nullstill());

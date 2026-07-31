@@ -36,7 +36,7 @@ const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium',args:[
 const p=await b.newPage({viewport:{width:1280,height:900}});
 const sideFeil=[];
 p.on('pageerror',e=>sideFeil.push(e.message));
-await p.goto('file://'+__dirname+'/index.html');
+await p.goto(process.env.RR_URL||('file://'+__dirname+'/index.html'));
 await p.evaluate(()=>RR.nullstill());
 await p.reload();
 await p.evaluate(()=>{ RR.start(); RR.sett({harJobb:true,kontanter:250000}); });

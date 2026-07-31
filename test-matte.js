@@ -4,7 +4,10 @@
 // bruker, eller hentet fra offentlig kilde. Poenget er ikke å bekrefte at
 // koden gjør det den gjør, men at den gjør det RIKTIGE.
 const {chromium}=require('playwright');
-const SPILL='file://'+__dirname+'/index.html';
+// GitHub Pages serverer over HTTPS, ikke file://. RR_URL lar hele pakka
+// kjøres mot en HTTP-server, som er den eneste måten å fange antakelser
+// som bare holder på file:// (localStorage-origo, relative stier).
+const SPILL=process.env.RR_URL||('file://'+__dirname+'/index.html');
 
 let ok=0, feil=0;
 function er(navn,fikk,skal,tol){

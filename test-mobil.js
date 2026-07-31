@@ -17,7 +17,7 @@ for (const [navn,w,h] of [['iPhone-format 390×844',390,844],['liten Android 360
   console.log('\n=== '+navn+' ===');
   const p=await b.newPage({viewport:{width:w,height:h},hasTouch:true,isMobile:true});
   const sideFeil=[]; p.on('pageerror',e=>sideFeil.push(e.message));
-  await p.goto('file://'+__dirname+'/index.html');
+  await p.goto(process.env.RR_URL||('file://'+__dirname+'/index.html'));
   await p.evaluate(()=>RR.nullstill());
   await p.reload();
   sant('touch-modus oppdages', await p.evaluate(()=>document.body.classList.contains('touch')));

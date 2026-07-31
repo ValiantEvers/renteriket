@@ -9,7 +9,7 @@ function sant(n,x){ if (x) ok++; else { feil++; console.log('  ✗ '+n); } }
 const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium',args:['--no-sandbox']});
 const p=await b.newPage();
 p.on('pageerror',e=>{ console.log('  ✗ PAGEERROR '+e.message); feil++; });
-await p.goto('file://'+__dirname+'/index.html');
+await p.goto(process.env.RR_URL||('file://'+__dirname+'/index.html'));
 
 const kort=await p.evaluate(()=>RR.KORT);
 const soner=await p.evaluate(()=>RR.SONER);
