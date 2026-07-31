@@ -423,7 +423,10 @@ const SATSER = {
   stresspp: 0.03,                    // tåle +3 prosentpoeng …
   stressgulv: 0.07,                  // … men minimum 7 % rente
   avdragsgrense: 0.60,               // avdragskrav over 60 % belåningsgrad
-  dokumentavgift: 0.025,             // 2,5 % av markedsverdi (fritak: nybygg og borettslag)
+  dokumentavgift: 0.025,             // 2,5 % av markedsverdi (borettslag er utenfor)
+  tomteandelNybygg: 0.25,            // ved nybygg løper avgiften på tomteverdien;
+                                     // 25 % er et grovt anslag og varierer sterkt
+                                     // med beliggenhet — oppgis som anslag i teksten
   rentefradrag: 0.22,                // gjeldsrenter i alminnelig inntekt
   boligEiertid: 1,                   // år eiertid for skattefri gevinst
   boligBotid: 12,                    // måneder botid av de siste 24
@@ -442,6 +445,7 @@ const SATSER = {
   boliglaansrente: 0.0508,           // snitt utestående, mai 2026 (SSB)
   innskuddsrente: 0.0298,            // snitt husholdninger, mai 2026 (SSB)
   kpi: 0.027,                        // tolvmånedersvekst juni 2026 (SSB)
+  lonnsvekst: 0.032,                 // nominell årslønnsvekst, TBU/SSB-anslag 2026
   inflasjonsmaal: 0.02,              // Norges Bank
 
   // --- langsiktige anslag brukt i simuleringene ---
@@ -726,7 +730,14 @@ const F = {
     }
     return Math.pow(1+(lo+hi)/2,12)-1;
   },
-  dokumentavgift(pris,nybygg){ return nybygg ? 0 : pris*SATSER.dokumentavgift; },
+  // Nybygg som ikke er tatt i bruk gir IKKE fullt fritak: avgiften løper på
+  // tomteverdien. Funksjonen returnerte 0, mens Visningsboligen sa
+  // «du betaler bare av tomteverdien». tomteAndel er et grovt anslag og skal
+  // oppgis som det der tallet vises.
+  dokumentavgift(pris,nybygg,tomteAndel){
+    const grunnlag = nybygg ? pris*(tomteAndel===undefined?SATSER.tomteandelNybygg:tomteAndel) : pris;
+    return grunnlag*SATSER.dokumentavgift;
+  },
   // Netto lånekostnad etter rentefradrag
   netterente(rente){ return rente*(1-SATSER.rentefradrag); },
 
@@ -764,11 +775,27 @@ const F = {
   // Nedsiden: hvor mye må noe stige for å hente inn et fall?
   hentInn(fall){ return fall>=1 ? Infinity : fall/(1-fall); },
 
+  // Nominell avkastning av en real. Spillet lærer bort i oppdrag F at
+  // realrenten IKKE er «rente minus inflasjon», og brukte likevel
+  // realAksjer + kpi som nominell drift i tre simuleringer. Forskjellen er
+  // liten (8,04 % mot 7,90 %) og nøyaktig den feilen oppdraget advarer mot.
+  nominell(real,inflasjon){ return (1+real)*(1+inflasjon)-1; },
+
   // Historisk avkastning oppgis ANNUALISERT (geometrisk). Skal et tilfeldig
-  // forløp ha den annualiserte avkastningen som median, må driften være
-  // g + σ²/2 — ellers spiser volatiliteten forskjellen, og simuleringen leverer
-  // systematisk mindre enn tabellen ved siden av påstår.
-  drift(geometrisk,sigma){ return geometrisk + sigma*sigma/2; },
+  // forløp ha den annualiserte avkastningen som MEDIAN, må den månedlige
+  // forventningen ligge over — ellers spiser volatiliteten forskjellen, og
+  // simuleringen leverer systematisk mindre enn tabellen ved siden av påstår.
+  //
+  // Returnerer MÅNEDLIG forventning, ikke årlig. Den forrige utgaven het
+  // drift() og ga (g + σ²/2), som kallerne delte på 12. Det er en
+  // førsteordens tilnærming som behandler g som en log-avkastning, og den
+  // bommer oppover når g og σ blir store: målt +0,28 pp på 7,9 % og σ 16 %
+  // over førti år. Riktig er å regne i logrom og tilbake:
+  //   ln(1+µ) = ln(1+g)/12 + σ²/24
+  // Målt med denne: medianen treffer innenfor 0,02 pp på lange horisonter.
+  mndDrift(geometrisk,sigma){
+    return Math.pow(1+geometrisk,1/12)*Math.exp(sigma*sigma/24)-1;
+  },
 
   // Betjeningsevne: største lån der terminen ved bankens STRESSRENTE fortsatt
   // er innenfor det som er igjen etter normale levekostnader. Utlånsforskriften
@@ -1149,7 +1176,7 @@ const KORT=[
   {n:12,x:980, y:340, t:'Banken stresstester deg',
    s:'Du må tåle 3 prosentpoeng høyere rente, minimum 7 %. Med 5,08 % i dag regner banken med 8,08 %.'},
   {n:13,x:1200,y:620, t:'Dokumentavgift: 2,5 %',
-   s:'Av markedsverdien. Fritak ved nybygg som ikke er tatt i bruk, og borettslagsandeler er helt utenfor.'},
+   s:'Av markedsverdien. Ved nybygg som ikke er tatt i bruk betaler du bare av tomteverdien, og borettslagsandeler er helt utenfor.'},
   {n:14,x:290, y:860, t:'Fellesgjeld er din gjeld',
    s:'En borettslagsleilighet til 3 mill. med 700 000 i fellesgjeld koster deg 3,7 mill. Bankene regner den med.'},
   {n:15,x:700, y:860, t:'Bolig er ikke bare avkastning',
@@ -1167,7 +1194,7 @@ const KORT=[
    s:'Hevet fra 15 000. Fradrag med 22 % inn, 22 % skatt ut, og ingen formuesskatt underveis.'},
   // --- PENSJONSHØYDEN ---
   {n:21,x:2050,y:280, t:'18,1 prosent, hver måned',
-   s:'Så mye av lønna di går inn i pensjonsbeholdningen i folketrygden, opp til 7,1 G, altså ca. 954 000 kr i 2026.'},
+   s:'Så mye av lønna di går inn i pensjonsbeholdningen i folketrygden, opp til 7,1 × GJENNOMSNITTLIG grunnbeløp, altså 954 375 kr i 2026, ikke 7,1 × G per 1. mai.'},
   {n:22,x:2825,y:250, t:'Arbeidsgiver må spare minst 2 %',
    s:'Obligatorisk tjenestepensjon, fra første krone. Sjekk hva din faktisk sparer. Mange sparer mer.'},
   {n:23,x:2700,y:290, t:'Grunnbeløpet er 136 549 kr',
@@ -1334,9 +1361,9 @@ let markedStemning=0;                       // −1 bjørn … +1 okse, glidende
 
 function markedSteg(){
   // månedlig: drift fra realavkastning + inflasjon, støy fra volatiliteten
-  // Driftkorreksjon: uten + σ²/2 blir den ANNUALISERTE avkastningen systematisk
+  // Driftkorreksjon: uten den blir den ANNUALISERTE avkastningen systematisk
   // lavere enn de 5,2 % byen lærer bort. Målt før korreksjonen: 1,9 % realt.
-  const mu=F.drift(SATSER.realAksjer+SATSER.kpi,SATSER.volAksjer)/12;
+  const mu=F.mndDrift(F.nominell(SATSER.realAksjer,SATSER.kpi),SATSER.volAksjer);
   const sig=SATSER.volAksjer/Math.sqrt(12);
   let r=mu+sig*gauss(markedRnd);
   if (markedRnd()<0.012) r-=0.09+markedRnd()*0.16;      // sjeldent krakk
@@ -1362,10 +1389,17 @@ const LEVEKOSTNAD=(()=>{ let s=0; for (const k in UTGIFT) if (k!=='husleie') s+=
 // Den koster forbrukslånsrente, ikke boliglånsrente — å bruke boliglånsrenten
 // her gjorde forbruksgjeld fire og en halv gang mindre farlig enn den er.
 const FORBRUKSRENTE=0.229;
+// Prisnivået i byen. Uten dette var overskuddet konstant 10 000 kr i måneden i
+// førti år — i et spill der oppdrag F handler om at kroner lyver over tid og
+// oppdrag N regner med 3,2 % lønnsvekst. Byen motsa altså pensum.
+function prisniva(){ return Math.pow(1+SATSER.kpi, mnd/12); }
 function utgiftSum(){ let s=0; for (const k in UTGIFT) s+=UTGIFT[k];
   if (livsstil.dyrleilighet) s+=4500;
   if (livsstil.bil) s+=3800;
-  return s; }
+  return s*prisniva(); }
+// Formue målt i kroner fra da du begynte — det tallet oppdrag F sier er det
+// eneste som betyr noe.
+function formueReal(){ return F.kjopekraft(formue(),SATSER.kpi,mnd/12); }
 
 // Kalenderen. Én måned går på 75 sekunder spilt tid.
 const SEK_PER_MND=75;
@@ -1376,6 +1410,13 @@ function datoLang(){ const m=mnd%12, a=2026+Math.floor(mnd/12); return MNDLANG[m
 function nyMaaned(){
   mnd++; stat.mnd++;
   const hendelser=[];
+  // Lønna vokser nominelt, som i virkeligheten. bruttoAar er alltid DAGENS lønn,
+  // så alle oppdrag og skjermer leser det samme tallet.
+  if (harJobb && mnd%12===0){
+    const foer=bruttoAar;
+    bruttoAar=Math.round(bruttoAar*(1+SATSER.lonnsvekst)/100)*100;
+    hendelser.push({t:'Lønnsvekst ('+pst2(SATSER.lonnsvekst)+')',v:(bruttoAar-foer)/12});
+  }
   // Økonomien starter når du blir ansatt. Uten dette ble utforsking straffet:
   // faste utgifter uten inntekt ble overtrekk, som ble forbruksgjeld til 22,9 %,
   // og en spiller som ruslet rundt i fem måneder før hen fant Jobbsenteret sto
@@ -1451,7 +1492,7 @@ const OPPDRAG=[
   {id:'D',navn:'Rentetrappa',bygg:'bank',figur:'gro',krav:['C'],xp:400,lonn:0,
    tema:'renters rente, tid framfor beløp',
    mal:'Ned i bankens kjeller står trappa. Bygg den til målhøyden.',
-   kron:'Trappa viste det jeg ikke trodde: den som starter tidlig og sparer lite, slår den som starter sent og sparer mye.'},
+   kron:'Trappa viste det jeg ikke trodde: Ada og Bodil endte likt — men Ada kjøpte det sluttbeløpet for under halvparten av pengene.'},
   {id:'E',navn:'Gjeldsraset',bygg:'kvikklaan',figur:'rolf',krav:['C'],xp:400,lonn:0,
    tema:'effektiv rente, nedbetalingsrekkefølge',
    mal:'Rolf i KVIKKLÅN AS har fire lån han gjerne selger deg. Ta dem ned i riktig rekkefølge i stedet.',
@@ -1877,6 +1918,7 @@ MINI.C=(v)=>{
   // Tremånedersregelen handler om å miste inntekten, så inntektstapet må være
   // i modellen. Målt: med dette faller totalkostnaden lavest på tre måneder.
   const PERM_FRA=3, PERM_MND=3;
+  const OPPFYLLING=2500;      // kr/mnd til å bygge bufferen opp igjen eller betale ned lånet
   const dagpengegrunnlag=Math.min(bruttoAar,SATSER.grunnbelop*SATSER.dagpengeTakG);
   const lonnNetto=F.lonnsskatt(bruttoAar).netto/12;
   const dagpengerNetto=F.lonnsskatt(dagpengegrunnlag*SATSER.dagpengesats).netto/12;
@@ -1893,7 +1935,12 @@ MINI.C=(v)=>{
     x=>kr(x)+'  ('+nf1.format(x/utg)+' mnd)',x=>bufferValg=x);
   v.appendChild(U.kort('VELG BUFFER',sk,
     U.tips('Tommelfingerregelen er tre måneders utgifter. Den er ikke hentet ut av lufta. '+
-      'Kjør stormen og se hvorfor.'),
+      'Kjør stormen og se hvorfor.<br><br>'+
+      '<b>Én forutsetning som avgjør svaret:</b> du klarer å sette av '+kr(OPPFYLLING)+
+      ' i måneden til å bygge bufferen opp igjen, eller til å betale ned lånet hvis '+
+      'den tok slutt. Resten av overskuddet ditt står i indeksfondet. Kunne du kastet '+
+      'hele overskuddet på et forbrukslån, ville en liten buffer holdt; det er nettopp '+
+      'derfor beløpet står her og ikke skjult i regnestykket.'),
     U.tab(['Under permitteringen','Per måned'],[
       ['Lønn etter skatt i dag',kr(lonnNetto)],
       ['Dagpenger etter skatt ('+pst2(SATSER.dagpengesats)+' av grunnlaget)',kr(dagpengerNetto)],
@@ -1919,11 +1966,14 @@ MINI.C=(v)=>{
         if (buf>=rad.k) buf-=rad.k;
         else { laan+=rad.k-buf; buf=0; }
       }
-      // bufferen fylles opp igjen med 2 500 i måneden — men ikke mens du er
-      // permittert, for da er det ingenting å fylle den med
+      // Bufferen fylles opp igjen med OPPFYLLING i måneden — men ikke mens du er
+      // permittert, for da er det ingenting å fylle den med. Beløpet er ikke
+      // hele overskuddet ditt: resten går i indeksfondet, som oppdraget sier i
+      // åpningen. Hvilket beløp det er, avgjør hvor kurven bunner ut, så det
+      // skal STÅ i teksten og ikke ligge skjult i en løkke.
       if (laan>0){ const rente=laan*F.mndFraNominell(FORBRUKSRENTE); laan+=rente; betaltRente+=rente;
-        laan-=Math.min(laan,2500); }
-      else if (!permittert) buf=Math.min(bufferValg,buf+2500);
+        laan-=Math.min(laan,OPPFYLLING); }
+      else if (!permittert) buf=Math.min(bufferValg,buf+OPPFYLLING);
       rad.buf=buf; rad.laan=laan; logg.push(rad);
     }
     const laanEtterAaret=laan;
@@ -1939,7 +1989,12 @@ MINI.C=(v)=>{
     tab.innerHTML='';
     tab.appendChild(U.tab(['Mnd','Hendelse','Kostnad','Buffer','Forbrukslån'],
       logg.map(l=>[l.m,l.h,l.k?kr(l.k):'—',kr(l.buf),l.laan>1?kr(l.laan):'—'])));
-    const tapt=bufferValg*(SATSER.realAksjer-F.realrente(SATSER.innskuddsrente*(1-SATSER.alminnelig),SATSER.kpi));
+    // Begge sider etter skatt, ellers er de ikke sammenlignbare — oppdrag F sier
+    // det selv om nøyaktig dette. Aksjealternativet sto før skatt her, og
+    // bufferkostnaden ble dermed overdrevet med realAksjer × aksjeskatt.
+    const aksjeEtterSkatt=SATSER.realAksjer*(1-SATSER.aksjeskatt);
+    const bankEtterSkatt=F.realrente(SATSER.innskuddsrente*(1-SATSER.alminnelig),SATSER.kpi);
+    const tapt=bufferValg*(aksjeEtterSkatt-bankEtterSkatt);
     svar.innerHTML='';
     const anbefalt=utg*3;
     const ok = laanEtterAaret<1 && bufferValg<=utg*4;
@@ -2058,9 +2113,13 @@ MINI.D=(v)=>{
   v.appendChild(k);
   const svar=U.el('div');
 
+  // Første punkt er saldoen ved ADA_START (null), deretter ett punkt per år som
+  // faktisk har gått. «a<=SLUTT» ga 43 vekstår i stedet for 42, så Adas
+  // sluttpunkt lå 5,20 % — presis ett år — over lukket form, mens fasitteksten
+  // under grafen brukte 42/32 år. To konvensjoner på samme skjerm.
   function serie(belop,startAlder,sparAar){
-    const d=[]; let s=0; const mr=F.mndRente(r);
-    for (let a=ADA_START;a<=SLUTT;a++){
+    const d=[0]; let s=0; const mr=F.mndRente(r);
+    for (let a=ADA_START;a<SLUTT;a++){
       if (a>=startAlder && a<startAlder+sparAar)
         s=F.sluttverdiSerie(belop,mr,12,true)+s*(1+r);
       else s=s*(1+r);
@@ -2355,7 +2414,7 @@ MINI.G=(v)=>{
   function simuler(m,w){
     const N=1200, mk=F.miks(w/100);
     const sig=mk.risiko/Math.sqrt(12);
-    const mu=F.drift(mk.avkastning,mk.risiko)/12;
+    const mu=F.mndDrift(mk.avkastning,mk.risiko);
     const sluttverdier=[];
     const r=lagRnd(90210+Math.round(w)*7+m.aar);
     for (let k=0;k<N;k++){
@@ -2418,7 +2477,12 @@ MINI.H=(v)=>{
   // alt på null, og «Neste år» er låst til summen er 100 %.
   let vekt=[0,0,0,0,0,0], runde=0, verdi=START;
   let skygge={konsentrert:START,indeks:START};
-  const r=lagRnd(31337);
+  // Frøet ligger i en variabel fordi «Start på nytt» MÅ nullstille det. Uten
+  // det fikk spilleren nye fem år hvert forsøk, og kunne trykke seg gjennom
+  // uten å flytte en brikke: målt BESTÅTT·BESTÅTT·BESTÅTT·BESTÅTT·STRYK·STRYK
+  // med samme vekting seks ganger.
+  const FRO=31337;
+  let r=lagRnd(FRO);
   const logg=[];
 
   v.appendChild(U.hode('OPPDRAG H','Ikke alt i én kurv',
@@ -2475,20 +2539,66 @@ MINI.H=(v)=>{
     if (runde>=5) avslutt();
     spillEl.scrollTop=spillEl.scrollHeight;
   });
+  // Fem år er støy. Å kreve «over startverdien» etter fem år er å kreve flaks:
+  // målt over 20 000 femårsperioder ender 20 % i hver sektor over start i bare
+  // 67 % av dem, og alle seks alternativene har samme forventede avkastning i
+  // modellen — spredning slår «alt i teknologi» bare 55 % av gangene. Det
+  // spredning FAKTISK leverer er nedsiden: 5.-persentilen går fra 37 831 kr
+  // (alt i teknologi) til 75 903 kr (spredt), og standardavviket fra 56 950 til
+  // 25 238. Derfor er kravet nå regelen spilleren styrer selv, og fordelingen
+  // er det som beviser hvorfor regelen er verdt å følge.
+  function fordeling(vekting,N){
+    const rr=lagRnd(90125), ut=[];
+    for (let k=0;k<N;k++){
+      let v=START;
+      for (let runde=0;runde<5;runde++){
+        const mkt=0.09+gauss(rr)*0.07;
+        const a=[0,1,2,3,4].map(()=>mkt+gauss(rr)*0.16);
+        const ramt=Math.floor(rr()*5); a[ramt]-=0.20+rr()*0.25;
+        a[5]=a.reduce((x,y)=>x+y,0)/5;
+        let ny=0; vekting.forEach((w,i)=>{ ny+=v*(w/100)*(1+a[i]); }); v=ny;
+      }
+      ut.push(v);
+    }
+    ut.sort((a,b)=>a-b);
+    const snitt=ut.reduce((a,b)=>a+b,0)/N;
+    return {median:ut[Math.floor(N*0.5)], p5:ut[Math.floor(N*0.05)],
+            p95:ut[Math.floor(N*0.95)],
+            std:Math.sqrt(ut.reduce((a,b)=>a+(b-snitt)*(b-snitt),0)/N)};
+  }
   function avslutt(){
-    const ok = verdi>=START && Math.max(...vekt.slice(0,5))<=40;
+    const maks=Math.max(...vekt.slice(0,5));
+    const ok = maks<=40;
     svar.innerHTML='';
-    svar.appendChild(U.kort('ETTER FEM ÅR',U.tab(['Portefølje','Slutt','Endring'],[
+    svar.appendChild(U.kort('DE FEM ÅRENE DU SÅ',U.tab(['Portefølje','Slutt','Endring'],[
       ['<b>Din</b>','<b>'+kr(verdi)+'</b>','<b>'+(verdi>=START?'+':'−')+nf1.format(Math.abs(verdi/START-1)*100)+' %</b>'],
       ['Alt i teknologi',kr(skygge.konsentrert),(skygge.konsentrert>=START?'+':'−')+nf1.format(Math.abs(skygge.konsentrert/START-1)*100)+' %'],
       ['Alt i globalt indeksfond',kr(skygge.indeks),(skygge.indeks>=START?'+':'−')+nf1.format(Math.abs(skygge.indeks/START-1)*100)+' %']
-    ])));
+    ]),U.tips('Fem år er ett utfall. Trykk «Start på nytt» og du får de <i>samme</i> '+
+      'fem årene om igjen, så du kan endre fordelingen og se hva den gjorde, i stedet '+
+      'for å prøve deg til en heldig periode.')));
+    // Det som faktisk avgjør: fordelingen over 2 000 femårsperioder
+    const NP=2000;
+    const din=fordeling(vekt,NP), tek=fordeling([0,0,0,100,0,0],NP),
+          ind=fordeling([0,0,0,0,0,100],NP);
+    svar.appendChild(U.kort('OG '+nf0.format(NP)+' ANDRE FEMÅRSPERIODER MED SAMME FORDELING',
+      U.tab(['Fordeling','Median','I 5 av 100 under','I 5 av 100 over','Svingning'],[
+        ['<b>Din</b>','<b>'+kr(din.median)+'</b>','<b>'+kr(din.p5)+'</b>',kr(din.p95),kr(din.std)],
+        ['Alt i teknologi',kr(tek.median),kr(tek.p5),kr(tek.p95),kr(tek.std)],
+        ['Alt i globalt indeksfond',kr(ind.median),kr(ind.p5),kr(ind.p95),kr(ind.std)]
+      ]),
+      U.tips('<b>Se på hvilken kolonne som endrer seg.</b> Medianen er nesten den '+
+        'samme for alle tre: i denne modellen har hver sektor samme forventede '+
+        'avkastning, så spredning gir deg ikke mer. Det den gir deg, står i de to '+
+        'siste kolonnene: nedsiden og svingningen. Alt i teknologi kan gi '+
+        kr(tek.p95)+', og det er nettopp derfor det også kan gi '+kr(tek.p5)+'.')));
     const r1=F.porteføljerisiko(1,0.35,0.25), r5=F.porteføljerisiko(5,0.35,0.25),
           r30=F.porteføljerisiko(30,0.35,0.25), rInf=Math.sqrt(0.35*0.35*0.25);
     svar.appendChild(fasit(ok,
-      ok?'Du kom gjennom, og du kom gjennom spredt.'
-        :(verdi<START?'Du endte under startverdien.':'Du kom over, men med '+
-           Math.max(...vekt.slice(0,5))+' % i én sektor. Det gikk bra denne gangen.'),
+      ok?'Fordelingen holder: største enkeltsektor '+maks+' %, og nedsiden din er '+
+         kr(din.p5)+' mot '+kr(tek.p5)+' for den som satset alt på én.'
+        :'Du har '+maks+' % i én sektor. Se på 5.-persentilen din i tabellen over. '+
+         'Det er den konsentrasjonen koster, uansett hvordan disse fem årene gikk.',
       '<b>Legg merke til én ting i modellen:</b> indeksfondet er ikke noe annet enn de fem '+
       'sektorene likevektet. Derfor gir «20 % i hver sektor» og «alt i indeksfondet» nøyaktig '+
       'samme resultat. Indeksfondet <i>er</i> den spredte kurven, ferdig pakket og billigere '+
@@ -2508,6 +2618,7 @@ MINI.H=(v)=>{
   }
   v.appendChild(U.fot(kjorKnapp,U.knapp('Start på nytt',()=>{
     runde=0; verdi=START; skygge={konsentrert:START,indeks:START}; logg.length=0;
+    r=lagRnd(FRO);                       // samme fem år om igjen, ikke nye
     loggT.innerHTML=''; svar.innerHTML=''; delete svar.dataset.lost; tegnSum();
   },'sek')));
   v.appendChild(loggK); v.appendChild(svar);
@@ -2599,19 +2710,47 @@ MINI.I=(v)=>{
 // Panikkprøven: det eneste oppdraget der du kan gjøre alt riktig og
 // likevel synes det er vondt. Fast bane, så alle får samme prøve.
 MINI.J=(v)=>{
-  // Tretti års månedsavkastning, håndlagd så fire krakk ligger på faste steder.
+  // Banen er KONSTRUERT, ikke tilfeldig — og den er konstruert til å oppfylle
+  // det fasiten påstår om den.
+  //
+  // Første utgave hadde fall på rundt 55 % (sju måneder à −7,5 til −12 %) og
+  // opphentinger på +44 % (tretten måneder à +1,2 til +3,2 %). Hver krakksyklus
+  // ganget dermed indeksen med 0,64. Målt: TRE AV FIRE fall kom aldri tilbake
+  // til forrige topp, tretti år ga 2,68 % nominelt = −0,02 % realt, og
+  // spilleren som gjorde alt riktig endte med 818 000 kr i kjøpekraft av
+  // 1 080 000 innskutt. Fasiten påsto samtidig at «alle fire fallene i denne
+  // banen hentet seg inn igjen». Oppdraget som skal vise at man skal sitte
+  // stille, kjørte altså på den ene banen der det ikke lønner seg.
+  //
+  // Nå: fire fall med historisk plausible dybder, hver med en opphenting som
+  // faktisk tar igjen forrige topp, og en grunndrift som LØSES numerisk slik at
+  // de tretti årene lander på spillets egen forventning. Ingen hardkodet drift:
+  // endres SATSER, retuner banen seg selv. test-oppdrag.js måler begge
+  // påstandene — at alle fire henter seg inn, og at avkastningen treffer.
   const BANE=(()=>{
-    const r=lagRnd(19291024), d=[];
-    const KRAKK=[42,116,205,289];      // måned nr. der fallet starter
-    for (let m=0;m<360;m++){
-      let x=0.0055+gauss(r)*0.036;
-      for (const k of KRAKK){
-        if (m>=k && m<k+7) x=-0.075-Math.abs(gauss(r))*0.045;
-        if (m>=k+7 && m<k+20) x=0.012+Math.abs(gauss(r))*0.02;
+    const KRAKK=[42,116,205,289];          // måned nr. der fallet starter
+    const DYBDE=[0.38,0.45,0.30,0.34];     // dot-com, finanskrise, rentesjokk, pandemi
+    const FALL=7, OPP=18;                  // måneder ned, måneder opp
+    const sig=SATSER.volAksjer/Math.sqrt(12);
+    const maal=F.nominell(SATSER.realAksjer,SATSER.kpi);
+    const lagBane=(mu)=>{
+      const r=lagRnd(19291024), d=[];
+      for (let m=0;m<360;m++){
+        let x=mu+sig*gauss(r);
+        for (let i=0;i<KRAKK.length;i++){
+          const k=KRAKK[i], dyp=DYBDE[i];
+          if (m>=k && m<k+FALL) x=Math.pow(1-dyp,1/FALL)-1-Math.abs(gauss(r))*0.012;
+          else if (m>=k+FALL && m<k+FALL+OPP) x=Math.pow(1/(1-dyp),1/OPP)-1+gauss(r)*0.010;
+        }
+        d.push(x);
       }
-      d.push(x);
-    }
-    return {d,KRAKK};
+      return d;
+    };
+    const annualisert=(d)=>{ let n=1; d.forEach(x=>n*=(1+x)); return Math.pow(n,1/30)-1; };
+    let lo=0, hi=0.03, mu=0;
+    for (let i=0;i<50;i++){ mu=(lo+hi)/2; if (annualisert(lagBane(mu))<maal) lo=mu; else hi=mu; }
+    const d=lagBane(mu);
+    return {d, KRAKK, FALL, aarlig:annualisert(d)};
   })();
   const INN=3000, TORT_KRUTT=INN*6;
   let m=0, verdi=0, kontant=0, iMarked=true, nerve=0, valgTatt=[], kjorer=false, tilbakeIMnd=-1;
@@ -2673,16 +2812,22 @@ MINI.J=(v)=>{
   function kjor(){
     if (kjorer) return; kjorer=true;
     const stopp=nesteKrakk();
-    const til = stopp!==undefined ? stopp+6 : 360;
+    // Valget skal komme på BUNNEN, siste måned av fallet. steg(4) bommet med
+    // én til to måneder, så kortet «Markedet faller — hva gjør du?» dukket opp
+    // etter at kursene alt hadde snudd. Nå går siste biten én måned av gangen.
+    const til = stopp!==undefined ? stopp+BANE.FALL-1 : 360;
     const timer=setInterval(()=>{
-      steg(4);
+      steg(m+4<=til ? 4 : 1);
       if (m>=til||m>=360){ clearInterval(timer); kjorer=false;
         if (m>=360) avslutt(); else spor(); }
     },26);
   }
   function spor(){
     sfx('krakk');
-    const fall=(verdi/(dinHist[Math.max(0,dinHist.length-4)]||1)-1);
+    // Sammenlign likt med likt: dinHist inneholder kruttet, verdi gjør det ikke.
+    // Uten dette viste kortet −46 % der det faktiske fallet var −39 %.
+    const naa=verdi+kontant+kruttIgjen;
+    const fall=(naa/(dinHist[Math.max(0,dinHist.length-4)]||1)-1);
     valgK.innerHTML='';
     const kk=U.kort('MARKEDET FALLER',U.el('div','mlead',
       'Avisene skriver at «dette er annerledes». Porteføljen din er ned rundt '+
@@ -2749,8 +2894,13 @@ MINI.J=(v)=>{
               : 'Du satt gjennom alle fire. Det er svaret.')
         : 'Du endte '+kr(ref-min)+' bak den som ikke gjorde noe, etter å ha solgt '+
           solgt+' gang'+(solgt===1?'':'er')+'.',
-      'Alle fire fallene i denne banen hentet seg inn igjen, akkurat som alle historiske fall '+
-      'i et bredt globalt marked har gjort så langt. Problemet med å selge er ikke salget. '+
+      'Alle fire fallene i denne banen hentet seg inn igjen. Banen er bygget slik, og '+
+      'sjekken som beviser det ligger i testpakka: hvert fall er tilbake på forrige topp '+
+      'før neste kommer. De tretti årene lander på <b>'+pst2(BANE.aarlig)+' nominelt</b>, '+
+      'som er '+pst2(SATSER.realAksjer)+' realt, altså spillets egen forventning og ikke en '+
+      'heldig bane. Slik har alle historiske fall i et bredt globalt marked gjort så langt, '+
+      'men merk at «så langt» er hele garantien som finnes.<br><br>'+
+      'Problemet med å selge er ikke salget. '+
       'Det er at ingen ringer og sier at bunnen var i går. Man kommer inn igjen etter at '+
       'oppgangen har startet, og den oppgangen er der mesteparten av avkastningen ligger.<br><br>'+
       '<b>Dette er hele forskjellen mellom kunnskap og atferd.</b> Nils kan alt du kan. '+
@@ -2785,7 +2935,7 @@ MINI.K=(v)=>{
      r:'vanlig',f:'Rentefond kan ikke ligge på ASK. Bare aksjer og fond med mer enn 80 % aksjeandel får plass der. Pengemarkedsfond og obligasjonsfond må ligge på en vanlig fondskonto, og avkastningen beskattes som renteinntekt med '+pst2(SATSER.alminnelig)+'.',
      galt:{ask:'Dette er den vanligste misforståelsen om ASK: rentefond får ikke ligge der. Kontoen tar bare aksjer og aksjefond over 80 %.',ips:'IPS kan holde rentefond, men er låst til 62 og har et årlig tak på '+kr(SATSER.ipsMaks)+'.',hoyrente:'Et alternativ, men et rentefond og en sparekonto er ikke det samme: fondet har kursrisiko og potensielt høyere avkastning.',bsu:'Hun er 45. Aldersgrensen er '+SATSER.bsuAlder+'.'}},
     {n:'Ahmed, 52 år',t:'Tjener '+kr(920000)+' og har allerede fylt ASK-en. Han vil ha noe som er fritatt formuesskatt, og han trenger ikke pengene før han er 65.',
-     r:'ips',f:'IPS er den eneste kontoen her som er <b>fritatt formuesskatt</b>, og den eneste der avkastningen ikke beskattes løpende. Fradraget på '+kr(SATSER.ipsMaks*SATSER.alminnelig)+' i året er hyggelig, men det er ikke der gevinsten ligger: fradraget gis i <i>alminnelig</i> inntekt med '+pst2(SATSER.alminnelig)+', og uttaket beskattes med de samme '+pst2(SATSER.alminnelig)+'. Inn og ut er symmetrisk, så trinnet ditt har ingenting å si. At han er 52, betyr at bindingen til '+SATSER.ipsAlder+' år koster ham lite.',
+     r:'ips',f:'IPS er den eneste kontoen her som er <b>fritatt formuesskatt</b>. Utsatt skatt på avkastningen får han også på ASK, men den har han alt fylt. Fradraget på '+kr(SATSER.ipsMaks*SATSER.alminnelig)+' i året er hyggelig, men det er ikke der gevinsten ligger: fradraget gis i <i>alminnelig</i> inntekt med '+pst2(SATSER.alminnelig)+', og uttaket beskattes med de samme '+pst2(SATSER.alminnelig)+'. Inn og ut er symmetrisk, så trinnet ditt har ingenting å si. At han er 52, betyr at bindingen til '+SATSER.ipsAlder+' år koster ham lite.',
      galt:{ask:'Han har alt fylt den, og ASK gir verken formuesskattefritak eller fradrag.',vanlig:'Verken fradrag, formuesskattefritak eller skatteutsettelse.',hoyrente:'Tretten års horisont på sparekonto er for defensivt.',bsu:'Aldersgrensen er '+SATSER.bsuAlder+'.'}},
     {n:'Nora, 29 år',t:'Skal ha bryllup om åtte måneder og har spart opp '+kr(180000)+' til det.',
      r:'hoyrente',f:'Åtte måneder er ingen investeringshorisont. Pengene har ett krav: at de er der når regningen kommer. Kursrisiko er ren nedside her.',
@@ -2915,7 +3065,10 @@ MINI.L=(v)=>{
     const b=U.el('button','valgkort'); b.dataset.v=x.v;
     b.innerHTML='<div class="vt">'+x.t+'</div>';
     b.onclick=()=>{
-      const ram=F.laaneramme(bruttoAar,300000);
+      // annenGjeld MÅ sendes inn: fasiten under sier at gjeldstaket gjelder ALL
+      // gjeld, og Meglerkontoret bak samme dør regner det med. Uten dette viste
+      // de to skjermene ulikt tak for samme spiller.
+      const ram=F.laaneramme(bruttoAar,300000,undefined,gjeld);
       const riktig=ram.bindende;
       if (x.v===riktig){
         b.classList.add('valgt'); [...g.children].forEach(y=>y.disabled=true);
@@ -2976,7 +3129,7 @@ MINI.L=(v)=>{
   opg.appendChild(g); v.appendChild(opg); v.appendChild(svar);
 
   function tegn(){
-    const ram=F.laaneramme(inntekt,ek);
+    const ram=F.laaneramme(inntekt,ek,undefined,gjeld);
     const navn={gjeldsgrad:'gjeldsgraden',egenkapital:'egenkapitalen',
                 betjeningsevne:'betjeningsevnen'};
     ut.innerHTML='';
@@ -3149,7 +3302,10 @@ MINI.N=(v)=>{
     'Signe har nøkkelen til toppetasjen. Herfra ser du førti år på én gang. '+
     'Du setter de seks valgene du har lært om i byen, og maskinen kjører dem gjennom '+
     'det samme markedet du så på Børstorget, med krakk, gebyrer, skatt og inflasjon. '+
-    '<b>Klar oppgaven: '+kr(MAAL_REAL)+' i dagens kjøpekraft etter skatt.</b>'));
+    '<b>Klar oppgaven: '+kr(MAAL_REAL)+' i dagens kjøpekraft etter skatt</b>, '+
+    'som <b>medianen</b> av førtiårsløpene maskinen kjører, ikke som ett heldig løp. '+
+    'Det er et strengt krav, og det skal det være: seks millioner i dagens penger '+
+    'koster omtrent en femtedel av nettolønna, hver måned, i førti år.'));
 
   const k=U.kort('DE SEKS VALGENE');
   k.appendChild(U.skyv('sr','Sparerate av netto lønn',0.02,0.40,0.01,sparerate,
@@ -3189,38 +3345,58 @@ MINI.N=(v)=>{
   })));
   const svar=U.el('div'); v.appendChild(svar);
 
-  function kjor(){
-    const r=lagRnd(556677);
+  // Én bane er ikke et svar. Første utgave kjørte lagRnd(556677) og viste det
+  // ene løpet som RESULTATET av spillerens seks valg. Målt mot 4 000 tilfeldige
+  // baner lå den på 83.–84. persentil uansett innstilling — systematisk, ikke
+  // tilfeldig. Konsekvensen: finalen lærte bort at 13 % sparerate når seks
+  // millioner med 80 % aksjer, mens medianbanen krever 20 %. Sju prosentpoeng
+  // av nettolønn, 2 100 kr i måneden, på den ene skjermen som finnes for å
+  // svare på hva valgene dine er verdt.
+  //
+  // Nå kjøres 400 løp, og det er MEDIANEN som gjelder — samme framgangsmåte som
+  // oppdrag G bruker på sine tre sparemål. 5.- og 95.-persentilen står i
+  // tabellen, så spilleren ser spredningen og ikke bare midtpunktet.
+  // Frøene er faste (556677 + i·7919), så medianen er deterministisk: spilleren
+  // ser aldri tallet hoppe av seg selv. Målt kostnad for 500 løp à 480 måneder:
+  // 20 ms per skyvedrag, mot 43 ms for oppdrag G. Testpakka krever under 400.
+  const N_LOP=500;
+  function kjor(fro){
+    const r=lagRnd(fro);
     const mk=F.miks(aksje/100);
     const gebyr=indeks?SATSER.gebyrIndeks:SATSER.gebyrAktiv;
     const sig=mk.risiko/Math.sqrt(12);
-    const mu=F.drift(mk.avkastning+SATSER.kpi,mk.risiko)/12-gebyr/12;
+    const mu=F.mndDrift(F.nominell(mk.avkastning,SATSER.kpi),mk.risiko)-gebyr/12;
     let s=0, innskuddSum=0, skattUnderveis=0, realisertSum=0, hist=[0], lonnVekst=1;
-    let uhellskostnad=0, forrigeAar=0;
+    let uhellskostnad=0, aarsGevinst=0, bruttoGevinst=0;
     for (let m=0;m<AAR*12;m++){
       if (m>0&&m%12===0) lonnVekst*=1.032;                  // nominell lønnsvekst
       const spar=NETTO*lonnVekst*(livsstil2?sparerate*Math.pow(0.988,m/12):sparerate);
       s+=spar; innskuddSum+=spar;
       const avk=mu+sig*gauss(r);
-      const gevinst=s*avk; s+=gevinst;
-      // uten ASK: gevinsten beskattes løpende ved rebalansering/bytte — modellert som
-      // at en tredjedel av årets gevinst realiseres
+      const gevinst=s*avk; s+=gevinst; aarsGevinst+=gevinst; bruttoGevinst+=gevinst;
       // Uten ASK utløses skatt hver gang man selger for å rebalansere eller bytte
-      // fond. En femtedel av porteføljens ÅRLIGE avkastning antas realisert.
-      // Det realiserte beløpet hever inngangsverdien — ellers beskattes det på nytt
-      // ved uttak, og modellen ville påstå 55 % effektiv skatt på gevinsten.
+      // fond. En femtedel av årets AVKASTNING antas realisert. Det realiserte
+      // beløpet hever inngangsverdien — ellers beskattes det på nytt ved uttak,
+      // og modellen ville påstå 55 % effektiv skatt på gevinsten.
+      //
+      // NB: her sto «s - forrigeAar», som er årets INNSKUDD PLUSS gevinst.
+      // Spilleren betalte dermed 37,84 % skatt på sine egne sparepenger, og
+      // første år var forrigeAar=0, så en femtedel av hele saldoen ble regnet
+      // som realisert gevinst. Målt: 221 189 kr for mye i skatt, og ASK-fordelen
+      // oppdraget skal vise ble 56 % for stor.
       if (!ask && m%12===11){
-        const aarsgevinst=s-forrigeAar;
-        if (aarsgevinst>0){
-          const realisert=aarsgevinst*0.20;
+        if (aarsGevinst>0){
+          const realisert=aarsGevinst*0.20;
           const sk=realisert*SATSER.aksjeskatt;
           s-=sk; skattUnderveis+=sk; realisertSum+=realisert;
         }
-        forrigeAar=s;
       }
+      if (m%12===11) aarsGevinst=0;
       // Uhellene kommer UANSETT — bufferen endrer bare hvordan de betales.
       // Med buffer: en utgift. Uten: forbrukslån til 22,9 % oppå.
-      if (m%7===0){
+      // m%7 traff m=0, altså et uhell før det fantes penger: 69 uhell i stedet
+      // for 68, og negativ fondssaldo de første månedene ved lav sparerate.
+      if (m>0 && m%7===0){
         const koster=4200;
         const faktisk=buff ? koster : koster*1.55;
         s-=faktisk; uhellskostnad+=faktisk;
@@ -3236,10 +3412,23 @@ MINI.N=(v)=>{
     const nominell=s-skattUt;
     const real=F.kjopekraft(nominell,SATSER.kpi,AAR);
     return {hist,nominell,real,innskuddSum,gevinstTotal,skattUt,skattUnderveis,
-            uhellskostnad,mk,gebyr,skjerming};
+            realisertSum,uhellskostnad,mk,gebyr,skjerming,bruttoGevinst};
+  }
+  // 400 løp, sortert på sluttbeløp i dagens kjøpekraft. Returnerer medianløpet
+  // (som er en ekte bane, ikke et gjennomsnitt av baner — grafen skal vise noe
+  // som faktisk kan skje), pluss persentilene og treffandelen.
+  function kjorMange(){
+    const lop=[];
+    for (let i=0;i<N_LOP;i++) lop.push(kjor(556677+i*7919));
+    lop.sort((a,b)=>a.real-b.real);
+    return {median:lop[Math.floor(N_LOP*0.5)],
+            p5:lop[Math.floor(N_LOP*0.05)].real,
+            p95:lop[Math.floor(N_LOP*0.95)].real,
+            traff:lop.filter(x=>x.real>=MAAL_REAL).length/N_LOP};
   }
   function tegn(){
-    const x=kjor();
+    const alle=kjorMange();
+    const x=alle.median;
     const nom=x.hist.map(v=>v);
     const realS=x.hist.map((v,i)=>F.kjopekraft(v,SATSER.kpi,i));
     linjegraf(c,[
@@ -3247,16 +3436,23 @@ MINI.N=(v)=>{
       {n:'Realt (dagens kjøpekraft)',d:realS,f:'#2fbf7a',fyll:'rgba(47,191,122,.10)'}
     ],{fyll:true,x0:0,xmerke:'år'});
     ut.innerHTML='';
-    ut.appendChild(U.tab(['Etter '+AAR+' år','Beløp'],[
+    // Kolonnen skal kunne legges sammen. Første utgave viste «Avkastning» netto
+    // etter uhell OG uhellene som egen minuslinje, så tabellen bommet med
+    // nøyaktig uhellskostnaden — og skjermingsfradraget sto som en pengelinje
+    // enda det ikke er penger ut, bare et lavere skattegrunnlag.
+    ut.appendChild(U.tab(['Medianen av '+N_LOP+' løp på '+AAR+' år','Beløp'],[
       ['Du har satt inn',kr(x.innskuddSum)],
-      ['Avkastning',kr(x.gevinstTotal)],
-      ['Skjermingsfradrag (anslag, se under)','−'+kr(x.skjerming)],
-      ['Skatt ved uttak ('+pst2(SATSER.aksjeskatt)+' av gevinst utover skjerming)','−'+kr(x.skattUt)],
-      x.skattUnderveis>0?['Skatt betalt underveis (ikke ASK)','−'+kr(x.skattUnderveis)]:null,
+      ['Avkastning etter gebyr','+'+kr(x.bruttoGevinst)],
       ['Uhell underveis'+(buff?' (dekket av bufferen)':' (måtte lånefinansieres)'),
        '−'+kr(x.uhellskostnad)],
+      x.skattUnderveis>0?['Skatt betalt underveis (ikke ASK)','−'+kr(x.skattUnderveis)]:null,
+      ['Skatt ved uttak ('+pst2(SATSER.aksjeskatt)+' av gevinst utover et '+
+        'skjermingsfradrag på '+kr(x.skjerming)+')','−'+kr(x.skattUt)],
       ['<b>Etter skatt, i kroner</b>','<b>'+kr(x.nominell)+'</b>'],
       ['<b>Etter skatt, i dagens kjøpekraft</b>','<b>'+kr(x.real)+'</b>'],
+      ['I 5 av 100 løp fikk du mindre enn',kr(alle.p5)],
+      ['I 5 av 100 løp fikk du mer enn',kr(alle.p95)],
+      ['Løp som nådde '+kr(MAAL_REAL),nf0.format(alle.traff*100)+' %'],
       ['Forventet realavkastning i valgt miks',pst2(x.mk.avkastning)+' før gebyr'],
       ['Gebyr',pst2(x.gebyr)]
     ].filter(Boolean)));
@@ -3265,14 +3461,17 @@ MINI.N=(v)=>{
       'så et eksakt tall krever hele innskuddshistorikken. Her er det regnet som '+
       'innskutt beløp × skjermingsrenten ('+pst2(SATSER.skjermingsrente)+', fastsatt for '+
       SATSER.skjermingsrenteAar+') × '+AAR+' år × '+nf0.format(SKJERM_ANSLAG*100)+' %, '+
-      'som treffer omtrent midt på for jevn månedssparing. Det trekker i din favør, '+
-      'ikke mot deg, så sluttbeløpet er om noe litt for høyt.'));
+      'som treffer omtrent midt på for jevn månedssparing. '+
+      'Anslaget er <b>konservativt</b>: regnet eksakt, med framføring av ubenyttet '+
+      'skjerming, ville faktoren ligget mellom 0,39 og 0,60. Fradraget her er altså '+
+      'for lite, skatten for høy, og sluttbeløpet om noe litt for <b>lavt</b>.'));
     const ok=x.real>=MAAL_REAL;
     ut.appendChild(U.tips(ok
       ? '<span class="pill g">Målet er nådd</span> '+kr(x.real)+' i dagens kjøpekraft.'+
         (spakTrukket?'':' Trekk i spaken under for å gjøre det gjeldende.')
       : '<span class="pill y">'+kr(MAAL_REAL-x.real)+' igjen til målet</span>. '+
-        'Prøv en høyere sparerate, høyere aksjeandel, eller billigere fond.'));
+        'Prøv en høyere sparerate, høyere aksjeandel, eller billigere fond. '+
+        'Husk at det er <b>medianen</b> som gjelder, ikke et heldig løp.'));
     if (ok && spakTrukket && !svar.dataset.lost){
       svar.dataset.lost='1';
       svar.appendChild(fasit(true,
@@ -3280,11 +3479,15 @@ MINI.N=(v)=>{
         '<b>Se på hva som faktisk gjorde jobben.</b> Av de '+kr(x.nominell)+' du endte med, '+
         'satte du selv inn '+kr(x.innskuddSum)+'. Resten er avkastning på avkastning. '+
         'Ingen av de seks valgene var geniale. De var bare rimelige, og gjentatt i førti år.<br><br>'+
+        '<b>Og legg merke til hva tallet er.</b> Det er medianen av '+N_LOP+' løp, ikke ett '+
+        'løp. I fem av hundre endte du under '+kr(alle.p5)+', i fem av hundre over '+
+        kr(alle.p95)+'. Sparingen kan du bestemme; utfallet kan du bare gjøre sannsynlig.<br><br>'+
         'Det du har lært i Renteriket, i tretten setninger:<br>'+
         '1. Budsjettet står i netto, ikke i brutto.<br>'+
         '2. Sparingen trekkes først, ellers blir den null.<br>'+
         '3. Bufferen gjør uhell til utgifter i stedet for lån.<br>'+
-        '4. Tid slår beløp: Adas ti år slo Bodils trettito.<br>'+
+        '4. Tid er billigere enn beløp: Ada kjøpte samme sluttsum for under halvparten '+
+        'av pengene.<br>'+
         '5. Dyreste gjeld først. Renta er prisen på tid.<br>'+
         '6. Regn i kjøpekraft. Kroner lyver over tid.<br>'+
         '7. Horisonten bestemmer aksjeandelen.<br>'+
@@ -3318,7 +3521,11 @@ function pengeflytt(v,tittel,fra,til,maks,utfor,forklaring){
   let belop=Math.min(maks,Math.round(maks/2/1000)*1000);
   if (maks<1000){ k.appendChild(U.tips(forklaring+'<br><br><b>Du har ikke nok til dette nå.</b>'));
     return k; }
-  const sk=U.skyv('flytt','Beløp',0,Math.floor(maks/1000)*1000,1000,belop,x=>kr(x),x=>belop=x);
+  // Id-en må være unik: Fondsbutikken og banken viser to pengeflytt-kort på
+  // samme skjerm, og med samme id fikk begge skyverne id «flytt».
+  // getElementById traff da bare den første, og den andre var ikke nåbar.
+  const sk=U.skyv('flytt-'+fra+'-'+til,'Beløp',0,Math.floor(maks/1000)*1000,1000,
+    belop,x=>kr(x),x=>belop=x);
   k.appendChild(sk);
   k.appendChild(U.tips(forklaring));
   k.appendChild(U.fot(U.knapp('Flytt '+fra+' → '+til,()=>{
@@ -3401,8 +3608,14 @@ HUS.jobb=(v)=>{
 HUS.kafe=(v)=>{
   const KAFFE=52;
   v.appendChild(U.hode('KAFÉ KRONA','Kaffe og kjøpekraft',
-    'Ingrid har servert kaffe her i tretti år. «Den kostet tolv kroner da jeg begynte. '+
-    'Nå koster den '+kr(KAFFE)+'. Jeg har ikke satt opp prisen. Det er kronene som har blitt mindre.»'));
+    'Ingrid har servert kaffe her i tjue år, og hun har hørt historien fra sin mor før det. «Den kostet tolv kroner da jeg begynte. '+
+    'Nå koster den '+kr(KAFFE)+'. Jeg har ikke satt opp prisen mer enn prisene ellers.»'+
+    '<br><br>Regn på det: '+kr(12)+' til '+kr(KAFFE)+' er '+
+    pst2(Math.pow(KAFFE/12,1/55)-1)+' i året over '+
+    nf0.format(Math.log(KAFFE/12)/Math.log(1+SATSER.kpi))+' år, altså omtrent '+
+    pst2(SATSER.kpi)+', altså inflasjon og ingenting annet. '+
+    'Med dagens KPI tar en firedobling av prisen '+
+    nf0.format(Math.log(4)/Math.log(1+SATSER.kpi))+' år.'));
   v.appendChild(U.kort('KAFFEPRISEN OVER TID',U.tab(['År','Pris på én kaffe'],
     [0,5,10,20,30].map(a=>[String(2026+a),kr(F.prisFram(KAFFE,SATSER.kpi,a))]))));
   v.appendChild(U.kort('EN KAFFE HVER DAG',
@@ -3465,8 +3678,12 @@ HUS.bank=(v)=>{
   v.appendChild(U.kort('STATUS',U.tab(['Konto','Beløp'],[
     ['Kontanter',kr(kontanter)],['Buffer',kr(buffer)],
     ['Anbefalt buffer (3 mnd utgifter)',kr(utgiftSum()*3)],
-    ['Portefølje',kr(portefolje)],['Gjeld',gjeld>1?kr(gjeld):'ingen']
-  ])));
+    ['Portefølje',kr(portefolje)],['Gjeld',gjeld>1?kr(gjeld):'ingen'],
+    ['<b>Formue</b>','<b>'+kr(formue())+'</b>'],
+    ['<b>Samme formue i kroner fra du begynte</b>','<b>'+kr(formueReal())+'</b>']
+  ]),U.tips('De to siste radene er samme penger. Forskjellen er '+
+    pst2(SATSER.kpi)+' inflasjon i året, og den er grunnen til at kroner ikke er '+
+    'et godt mål på om du kommer noen vei.')));
   v.appendChild(pengeflytt(v,'SETT INN I BUFFEREN','kontanter','buffer',kontanter,
     b=>{kontanter-=b;buffer+=b;},
     'Bufferen ligger på høyrentekonto og er tilgjengelig i morgen. '+
@@ -3627,9 +3844,15 @@ HUS.visning=(v)=>{
     ['Dokumentavgift ('+pst2(SATSER.dokumentavgift)+')',kr(F.dokumentavgift(PRIS,false))],
     ['Tinglysing og gebyrer',kr(1000)],
     ['<b>Sum du må ha i banken</b>','<b>'+kr(PRIS*SATSER.egenkapital+F.dokumentavgift(PRIS,false)+1000)+'</b>']
-  ]),U.tips('Dokumentavgiften faller bort ved kjøp av <b>nybygg som ikke er tatt i bruk</b> '+
-    '(du betaler bare av tomteverdien) og ved kjøp av <b>borettslagsandel</b>, som ligger helt '+
-    'utenfor ordningen. På '+kr(PRIS)+' er det '+kr(F.dokumentavgift(PRIS,false))+' spart.')));
+  ]),U.tips('Dokumentavgiften er lavere ved kjøp av <b>nybygg som ikke er tatt i bruk</b>, '+
+    'der den bare løper på tomteverdien, og faller helt bort ved kjøp av '+
+    '<b>borettslagsandel</b>, som ligger utenfor ordningen.<br><br>'+
+    'På '+kr(PRIS)+' er full avgift '+kr(F.dokumentavgift(PRIS,false))+'. Med tomteverdi '+
+    'anslått til '+nf0.format(SATSER.tomteandelNybygg*100)+' % av prisen, som er et grovt '+
+    'anslag og varierer sterkt med beliggenhet, blir nybyggavgiften '+
+    kr(F.dokumentavgift(PRIS,true))+', altså '+
+    kr(F.dokumentavgift(PRIS,false)-F.dokumentavgift(PRIS,true))+' spart. '+
+    'I borettslag er hele '+kr(F.dokumentavgift(PRIS,false))+' spart.')));
   {
     const renKostnad=netteRente/12+FELLES+PRIS*VEDLIKEHOLD/12+1350;
     const ek=PRIS*SATSER.egenkapital+F.dokumentavgift(PRIS,false);
@@ -3856,9 +4079,19 @@ HUS.fond=(v)=>{
     kr(utgiftSum()*3)+' for deg), betal ned dyr gjeld, og invester det som er langsiktig.'+
     (buffer<utgiftSum()*3?'<br><br><b>Bufferen din er ikke full ennå.</b>':'')));
   if (portefolje>0) v.appendChild(pengeflytt(v,'SELG FOND','portefølje','kontanter',portefolje,
-    b=>{portefolje-=b; kontanter+=b; innskutt=Math.max(0,innskutt-b);},
+    // Skatten MÅ trekkes her. Skjermen lovet 37,84 % på uttak over innskutt
+    // beløp og flyttet så pengene uten å trekke en krone.
+    b=>{
+      const overInnskutt=Math.max(0,b-Math.max(0,innskutt));
+      const gevinstAndel=portefolje>innskutt ? (portefolje-innskutt)/portefolje : 0;
+      const skattbar=Math.min(overInnskutt, b*gevinstAndel);
+      const skatt=Math.round(skattbar*SATSER.aksjeskatt);
+      portefolje-=b; innskutt=Math.max(0,innskutt-b);
+      kontanter+=b-skatt;
+      if (skatt>0) banner('SKATT PÅ UTTAK','−'+kr(skatt)+' ('+pst2(SATSER.aksjeskatt)+' av '+kr(skattbar)+')');
+    },
     'På ASK er uttak opp til innskutt kapital skattefritt. Over det beskattes gevinsten med '+
-    pst2(SATSER.aksjeskatt)+'.'));
+    pst2(SATSER.aksjeskatt)+', og den trekkes med én gang, så du ser hva den koster.'));
   if (!gjort('H') && laastOpp(oppdrag('H')))
     v.appendChild(U.fot(U.knapp('Fru Åkre har hundre brikker (oppdrag H)',
       ()=>aapneMinispill('H',MINI.H))));
@@ -4655,8 +4888,12 @@ function tegnPause(){
   if (pauseFane==='stat'){
     const g=U.el('div','stat');
     const rader=[
-      ['Formue',kr(formue())],['Kontanter',kr(kontanter)],['Buffer',kr(buffer)],
+      ['Formue',kr(formue())],
+      ['Formue i kroner fra du begynte',kr(formueReal())],
+      ['Kontanter',kr(kontanter)],['Buffer',kr(buffer)],
       ['Portefølje',kr(portefolje)],['Gjeld',kr(gjeld)],
+      ['Prisnivå mot start',nf1.format(prisniva()*100)+' %'],
+      ['Faste utgifter nå',kr(utgiftSum())+' /mnd'],
       ['Måneder spilt',String(stat.mnd)],['Skritt gått',nf0.format(stat.skritt)],
       ['Tjent i alt',kr(stat.tjent)],['Brukt i alt',kr(stat.tapt)],
       ['Kaffe kjøpt',String(stat.kaffe)],
@@ -4928,7 +5165,8 @@ window.RR={
   nyMaaned, markedSteg, linjegraf,
   get tilstand(){ return {kontanter,buffer,portefolje,gjeld,innskutt,xp,mnd,indeks,
     pos:[sp.x,sp.y], sone:(sonenPaa(sp.x,sp.y)||{}).id||null,
-    formue:formue(),nivaa:nivaaAv(xp),tittel:tittel(),
+    formue:formue(),formueReal:formueReal(),prisniva:prisniva(),
+    utgiftNaa:utgiftSum(),nivaa:nivaaAv(xp),tittel:tittel(),
     gjort:[...lostGjort],kort:[...funnetKort],besokt:[...besokt],
     harJobb,bruttoAar,kjorer,mAapen,dAapen,pause:pauseEl.style.display==='block',
     frametid,spilltid}; },
