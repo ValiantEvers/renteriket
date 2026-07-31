@@ -532,6 +532,131 @@ console.log('\n=== FONDSBUTIKKEN TREKKER SKATTEN DEN LOVER ===');
   await p.evaluate(()=>RR.lukkAlt());
 }
 
+console.log('\n=== SKYGGEN FØLGER SOLA ===');
+// Hver bygning kastet samme skygge — 7 px høyre, 11 px ned — hele døgnet. På et
+// skjermbilde fra 00:49 pekte skyggene som om sola sto høyt.
+{
+  const les=async (d)=>await p.evaluate(x=>{ RR.settDogn(x); return {...RR.lys(), ...RR.dogn()}; },d);
+  const morgen=await les(0.33), middag=await les(0.50), kveld=await les(0.79), natt=await les(0.02);
+  console.log('    08:00  retning '+morgen.dx.toFixed(2)+','+morgen.dy.toFixed(2)+
+    '  lengde '+morgen.lengde.toFixed(2)+'  styrke '+morgen.styrke.toFixed(2));
+  console.log('    12:00  retning '+middag.dx.toFixed(2)+','+middag.dy.toFixed(2)+
+    '  lengde '+middag.lengde.toFixed(2)+'  styrke '+middag.styrke.toFixed(2));
+  console.log('    19:00  retning '+kveld.dx.toFixed(2)+','+kveld.dy.toFixed(2)+
+    '  lengde '+kveld.lengde.toFixed(2)+'  styrke '+kveld.styrke.toFixed(2));
+  sant('skyggen peker vestover om morgenen', morgen.dx<0);
+  sant('skyggen peker østover om kvelden', kveld.dx>0);
+  sant('skyggen er kortest midt på dagen',
+    middag.lengde<morgen.lengde && middag.lengde<kveld.lengde);
+  sant('skyggen er sterkest midt på dagen',
+    middag.styrke>morgen.styrke && middag.styrke>kveld.styrke);
+  sant('skyggen er nesten borte om natta', natt.styrke<0.15);
+  sant('skyggen har en øvre lengde, den løper ikke løpsk', morgen.lengde<=7.5 && natt.lengde<=7.5);
+}
+
+console.log('\n=== NATTA ER DYPERE I JANUAR ENN I JULI ===');
+{
+  const natt=async (m)=>await p.evaluate(x=>{ RR.settMnd(x); RR.settDogn(0.0); return RR.dogn().natt; },m);
+  const jan=await natt(0), jul=await natt(6);
+  console.log('    midnatt i januar: '+jan.toFixed(2)+' · i juli: '+jul.toFixed(2));
+  sant('lyse sommernetter: juli er grunnere enn januar', jul<jan-0.10);
+  await p.evaluate(()=>RR.settMnd(0));
+}
+
+console.log('\n=== VINDUENE FØLGER ÅPNINGSTID ===');
+// Alle vinduer tentes overalt, så Jobbsenteret lyste like sterkt 02:00 som 10:00.
+{
+  const ved=async (d,id)=>await p.evaluate(([x,i])=>{ RR.settDogn(x); return RR.apentNaa(i); },[d,id]);
+  const r=[
+    ['jobb','Jobbsenteret',0.42,true],  ['jobb','Jobbsenteret',0.08,false],
+    ['kasino','Kasino Fortuna',0.08,true], ['kasino','Kasino Fortuna',0.42,false],
+    ['bors','Børshuset',0.42,true],      ['bors','Børshuset',0.85,false]
+  ];
+  for (const [id,navn,d,vent] of r){
+    const fikk=await ved(d,id);
+    const kl=await p.evaluate(()=>RR.dogn().klokke);
+    sant(navn+' er '+(vent?'åpent':'stengt')+' kl. '+kl, fikk===vent);
+  }
+  await p.evaluate(()=>RR.settDogn(0.42));
+}
+
+console.log('\n=== SEVERDIGHETENE STÅR DER, OG TO AV DEM LESER MARKEDET ===');
+{
+  const sev=await p.evaluate(()=>{
+    const navngitte=RR.PROPS.filter(x=>x.navn);
+    return navngitte.map(x=>({navn:x.navn,t:x.t,x:x.x,y:x.y,
+      blokkert:RR.blokkert(x.x,x.y),
+      sone:(RR.sonenPaa(x.x,x.y)||{}).id||'gate',
+      // kan spilleren stå inntil den? naermeste() krever under max(46, r+34)
+      naabar:!RR.blokkert(x.x,x.y+x.r+20)}));
+  });
+  console.log('    '+sev.length+' navngitte severdigheter:');
+  sev.forEach(x=>console.log('      '+x.navn.padEnd(20)+x.t.padEnd(12)+x.sone.padEnd(9)+
+    (x.blokkert?'':'fri ')+(x.naabar?'· nåbar':'· IKKE NÅBAR')));
+  sant('det finnes minst ti navngitte severdigheter', sev.length>=10);
+  sev.forEach(x=>sant('  '+x.navn+' kan nås fra sør', x.naabar));
+  const soner=new Set(sev.map(x=>x.sone));
+  console.log('    fordelt over: '+[...soner].join(', '));
+  sant('severdighetene står i minst fire ulike bydeler', soner.size>=4);
+  // oksen og bjørnen leser markedStemning
+  const opp=await p.evaluate(()=>{ RR.settStemning(0.6);
+    return {okse:RR.lyser('okse'), bjorn:RR.lyser('bjorn')}; });
+  const ned=await p.evaluate(()=>{ RR.settStemning(-0.6);
+    return {okse:RR.lyser('okse'), bjorn:RR.lyser('bjorn')}; });
+  const rolig=await p.evaluate(()=>{ RR.settStemning(0);
+    return {okse:RR.lyser('okse'), bjorn:RR.lyser('bjorn')}; });
+  sant('oksen lyser i oppgang, bjørnen ikke', opp.okse && !opp.bjorn);
+  sant('bjørnen lyser i nedgang, oksen ikke', ned.bjorn && !ned.okse);
+  sant('ingen av dem lyser når markedet er rolig', !rolig.okse && !rolig.bjorn);
+}
+
+console.log('\n=== INGEN BYDEL ER UTEN GATELYS ===');
+// Ti lykter i hele byen, og fem av åtte bydeler hadde ingen — inkludert
+// Bakgata, den mørkeste. Lyktene genereres nå fra GATER.
+{
+  const d=await p.evaluate(()=>{
+    const lykter=RR.PROPS.filter(x=>x.t==='lykt');
+    const ut=RR.SONER.map(s=>{
+      let verste=0, versteSted=null;
+      for (let x=s.x+50;x<s.x+s.w-50;x+=50) for (let y=s.y+50;y<s.y+s.h-50;y+=50){
+        if (RR.blokkert(x,y)) continue;
+        let naer=1e9;
+        for (const l of lykter){ const dd=Math.hypot(l.x-x,l.y-y); if (dd<naer) naer=dd; }
+        if (naer>verste){ verste=naer; versteSted=[x,y]; }
+      }
+      return {navn:s.navn, verste:Math.round(verste), sted:versteSted};
+    });
+    return {ant:lykter.length, flimmer:lykter.filter(x=>x.flimmer).length, ut};
+  });
+  console.log('    '+d.ant+' lykter i alt, '+d.flimmer+' av dem flimrer (Bakgata)');
+  d.ut.forEach(x=>console.log('      '+x.navn.padEnd(20)+'lengst fra en lykt: '+x.verste+' px'));
+  sant('det er minst førti lykter i byen', d.ant>=40);
+  sant('noen lykter flimrer', d.flimmer>=1);
+  d.ut.forEach(x=>sant('  '+x.navn+' er aldri mer enn 520 px fra en lykt', x.verste<=520));
+}
+
+console.log('\n=== TEGNINGEN HAR HODEPLASS ===');
+// Alt det nye koster noe. Budsjettet ved 60 fps er 16,7 ms.
+{
+  const m=await p.evaluate(()=>{
+    const ut=[];
+    for (const s of RR.SONER){
+      RR.lukkAlt(); RR.flyttTil(s.x+s.w/2, s.y+s.h/2);
+      RR.settDogn(0.42); const dag=RR.maalTegning(30);
+      RR.settDogn(0.03); const natt=RR.maalTegning(30);
+      ut.push({navn:s.navn, dag, natt});
+    }
+    return ut;
+  });
+  const verst=m.reduce((a,x)=>Math.max(a,x.dag,x.natt),0);
+  m.forEach(x=>console.log('      '+x.navn.padEnd(20)+'dag '+x.dag.toFixed(2)+
+    ' ms · natt '+x.natt.toFixed(2)+' ms'));
+  console.log('    tyngste ramme: '+verst.toFixed(2)+' ms av 16,7 — hodeplass ×'+(16.7/verst).toFixed(0));
+  sant('tyngste tegning er under 4 ms', verst<4);
+  sant('det er minst fire ganger hodeplass igjen', 16.7/verst>4);
+  await p.evaluate(()=>RR.settDogn(0.42));
+}
+
 await b.close();
 console.log('\n'+'='.repeat(58));
 console.log(feil? ('✗ '+feil+' feil av '+(ok+feil)) : ('✓ alle '+ok+' sjekker OK'));
