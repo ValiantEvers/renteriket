@@ -568,6 +568,185 @@ console.log('\n=== ETTER ALLE FJORTEN ===');
   await p.evaluate(()=>RR.lukkAlt());
 }
 
+console.log('\n=== INGENTING SKRIVER «NaN» PÅ SKJERMEN ===');
+// Oppdrag F skrev «NaN % nominelt i året» på alle fire valgkortene, live, i
+// tre uker: feltet het `brutto`, kortet leste `s.nom`. Ingen av de 854 andre
+// sjekkene så på teksten som faktisk står der. Denne gjør.
+{
+  const SKROT=[/NaN/,/undefined/,/Infinity/,/\[object Object\]/];
+  const finn=async ()=>await p.evaluate(()=>{
+    const t=document.getElementById('spillinner').innerText;
+    const ut=[];
+    ['NaN','undefined','Infinity','[object Object]'].forEach(o=>{
+      const i=t.indexOf(o);
+      if (i>=0) ut.push(t.slice(Math.max(0,i-40),i+o.length+40).replace(/\n/g,'⏎'));
+    });
+    return ut;
+  });
+  let skitne=0;
+  for (const id of alleOppdrag){
+    await apne(p,id);
+    const f=await finn();
+    if (f.length){ skitne++; console.log('      oppdrag '+id+': '+f[0]); }
+  }
+  sant('ingen av de fjorten oppdragene skriver NaN/undefined/Infinity', skitne===0);
+  // og alle bygningsskjermene, både for en fersk og en ferdig spiller
+  const husIder=await p.evaluate(()=>Object.keys(RR.HUS));
+  let skitneHus=0;
+  for (const fase of ['ferdig','fersk']){
+    if (fase==='fersk') await p.evaluate(()=>RR.sett({harJobb:false,kontanter:0,portefolje:0,gjeld:0}));
+    else await p.evaluate(()=>RR.sett({harJobb:true,kontanter:250000,portefolje:400000,gjeld:30000}));
+    for (const h of husIder){
+      await p.evaluate(()=>RR.lukkAlt());
+      await p.evaluate(i=>RR.aapneMinispill('hus-'+i,RR.HUS[i]),h);
+      await p.waitForTimeout(45);
+      const f=await finn();
+      if (f.length){ skitneHus++; console.log('      '+h+' ('+fase+'): '+f[0]); }
+    }
+  }
+  sant('ingen av bygningsskjermene skriver NaN/undefined/Infinity', skitneHus===0);
+  await p.evaluate(()=>RR.lukkAlt());
+  await p.evaluate(()=>RR.sett({harJobb:true,bruttoAar:456000,kontanter:250000,portefolje:0,gjeld:0}));
+}
+
+console.log('\n=== INGEN OPPDRAG ER LØST I DET DET ÅPNES ===');
+// Regelen står i CLAUDE.md, og både MINI.H og MINI.N har brutt den. MINI.G
+// brøt en mildere versjon: startstillingen [50,50,50] var alt riktig for to av
+// tre mål, så oppdraget løste seg ved å dra ÉN skyver, og spilleren fikk aldri
+// se at pensjonsvinduet begynner på 45 %.
+{
+  let alt=0, ettGrep=0;
+  for (const id of alleOppdrag){
+    await apne(p,id);
+    if (await harSeier(p)){ alt++; console.log('      oppdrag '+id+' var alt løst ved åpning'); }
+    const skyvere=await p.evaluate(()=>
+      [...document.querySelectorAll('#spillinner input[type=range]')].map(e=>
+        ({id:e.id,min:+e.min,maks:+e.max,steg:+e.step,verdi:+e.value})));
+    for (let i=0;i<skyvere.length;i++){
+      const sk=skyvere[i];
+      let vant=false;
+      const steg=Math.max(sk.steg,(sk.maks-sk.min)/40);
+      for (let v=sk.min; v<=sk.maks+1e-9 && !vant; v+=steg){
+        await skyv(p,sk.id,v);
+        await p.waitForTimeout(22);
+        if (await harSeier(p)) vant=true;
+      }
+      await skyv(p,sk.id,sk.verdi);
+      // D er med vilje ett tall: finn Bodils månedsbeløp. De andre skal kreve mer.
+      if (vant && id!=='D'){ ettGrep++;
+        console.log('      oppdrag '+id+' løses ved å flytte bare «'+sk.id+'»'); break; }
+    }
+    await p.evaluate(()=>RR.lukkAlt());
+  }
+  sant('ingen av de fjorten er løst i det de åpnes', alt===0);
+  sant('ingen av dem (unntatt D) løses ved å flytte én enkelt skyver', ettGrep===0);
+}
+
+console.log('\n=== G: INGEN AV DE TRE MÅLENE STARTER RIKTIG ===');
+{
+  await apne(p,'G');
+  // Et mål er oppfylt når kortet viser BEGGE kravene grønne — median og 5.-persentil.
+  const perMaal=await p.evaluate(()=>{
+    const k=[...document.querySelectorAll('#spillinner .kort')].slice(0,3);
+    return k.map(x=>(x.textContent.match(/✓ holder/g)||[]).length);
+  });
+  console.log('    grønne krav per mål ved åpning: '+perMaal.join(' / ')+' (av 2 hver)');
+  sant('ingen av de tre målene er oppfylt ved åpning', perMaal.every(x=>x<2));
+  sant('alle tre målene må flyttes, ikke bare ett', perMaal.filter(x=>x<2).length===3);
+  await p.evaluate(()=>RR.lukkAlt());
+}
+
+console.log('\n=== C: REGNSKAPET BUNNER UT DER TEKSTEN SIER ===');
+// Første utgave påsto at kostnaden «bunner ut rundt tre måneders utgifter»,
+// mens modellens egne tall ga ÉN måned — og det holdt også over 2 000
+// tilfeldige stormår. Grunnen var at stormen bare hadde husholdningsuhell på
+// 2 000–16 000 kr, mens tremånedersregelen handler om å miste inntekten.
+{
+  await apne(p,'C');
+  // Utgiftene leses av skyveren (maks = seks måneders utgifter). Å parse dem ut
+  // av teksten er skjørt: kr() skriver tusenskilletegn som hardt mellomrom.
+  const utg=await p.evaluate(()=>Math.round(+document.getElementById('buf').max/6));
+  console.log('    faste utgifter: '+utg+' kr/mnd');
+  sant('stormen inneholder et inntektstap, ikke bare uhell',
+    /[Pp]ermittert|uten jobb/.test(await tekst(p)));
+  // NB: kr() skriver tusenskille med hardt mellomrom. Normaliser ALT som ikke er
+  // et siffer bort, ellers matcher ikke regexen — det tok to forsøk.
+  const les=async ()=>await p.evaluate(()=>{
+    const t=document.getElementById('spillinner').innerText.replace(/\u00a0|\u202f/g,' ');
+    const i=t.indexOf('SUM KOSTNAD');
+    if (i<0) return null;
+    const linje=t.slice(i,i+80).split('\n').slice(0,2).join(' ');
+    const tall=linje.replace(/SUM KOSTNAD/,'').match(/[\d ]+/);
+    return tall?parseInt(tall[0].replace(/ /g,''),10):null;
+  });
+  const kurve=[];
+  for (let bufferV=0; bufferV<=utg*6; bufferV+=utg/4){
+    await skyv(p,'buf',Math.round(bufferV/5000)*5000);
+    await klikkTekst(p,'Kjør stormen');
+    await p.waitForTimeout(90);
+    kurve.push({mnd:+(Math.round(bufferV/5000)*5000/utg).toFixed(2), sum:await les(),
+                vant:await harSeier(p)});
+  }
+  const gyldig=kurve.filter(k=>k.sum!==null);
+  sant('regnskapet leses for hver bufferstørrelse', gyldig.length===kurve.length);
+  const min=gyldig.reduce((a,x)=>x.sum<a.sum?x:a,gyldig[0]);
+  console.log('    billigste buffer i spillets eget regnskap: '+min.mnd+' mnd ('+min.sum+' kr)');
+  sant('totalkostnaden er lavest på rundt tre måneders utgifter',
+    min.mnd>=2.5 && min.mnd<=3.5);
+  const vinnere=gyldig.filter(k=>k.vant).map(k=>k.mnd);
+  console.log('    vinnervindu: '+(vinnere.join(', ')||'ingen')+' mnd');
+  sant('vinnervinduet inneholder tre måneder', vinnere.includes(3));
+  sant('vinnervinduet er et vindu, ikke alt', vinnere.length>=2 && vinnere.length<=8);
+  sant('en buffer på null vinner ikke', !gyldig.find(k=>k.mnd===0).vant);
+  sant('en buffer på seks måneder vinner ikke', !gyldig.find(k=>k.mnd===6).vant);
+  // «renta løper videre etter at oppdraget er over» skal også TELLES
+  await skyv(p,'buf',0);
+  await klikkTekst(p,'Kjør stormen');
+  await p.waitForTimeout(90);
+  sant('regnskapet viser hvor lenge lånet lever etter året',
+    /Måneder til lånet er nedbetalt/.test(await tekst(p)));
+  await p.evaluate(()=>RR.lukkAlt());
+}
+
+console.log('\n=== HVERT OPPDRAG STÅR BAK KRAVENE SINE ===');
+// HUS.kiosk var den eneste bygningen uten laastOpp()-sjekk. En fersk spiller
+// uten jobb kunne gå til Bakgata, ta oppdrag M og få 450 XP og nivå 2 før
+// Jobbsenteret — mens M står oppført med krav: ['C'].
+{
+  await p.evaluate(()=>RR.nullstill());
+  await p.reload();
+  await p.evaluate(()=>RR.start());
+  await p.waitForTimeout(500);
+  const oppdrag=await p.evaluate(()=>RR.OPPDRAG.map(o=>({id:o.id,krav:o.krav,bygg:o.bygg})));
+  let apne_for_tidlig=0;
+  for (const o of oppdrag){
+    if (!o.krav.length || !o.bygg) continue;
+    await p.evaluate(()=>RR.lukkAlt());
+    const finnes=await p.evaluate(i=>{
+      if (!RR.HUS[i.bygg]) return null;
+      RR.aapneMinispill('hus-'+i.bygg,RR.HUS[i.bygg]);
+      return [...document.querySelectorAll('#spillinner button')]
+        .some(b=>b.textContent.indexOf('oppdrag '+i.id)>=0);
+    },o);
+    if (finnes===true){ apne_for_tidlig++;
+      console.log('      '+o.bygg+' tilbyr oppdrag '+o.id+' før krav '+o.krav.join(',')+' er løst'); }
+  }
+  sant('ingen bygning tilbyr et oppdrag før kravene er løst', apne_for_tidlig===0);
+  // og at det åpner seg når kravene ER løst
+  await p.evaluate(()=>{ ['A','B','C'].forEach(i=>RR.loesOppdrag(i)); RR.lukkAlt();
+    RR.aapneMinispill('hus-kiosk',RR.HUS.kiosk); });
+  await p.waitForTimeout(80);
+  sant('kiosken åpner oppdrag M når C er løst',
+    await p.evaluate(()=>[...document.querySelectorAll('#spillinner button')]
+      .some(b=>/oppdrag M/.test(b.textContent))));
+  await p.evaluate(()=>RR.lukkAlt());
+  await p.evaluate(()=>{ RR.nullstill(); });
+  await p.reload();
+  await p.evaluate(()=>{ RR.start(); RR.sett({harJobb:true,bruttoAar:456000,kontanter:250000}); });
+  await p.waitForTimeout(500);
+  await p.evaluate(()=>RR.lukkAlt());
+}
+
 console.log('\n=== INGEN SIDEFEIL UNDERVEIS ===');
 sant('ingen JavaScript-feil under hele gjennomspillingen ('+sideFeil.length+')', sideFeil.length===0);
 if (sideFeil.length) sideFeil.slice(0,8).forEach(f=>console.log('      '+f));

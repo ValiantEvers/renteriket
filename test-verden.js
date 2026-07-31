@@ -367,6 +367,77 @@ console.log('\n=== SPILLET STÅR STILLE NÅR ET MINISPILL ER ÅPENT ===');
   await p.evaluate(()=>RR.lukkMinispill());
 }
 
+console.log('\n=== MAN KOMMER SEG UT AV EN VEGG ===');
+// Spillløkka gir bare TILLATELSE til å flytte. Er begge akser blokkert, er
+// spilleren frosset for godt, uten et eneste signal. Det er nøyaktig feilen
+// som gjorde spillet uspillbart i første utgave, og den koster fem linjer å
+// gjøre umulig. Seks av åtte bydelsmidtpunkt ligger inne i en bygning, så
+// marginen mot å gjøre det igjen er tynn.
+{
+  await p.evaluate(()=>RR.lukkAlt());
+  // finn et punkt som faktisk er inne i en bygning
+  const inni=await p.evaluate(()=>{
+    for (const b of RR.BYGG){
+      const x=b.x+b.w/2, y=b.y+b.h/2;
+      if (RR.blokkert(x,y)) return {id:b.id,x,y};
+    }
+    return null;
+  });
+  sant('det finnes en bygning å bli fanget i (testforutsetning)', !!inni);
+  if (inni){
+    await p.evaluate(i=>RR.flyttTil(i.x,i.y),inni);
+    sant('  spilleren står inne i '+inni.id, await p.evaluate(()=>RR.blokkert(...RR.tilstand.pos)));
+    const f0=await p.evaluate(()=>RR.tilstand.pos);
+    for (const t of ['s','d']){
+      await p.keyboard.down(t); await p.waitForTimeout(900); await p.keyboard.up(t);
+    }
+    const f1=await p.evaluate(()=>RR.tilstand.pos);
+    const flyttet=Math.hypot(f1[0]-f0[0],f1[1]-f0[1]);
+    sant('  tastene virker inne i veggen ('+Math.round(flyttet)+' px)', flyttet>60);
+    sant('  spilleren står fritt etterpå', await p.evaluate(()=>!RR.blokkert(...RR.tilstand.pos)));
+  }
+  // og vaktposten i start(): en blokkert startposisjon skal flyttes, ikke låse spillet
+  await p.evaluate(()=>RR.nullstill());
+  await p.reload();
+  await p.waitForTimeout(250);
+  await p.evaluate(()=>{ const s=RR.START_POS; const b=RR.BYGG[0];
+    // dytt spilleren inn i en bygning FØR start() kalles
+    RR.flyttTil(b.x+b.w/2,b.y+b.h/2); });
+  await p.evaluate(()=>RR.start());
+  await p.waitForTimeout(250);
+  sant('start() setter aldri spilleren i gang inne i en vegg',
+    await p.evaluate(()=>!RR.blokkert(...RR.tilstand.pos)));
+}
+
+console.log('\n=== DIALOGTELLEREN TELLER GJENSTÅENDE, IKKE DEN DU LESER ===');
+// Sto «3 igjen» på linje 1 av 3, «2 igjen» på linje 2, og ingenting på linje 3.
+{
+  await p.evaluate(()=>RR.nullstill());
+  await p.reload();
+  await p.waitForTimeout(250);
+  await p.click('#startknapp');
+  await p.waitForTimeout(900);
+  const tellere=[];
+  for (let i=0;i<8;i++){
+    if (!(await p.evaluate(()=>RR.tilstand.dAapen))) break;
+    tellere.push(await p.evaluate(()=>{
+      const e=document.querySelector('#dialog .n1'); return e?e.textContent.trim():''; }));
+    await p.keyboard.press('Space');
+    await p.waitForTimeout(150);
+  }
+  const n=tellere.length;
+  console.log('    introdialogen ('+n+' linjer): '+JSON.stringify(tellere));
+  sant('introdialogen har mer enn én linje (testforutsetning)', n>1);
+  let riktig=true;
+  tellere.forEach((t,i)=>{
+    const skalVaere = (n-1-i)>0 ? (n-1-i)+' igjen' : '';
+    if (t!==skalVaere) riktig=false;
+  });
+  sant('telleren viser antall linjer som er IGJEN på hver linje', riktig);
+  sant('siste linje viser ingen teller', tellere[n-1]==='');
+  await p.evaluate(()=>RR.lukkAlt());
+}
+
 await b.close();
 console.log('\n'+'='.repeat(58));
 console.log(feil? ('✗ '+feil+' feil av '+(ok+feil)) : ('✓ alle '+ok+' sjekker OK'));

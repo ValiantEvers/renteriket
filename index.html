@@ -6,6 +6,9 @@
 <title>RENTERIKET — spillet som gjør deg til investor</title>
 <meta name="description" content="Et spill som lærer deg privatøkonomi og investering fra null: budsjett, buffer, renters rente, fond, skatt, bolig og svindel — gjennom oppdrag og puslespill.">
 <meta name="theme-color" content="#0d1117">
+<!-- Inline favicon. Uten en icon-lenke ber nettleseren om /favicon.ico og får 404
+     i konsollen ved hver lasting. Data-URI holder spillet på én fil. -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d1117'/%3E%3Cpath d='M16 26V12' stroke='%232fbf7a' stroke-width='3' stroke-linecap='round'/%3E%3Cpath d='M16 17c0-4 3-7 7-7 0 4-3 7-7 7zM16 13c0-3.5-2.6-6-6-6 0 3.5 2.6 6 6 6z' fill='%232fbf7a'/%3E%3C/svg%3E">
 <link rel="canonical" href="https://www.evers.no/renteriket/">
 <meta property="og:title" content="RENTERIKET — spillet som gjør deg til investor">
 <meta property="og:description" content="Fjorten oppdrag, førti kunnskapskort og en by der renters rente er et tre som vokser. Norske satser, med kilde og årstall.">
@@ -76,6 +79,8 @@ body.touch #hud{right:112px}
 #banner{position:fixed;left:50%;top:34%;transform:translate(-50%,-50%) scale(.9);z-index:9;
   text-align:center;opacity:0;transition:all .4s cubic-bezier(.2,1.4,.4,1);pointer-events:none;
   max-width:min(560px,86vw)}
+#banner{background:radial-gradient(ellipse at center,rgba(9,12,16,.82) 0%,
+  rgba(9,12,16,.62) 55%,rgba(9,12,16,0) 100%);padding:26px 46px;border-radius:20px}
 #banner .b1{font-size:clamp(22px,5.2vw,40px);font-weight:900;letter-spacing:-.5px;
   text-shadow:0 3px 22px rgba(0,0,0,.9)}
 #banner .b2{font-size:clamp(12px,2.6vw,16px);color:var(--dim);margin-top:5px;font-weight:600}
@@ -424,6 +429,8 @@ const SATSER = {
   boligBotid: 12,                    // måneder botid av de siste 24
 
   // --- pensjon og trygd ---
+  dagpengesats: 0.624,               // 62,4 % av dagpengegrunnlaget (folketrygdloven § 4-12)
+  dagpengeTakG: 6,                   // grunnlaget begrenses til 6 G
   folketrygdSats: 0.181,             // 18,1 % av pensjonsgivende inntekt
   folketrygdTak: 7.1,                // opp til 7,1 G (gjennomsnittlig grunnbeløp)
   grunnbelop: 136549,                // G per 1. mai 2026
@@ -491,7 +498,7 @@ function lesObj(k){ const v=store.get(k); return (v&&typeof v==='object'&&!Array
 const nf0=new Intl.NumberFormat('nb-NO',{maximumFractionDigits:0});
 const nf1=new Intl.NumberFormat('nb-NO',{minimumFractionDigits:1,maximumFractionDigits:1});
 const nf2=new Intl.NumberFormat('nb-NO',{minimumFractionDigits:2,maximumFractionDigits:2});
-function kr(n){ return nf0.format(Math.round(n))+' kr'; }
+function kr(n){ const r=Math.round(n); return nf0.format(r===0?0:r)+' kr'; }
 function krKort(n){
   const a=Math.abs(n);
   if (a>=1e6) return (n<0?'−':'')+nf1.format(a/1e6).replace(',0','')+' mill.';
@@ -1093,7 +1100,10 @@ function blokkert(x,y,m){
     if (x>b.x-m && x<b.x+b.w+m && y>b.y-m && y<b.y+b.h+m){
       // døra er et hull i veggen så du kan gå helt inntil
       const d=dor(b);
-      if (dist(x,y,d.x,d.y)<30) return false;
+      // Dørhullet gjelder BARE denne bygningen. «return false» her ville hoppet
+      // ut av hele funksjonen og droppet resten av BYGG og hele PROPS — altså
+      // gjort deg gjennomtrengelig for alt annet så lenge du sto i en dør.
+      if (dist(x,y,d.x,d.y)<30) continue;
       return true;
     }
   }
@@ -1296,7 +1306,7 @@ function tittel(){ return NIVAA[nivaaAv(xp)-1]; }
 function girXp(n,stille){
   const f=nivaaAv(xp); xp+=n;
   const e=nivaaAv(xp);
-  if (!stille) flyt(sp.x,sp.y+(-26),'+'+n+' XP','#f0b429');
+  if (!stille) flyt(sp.x,sp.y+(-46),'+'+n+' XP','#f0b429');   // over navnelappene, ikke oppå
   if (e>f){ sfx('nivaa'); banner(NIVAA[e-1], 'Nivå '+e+' av '+NIVAA.length); }
   oppdaterHud();
 }
@@ -1566,7 +1576,7 @@ function visNesteLinje(){
   }
   vEl.innerHTML='';
   dEl.querySelector('.txt').innerHTML=dKø.shift();
-  dEl.querySelector('.n1').textContent=dKø.length?(dKø.length+1)+' igjen':'';
+  dEl.querySelector('.n1').textContent=dKø.length?dKø.length+' igjen':'';
   dEl.querySelector('.n2').textContent=OKORD+' →';
 }
 function visValg(){
@@ -1859,67 +1869,115 @@ MINI.B=(v)=>{
 // for stor koster tapt avkastning. Poenget er at det finnes et midtpunkt.
 MINI.C=(v)=>{
   const utg=Math.round(utgiftSum());
-  let bufferValg=Math.round(utg*1.5/1000)*1000, m=0, laan=0, buf=0, betaltRente=0, logg=[];
+  let bufferValg=Math.round(utg*1.5/1000)*1000, laan=0, buf=0, betaltRente=0, logg=[];
   const FORBRUKSRENTE=0.229;
+  // Tre måneder uten jobb, med dagpenger. Uten dette inneholdt stormen bare
+  // husholdningsuhell på 2 000–16 000 kr, og da bunnet regnskapet ut på ÉN
+  // måneds buffer — altså motsatt av tommelfingerregelen oppdraget lærer bort.
+  // Tremånedersregelen handler om å miste inntekten, så inntektstapet må være
+  // i modellen. Målt: med dette faller totalkostnaden lavest på tre måneder.
+  const PERM_FRA=3, PERM_MND=3;
+  const dagpengegrunnlag=Math.min(bruttoAar,SATSER.grunnbelop*SATSER.dagpengeTakG);
+  const lonnNetto=F.lonnsskatt(bruttoAar).netto/12;
+  const dagpengerNetto=F.lonnsskatt(dagpengegrunnlag*SATSER.dagpengesats).netto/12;
+  const inntektsfall=Math.max(0,Math.round(lonnNetto-dagpengerNetto));
 
   v.appendChild(U.hode('OPPDRAG C','Bufferstormen',
-    'De faste utgiftene dine er <b>'+kr(utg)+' i måneden</b>. Gro setter deg gjennom tolv måneder '+
-    'med helt vanlige uhell. Du bestemmer bare én ting på forhånd: hvor stor bufferen skal være. '+
-    'Det du ikke setter i bufferen, ligger i et indeksfond og jobber for deg.'));
+    'De faste utgiftene dine er <b>'+kr(utg)+' i måneden</b>. Gro setter deg gjennom tolv '+
+    'måneder med helt vanlige uhell — og med <b>tre måneder uten jobb</b>, som er den '+
+    'hendelsen folk glemmer når de regner på buffer. Du bestemmer bare én ting på '+
+    'forhånd: hvor stor bufferen skal være. Det du ikke setter i bufferen, ligger i et '+
+    'indeksfond og jobber for deg.'));
 
   const sk=U.skyv('buf','Buffer på sparekonto',0,utg*6,5000,bufferValg,
     x=>kr(x)+'  ('+nf1.format(x/utg)+' mnd)',x=>bufferValg=x);
   v.appendChild(U.kort('VELG BUFFER',sk,
     U.tips('Tommelfingerregelen er tre måneders utgifter. Den er ikke hentet ut av lufta — '+
-      'kjør stormen og se hvorfor.')));
+      'kjør stormen og se hvorfor.'),
+    U.tab(['Under permitteringen','Per måned'],[
+      ['Lønn etter skatt i dag',kr(lonnNetto)],
+      ['Dagpenger etter skatt ('+pst2(SATSER.dagpengesats)+' av grunnlaget)',kr(dagpengerNetto)],
+      ['<b>Hullet du må dekke selv</b>','<b>'+kr(inntektsfall)+'</b>']
+    ])));
 
   const loggK=U.kort('TOLV MÅNEDER'); const tab=U.el('div'); loggK.appendChild(tab);
   const svar=U.el('div');
   const kjor=U.knapp('Kjør stormen',()=>{
-    m=0; laan=0; betaltRente=0; buf=bufferValg; logg=[];
+    laan=0; betaltRente=0; buf=bufferValg; logg=[];
     const rr=lagRnd(4711);
     for (let i=0;i<12;i++){
-      let rad={m:MND[i],h:'—',k:0,buf:buf,laan:laan};
+      const permittert = i>=PERM_FRA && i<PERM_FRA+PERM_MND;
+      let rad={m:MND[i],h:permittert?'Permittert — dagpenger':'—',k:0,buf:buf,laan:laan};
+      if (permittert) rad.k+=inntektsfall;
       if (rr()<0.42){
         const h=UFORUTSETT[Math.floor(rr()*UFORUTSETT.length)];
         const belop=h.min+Math.round(rr()*(h.maks-h.min));
-        rad.h=h.t; rad.k=belop;
-        if (buf>=belop) buf-=belop;
-        else { laan+=belop-buf; buf=0; }
+        rad.h = permittert ? rad.h+' + '+h.t.toLowerCase() : h.t;
+        rad.k+=belop;
       }
-      // bufferen fylles opp igjen med 2 500 i måneden, og lånet koster renter
+      if (rad.k>0){
+        if (buf>=rad.k) buf-=rad.k;
+        else { laan+=rad.k-buf; buf=0; }
+      }
+      // bufferen fylles opp igjen med 2 500 i måneden — men ikke mens du er
+      // permittert, for da er det ingenting å fylle den med
       if (laan>0){ const rente=laan*F.mndFraNominell(FORBRUKSRENTE); laan+=rente; betaltRente+=rente;
-        const ned=Math.min(laan,2500); laan-=ned; }
-      else buf=Math.min(bufferValg,buf+2500);
+        laan-=Math.min(laan,2500); }
+      else if (!permittert) buf=Math.min(bufferValg,buf+2500);
       rad.buf=buf; rad.laan=laan; logg.push(rad);
+    }
+    const laanEtterAaret=laan;
+    // «Renta løper videre etter at oppdraget er over» — da skal den også telles.
+    // Uten dette betalte bufferen et helt års tapt avkastning mens lånet slapp
+    // unna med under et år med renter, og regnskapet favoriserte for liten buffer.
+    let mndTilNull=0, vokser=false;
+    while (laan>0.5){
+      const rente=laan*F.mndFraNominell(FORBRUKSRENTE); laan+=rente; betaltRente+=rente;
+      laan-=Math.min(laan,2500); mndTilNull++;
+      if (mndTilNull>600){ vokser=true; break; }
     }
     tab.innerHTML='';
     tab.appendChild(U.tab(['Mnd','Hendelse','Kostnad','Buffer','Forbrukslån'],
       logg.map(l=>[l.m,l.h,l.k?kr(l.k):'—',kr(l.buf),l.laan>1?kr(l.laan):'—'])));
-    // kostnadsregnskapet: renter betalt + tapt avkastning på for stor buffer
     const tapt=bufferValg*(SATSER.realAksjer-F.realrente(SATSER.innskuddsrente*(1-SATSER.alminnelig),SATSER.kpi));
     svar.innerHTML='';
     const anbefalt=utg*3;
-    const ok = laan<1 && bufferValg<=utg*4;
-    svar.appendChild(U.kort('REGNSKAPET',U.tab(['Post','Ett år'],[
-      ['Renter på forbrukslån',betaltRente>0?'−'+kr(betaltRente):'0 kr'],
-      ['Tapt realavkastning på bufferen','−'+kr(tapt)],
-      ['SUM KOSTNAD','−'+kr(betaltRente+tapt)]
+    const ok = laanEtterAaret<1 && bufferValg<=utg*4;
+    svar.appendChild(U.kort('REGNSKAPET',U.tab(['Post','Hele regningen'],[
+      ['Lån igjen etter de tolv månedene',laanEtterAaret>1?kr(laanEtterAaret):'0 kr'],
+      ['Måneder til lånet er nedbetalt',
+        vokser?'<b>aldri</b> — renta er større enn avdraget':(mndTilNull?nf0.format(mndTilNull):'—')],
+      ['Renter på forbrukslån, til lånet er ute av verden',
+        betaltRente>0?'−'+(vokser?'over '+kr(betaltRente):kr(betaltRente)):'0 kr'],
+      ['Tapt realavkastning på bufferen, ett år','−'+kr(tapt)],
+      ['SUM KOSTNAD','−'+(vokser?'over '+kr(betaltRente+tapt):kr(betaltRente+tapt))]
     ]),U.tips('Bufferen koster deg noe uansett — enten i renter du betaler, '+
-      'eller i avkastning du ikke får. Regnestykket bunner ut rundt '+kr(anbefalt)+'.')));
+      'eller i avkastning du ikke får. Skyv bufferen og kjør om igjen: '+
+      'regnestykket bunner ut rundt <b>'+kr(anbefalt)+'</b>, altså tre måneders utgifter. '+
+      'Det er hele begrunnelsen for tommelfingerregelen, og den kommer av '+
+      'tallene i tabellen — ikke av at noen har sagt det.')));
     svar.appendChild(fasit(ok,
-      ok ? 'Du kom gjennom tolv måneder uten å låne en krone, med en buffer som ikke var større enn den måtte være.'
-         : (laan>=1 ? 'Bufferen tok slutt. Du endte med '+kr(laan)+' i forbrukslån til '+
-              pst2(FORBRUKSRENTE)+' — og renta løper videre etter at oppdraget er over.'
-            : 'Du kom gjennom, men bufferen var '+nf1.format(bufferValg/utg)+' måneder. '+
-              'Alt over rundt fire måneder ligger og taper kjøpekraft.'),
+      ok ? 'Du kom gjennom tolv måneder — tre av dem uten jobb — uten å låne en krone, '+
+           'med en buffer som ikke var større enn den måtte være.'
+         : (laanEtterAaret>=1
+              ? 'Bufferen tok slutt. Du endte med '+kr(laanEtterAaret)+' i forbrukslån til '+
+                pst2(FORBRUKSRENTE)+', og '+
+                (vokser ? 'avdraget på 2 500 kr i måneden dekker ikke engang renta — '+
+                          'lånet vokser av seg selv.'
+                        : 'det tar '+nf0.format(mndTilNull)+' måneder å bli kvitt det.')
+              : 'Du kom gjennom, men bufferen var '+nf1.format(bufferValg/utg)+' måneder. '+
+                'Alt over rundt fire måneder ligger og taper kjøpekraft.'),
       'Bufferen er ikke en investering, og den skal ikke være det. Den er nedsidebeskyttelse: '+
       'den gjør at et uhell blir en utgift i stedet for et lån. Forskjellen mellom de to er '+
-      pst2(FORBRUKSRENTE)+' i året.'+
+      pst2(FORBRUKSRENTE)+' i året.<br><br>'+
+      '<b>Og legg merke til hvilken hendelse som bestemte svaret.</b> Tannlegen og '+
+      'vaskemaskinen klarer du med én måneds buffer. Det er de tre månedene uten lønn '+
+      'som krever tre — dagpengene dekker '+kr(dagpengerNetto)+' av de '+kr(lonnNetto)+
+      ' du er vant til, og hullet på '+kr(inntektsfall)+' i måneden må komme fra deg.'+
       (ok?'':'<br><br>Prøv igjen med en annen buffer — knappen står der fortsatt.')));
     if (ok && !svar.dataset.lost){ svar.dataset.lost='1'; seier(svar,'C',
-      'Tolv måneder, ingen lån.','Nå kan du gå videre — men kom gjerne tilbake og prøv '+
-      'en buffer på null, bare for å se hva som skjer.'); }
+      'Tolv måneder, tre uten jobb, ingen lån.','Nå kan du gå videre — men kom gjerne '+
+      'tilbake og prøv en buffer på null, bare for å se hva som skjer.'); }
     spillEl.scrollTop=spillEl.scrollHeight;
   });
   v.appendChild(U.fot(kjor));
@@ -2191,7 +2249,7 @@ MINI.F=(v)=>{
   STED.forEach((s,i)=>{
     const b=U.el('button','valgkort');
     b.innerHTML='<div class="vt">'+s.n+'</div><div class="vd">'+
-      pst2(s.nom)+' nominelt i året<br>'+s.forkl+'</div>';
+      pst2(s.brutto)+' nominelt i året<br>'+s.forkl+'</div>';
     b.onclick=()=>{ valgt=i; [...g.children].forEach(x=>x.classList.remove('valgt'));
       b.classList.add('valgt'); sfx('klikk'); tegn(); };
     g.appendChild(b);
@@ -2271,7 +2329,11 @@ MINI.G=(v)=>{
      medianMin:2400000, p5Min:1200000,
      forkl:'Her er den store risikoen å ligge for trygt og tape kjøpekraft.'}
   ];
-  const andel=[50,50,50];
+  // Ingen av de tre starter i sitt eget vindu (0–35 / 30–75 / 45–100 %), og de må
+  // flyttes i ULIK retning: depositumet ned, sabbatsåret opp, pensjonen opp.
+  // Med [50,50,50] var to av tre alt riktige, og oppdraget løste seg ved å dra
+  // én skyver. Samme feil som MINI.H hadde i første utgave.
+  const andel=[90,10,20];
   v.appendChild(U.hode('OPPDRAG G','Kurven som lurer',
     'Tre sparemål, samme person, tre horisonter. Velg aksjeandel for hvert. '+
     'Tobias kjører <b>1 200 utfall</b> per mål og viser <b>medianen</b> og '+
@@ -3073,6 +3135,13 @@ MINI.M=(v)=>{
 // Tidsmaskinen: finalen. Alle valgene fra byen, satt sammen over førti år.
 MINI.N=(v)=>{
   const AAR=40, NETTO=Math.round(F.lonnsskatt(bruttoAar).netto/12);
+  // Skjermingsfradraget bygges opp på hvert års inngangsverdi og brukes ikke opp
+  // underveis. Å regne det eksakt krever hele innskuddshistorikken; 0,35 er en
+  // konservativ tilnærming som treffer omtrent midt på for jevn månedssparing.
+  // Faktoren skal STÅ i tabellen, ikke bare i en kodekommentar — resten av
+  // spillet sier fra når en modell er en modell. Derfor ligger den her, i
+  // omfanget både kjor() og tegn() ser.
+  const SKJERM_ANSLAG=0.35;
   let sparerate=0.08, aksje=60, indeks=true, ask=true, buff=true, livsstil2=false;
   const MAAL_REAL=6000000;   // målt: krever ca. 12 % sparerate med høy aksjeandel
 
@@ -3162,12 +3231,12 @@ MINI.N=(v)=>{
     // Det som alt er realisert og beskattet underveis, har hevet inngangsverdien
     // og skal ikke beskattes en gang til.
     const gevinstTotal=Math.max(0,s-innskuddSum-realisertSum);
-    const skjerming=innskuddSum*SATSER.skjermingsrente*AAR*0.35;   // grovt anslag, konservativt
+    const skjerming=innskuddSum*SATSER.skjermingsrente*AAR*SKJERM_ANSLAG;
     const skattUt=Math.max(0,gevinstTotal-skjerming)*SATSER.aksjeskatt;
     const nominell=s-skattUt;
     const real=F.kjopekraft(nominell,SATSER.kpi,AAR);
     return {hist,nominell,real,innskuddSum,gevinstTotal,skattUt,skattUnderveis,
-            uhellskostnad,mk,gebyr};
+            uhellskostnad,mk,gebyr,skjerming};
   }
   function tegn(){
     const x=kjor();
@@ -3181,6 +3250,7 @@ MINI.N=(v)=>{
     ut.appendChild(U.tab(['Etter '+AAR+' år','Beløp'],[
       ['Du har satt inn',kr(x.innskuddSum)],
       ['Avkastning',kr(x.gevinstTotal)],
+      ['Skjermingsfradrag (anslag, se under)','−'+kr(x.skjerming)],
       ['Skatt ved uttak ('+pst2(SATSER.aksjeskatt)+' av gevinst utover skjerming)','−'+kr(x.skattUt)],
       x.skattUnderveis>0?['Skatt betalt underveis (ikke ASK)','−'+kr(x.skattUnderveis)]:null,
       ['Uhell underveis'+(buff?' (dekket av bufferen)':' (måtte lånefinansieres)'),
@@ -3190,12 +3260,19 @@ MINI.N=(v)=>{
       ['Forventet realavkastning i valgt miks',pst2(x.mk.avkastning)+' før gebyr'],
       ['Gebyr',pst2(x.gebyr)]
     ].filter(Boolean)));
+    ut.appendChild(U.tips('<b>Om skjermingsfradraget i tabellen:</b> det er et anslag. '+
+      'Fradraget bygges opp på inngangsverdien hvert år og brukes ikke opp underveis, '+
+      'så et eksakt tall krever hele innskuddshistorikken. Her er det regnet som '+
+      'innskutt beløp × skjermingsrenten ('+pst2(SATSER.skjermingsrente)+', fastsatt for '+
+      SATSER.skjermingsrenteAar+') × '+AAR+' år × '+nf0.format(SKJERM_ANSLAG*100)+' %, '+
+      'som treffer omtrent midt på for jevn månedssparing. Det trekker i din favør, '+
+      'ikke mot deg — så sluttbeløpet er om noe litt for høyt.'));
     const ok=x.real>=MAAL_REAL;
     ut.appendChild(U.tips(ok
       ? '<span class="pill g">Målet er nådd</span> '+kr(x.real)+' i dagens kjøpekraft.'+
         (spakTrukket?'':' Trekk i spaken under for å gjøre det gjeldende.')
       : '<span class="pill y">'+kr(MAAL_REAL-x.real)+' igjen til målet</span> — '+
-        'prøv en høyere sparerate, lengre horisont i aksjer, eller billigere fond.'));
+        'prøv en høyere sparerate, høyere aksjeandel, eller billigere fond.'));
     if (ok && spakTrukket && !svar.dataset.lost){
       svar.dataset.lost='1';
       svar.appendChild(fasit(true,
@@ -3444,8 +3521,11 @@ HUS.kvikklaan=(v)=>{
     U.tips('Du kan gjøre det. Spillet stopper deg ikke. Renten løper hver måned, '+
       'og den vises i HUD-en øverst.'),
     U.fot(U.knapp('Lån '+kr(50000)+' til '+pst2(NOM),()=>{
+      // eff er regnet for 100 000 kr. Gebyret er en større andel av et mindre lån,
+      // så den effektive renten på 50 000 er høyere — regn den av beløpet som lånes.
+      const eff50=F.effektivMedGebyr(50000,NOM,5,GEBYR);
       gjeld+=50000; kontanter+=50000; lagre(); lukkMinispill();
-      sfx('feil'); banner('LÅN TATT OPP','50 000 kr til '+pst2(NOM)+' effektiv '+pst2(eff));
+      sfx('feil'); banner('LÅN TATT OPP','50 000 kr til '+pst2(NOM)+' nominelt — '+pst2(eff50)+' effektivt');
     },'fare'))));
   if (!gjort('E') && laastOpp(oppdrag('E')))
     v.appendChild(U.fot(U.knapp('Ta gjeldsraset i stedet (oppdrag E)',
@@ -3855,8 +3935,14 @@ HUS.kiosk=(v)=>{
   v.appendChild(U.hode('TELEFONKIOSKEN','Den ringer',
     'Odd står ved siden av med en perm. «Fjorten meldinger,» sier han. «Fem av dem er ekte. '+
     'Klarer du å se hvilke?»'));
-  v.appendChild(U.fot(U.knapp(gjort('M')?'Ta svindelsjekken om igjen':'Ta svindelsjekken (oppdrag M)',
-    ()=>aapneMinispill('M',MINI.M))));
+  // Alle andre oppdragsknapper står bak laastOpp(). Uten den her kunne en fersk
+  // spiller uten jobb ta M først av alt og få 450 XP før Jobbsenteret.
+  if (gjort('M') || laastOpp(oppdrag('M')))
+    v.appendChild(U.fot(U.knapp(gjort('M')?'Ta svindelsjekken om igjen':'Ta svindelsjekken (oppdrag M)',
+      ()=>aapneMinispill('M',MINI.M))));
+  else v.appendChild(U.kort('IKKE ENNÅ',U.tips('Odd lukker permen. «Kom tilbake når du har '+
+    'vært innom Gro i Sparebanken. Det er lettere å kjenne igjen et for godt tilbud '+
+    'når du vet hva pengene dine faktisk er verdt.»')));
 };
 
 HUS.kasino=(v)=>{
@@ -4676,8 +4762,16 @@ function oppdater(dt){
   sp.vy=lerp(sp.vy,iy*mal,1-Math.pow(0.0008,dt));
   const nx=sp.x+sp.vx*dt, ny=sp.y+sp.vy*dt;
   // aksene testes hver for seg, så man glir langs vegger i stedet for å låse seg
-  if (!blokkert(nx,sp.y)) sp.x=nx; else sp.vx*=-0.15;
-  if (!blokkert(sp.x,ny)) sp.y=ny; else sp.vy*=-0.15;
+  // Nødutgang FØRST: står vi alt inne i en vegg, skal tastene alltid virke.
+  // Uten denne gjør ett feilplassert tall hele spillet uspillbart uten et eneste
+  // signal til spilleren — det skjedde med START_POS inne i BUTIKKEN. Sjekken må
+  // ligge før akse-testene: etter dem har sp.vx*=-0.15 alt drept farten, og
+  // spilleren kryper 32 px på 2,4 sekunder i stedet for 291.
+  if (blokkert(sp.x,sp.y)){ sp.x=nx; sp.y=ny; }
+  else {
+    if (!blokkert(nx,sp.y)) sp.x=nx; else sp.vx*=-0.15;
+    if (!blokkert(sp.x,ny)) sp.y=ny; else sp.vy*=-0.15;
+  }
   sp.fart=Math.hypot(sp.vx,sp.vy);
   if (sp.fart>6){ sp.steg+=dt*sp.fart*0.055; stat.skritt+=sp.fart*dt*0.02; }
 
@@ -4781,6 +4875,19 @@ document.addEventListener('visibilitychange',()=>{
 // =====================================================================
 function start(){
   document.getElementById('tittel').style.display='none';
+  // Vaktpost: ligger startposisjonen inne i en vegg, er hele spillet uspillbart.
+  // Det har skjedd én gang (START_POS lå inne i BUTIKKEN). Nødutgangen i
+  // oppdater() henter deg ut nå, men vi skal ikke trenge den for å begynne.
+  if (blokkert(sp.x,sp.y)){
+    let best=null;
+    for (let r=0;r<=400 && !best;r+=20)
+      for (let a=0;a<24 && !best;a++){
+        const x=START_POS.x+Math.cos(a/24*TAU)*r, y=START_POS.y+Math.sin(a/24*TAU)*r;
+        if (!blokkert(x,y)) best=[x,y];
+      }
+    if (best){ sp.x=best[0]; sp.y=best[1]; kam.x=sp.x; kam.y=sp.y;
+      console.warn('START_POS lå inne i en vegg — flyttet til',Math.round(sp.x),Math.round(sp.y)); }
+  }
   kjorer=true;
   lydInit();
   glodLykt=lagGlod(95,'rgba(255,214,140,.30)');
@@ -4841,7 +4948,10 @@ window.RR={
   tilFigur(id){ const p=folk(id); if (!p) return false;
     sp.x=p.x; sp.y=p.y+8; kam.x=sp.x; kam.y=sp.y; return true; },
   loesOppdrag(id){ fullfor(id); },
-  loesAlle(){ OPPDRAG.forEach(o=>{ lostGjort.add(o.id); }); lagre(); oppdaterHud(); },
+  // Må gi samme XP som å faktisk løse dem, av samme grunn som taAlleKort():
+  // ellers måler testen et annet spill enn det spilleren spiller. Uten dette ga
+  // «alt løst» nivå 8 av 15, og det ser ut som en ødelagt XP-kurve.
+  loesAlle(){ OPPDRAG.forEach(o=>{ if (!lostGjort.has(o.id)) fullfor(o.id); }); },
   // Skal gi samme XP som å faktisk gå og plukke dem opp, ellers måler testen
   // noe annet enn det spilleren opplever.
   taAlleKort(){ let nye=0;
