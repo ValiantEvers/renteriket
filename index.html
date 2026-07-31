@@ -1115,8 +1115,49 @@ const PROPS=[
   {t:'soppel', x:1750,y:2050,r:13},{t:'soppel',x:2400,y:2080,r:13},
   {t:'soppel', x:2800,y:1750,r:13},
   {t:'postkasse',x:1960,y:1720,r:12,navn:'POSTKASSA'},
-  {t:'kum',    x:1300,y:1200,r:11},{t:'kum',x:2000,y:1300,r:11}
+  {t:'kum',    x:1300,y:1200,r:11},{t:'kum',x:2000,y:1300,r:11},
+
+  // ── SEVERDIGHETER ────────────────────────────────────────────────────────
+  // Byen hadde fire navngitte rekvisitter, tre av dem på samme torg, og
+  // ingenting man ville pekt på. Disse seks er valgt fordi de sier hva bydelen
+  // handler om — og fordi tre av dem VISER noe: oksen og bjørnen leser
+  // markedsstemningen, klokka viser klokka, og søylen viser styringsrenta.
+  {t:'okse',  x:2085,y:1385,r:30, navn:'OKSEN'},   // ikke 2060,1420: dekket kort 31
+  {t:'bjorn', x:2320,y:1420,r:30, navn:'BJØRNEN'},
+  {t:'ticker',x:2830,y:1420,r:16, navn:'TICKERSØYLA'},
+  {t:'tiger', x:1420,y:2060,r:28, navn:'TIGEREN'},
+  {t:'klokke',x:1810,y:1060,r:20, navn:'KLOKKETÅRNET'},
+  {t:'rentesoyle',x:1410,y:1300,r:16, navn:'RENTESØYLA'},
+
+  // ── BYMØBLER, ett vokabular per bydel ────────────────────────────────────
+  // Bankgata, Skattekvartalet og Børstorget hadde null rekvisitter.
+  {t:'pullert',x:300,y:1420,r:8},{t:'pullert',x:340,y:1420,r:8},
+  {t:'pullert',x:380,y:1420,r:8},{t:'pullert',x:420,y:1420,r:8},
+  {t:'planter',x:1100,y:1420,r:15},{t:'planter',x:1160,y:1420,r:15},
+  {t:'sperreband',x:1790,y:290,r:14},{t:'sykkelstativ',x:1810,y:350,r:14},
+  {t:'container',x:2700,y:2080,r:18},{t:'container',x:1700,y:2100,r:18},
+  {t:'busstopp',x:800,y:2110,r:16,navn:'BUSSHOLDEPLASSEN'},
+  {t:'sykkel', x:915,y:2075,r:11}                  // klar av kort 4
 ];
+
+// Lyktestolper langs alle gatene, generert fra GATER. Før sto det ti stykker i
+// hele byen, og fem av åtte bydeler hadde ingen — inkludert Bakgata, den
+// mørkeste. Genereres i stedet for å plasseres, så en ny gate får lys uten at
+// noen må huske det. Bakgata får lykter som flimrer.
+(()=>{
+  const AVSTAND=320, KANT=18;
+  const iBakgata=(x,y)=>x>1350&&y>1450;
+  GATER.forEach(g=>{
+    const vannrett=g.w>g.h, len=vannrett?g.w:g.h;
+    const n=Math.floor(len/AVSTAND);
+    for (let i=1;i<n;i++){
+      const langs=(vannrett?g.x:g.y)+i*AVSTAND;
+      const tvers=(vannrett?g.y:g.x)+(i%2 ? (vannrett?g.h:g.w)-KANT : KANT);
+      const x=vannrett?langs:tvers, y=vannrett?tvers:langs;
+      PROPS.push({t:'lykt',x,y,r:9,flimmer:iBakgata(x,y)&&(i%2===0)});
+    }
+  });
+})();
 
 // Kollisjon: bygninger blokkerer, med litt margin. Rekvisitter blokkerer i radius.
 // Kanten av verden blokkerer også.
@@ -4442,7 +4483,49 @@ function tilSkjerm(x,y){ return {x:(x-kam.x)*kam.z+W/2, y:(y-kam.y)*kam.z+H/2}; 
 const DOGN=960, DOGN_START=0.30;
 function dogntid(){ return ((spilltid/DOGN)+DOGN_START)%1; }   // 0 = midnatt, 0,5 = midt på dagen
 function solhoyde(){ return 0.5-0.5*Math.cos(dogntid()*TAU); }
-function nattMengde(){ return clamp(1-solhoyde()*1.55,0,0.55); }
+function nattMengde(){
+  // Lyse sommernetter: i juni er natta grunnere enn i desember, som i Norge.
+  const m=mnd%12;                                    // 0 = januar
+  const sesong=Math.cos((m-0)/12*TAU);               // +1 i januar, −1 i juli
+  const maks=0.58+sesong*0.10;                       // 0,68 i januar, 0,48 i juli
+  return clamp(1-solhoyde()*1.55,0,maks);
+}
+// Skyggen SKAL følge sola. Før kastet hver bygning samme skygge — 7 px høyre,
+// 11 px ned — hele døgnet, så klokka 00:49 pekte skyggene som om sola sto høyt.
+// Nå roterer retningen gjennom døgnet og lengden vokser når sola står lavt,
+// slik den gjør ute. Alt som tegner skygge leser HERFRA, så det er ett sted å
+// endre og ett sted å ta feil.
+function lys(){
+  const h=solhoyde();                                // 0 = midnatt, 1 = middag
+  const t=dogntid();                                 // 0 = midnatt
+  // Sola går fra øst (morgen) til vest (kveld), så skyggen peker vestover om
+  // morgenen og østover om kvelden. Vinkelen er speilet rundt middag.
+  const vinkel=(t-0.25)*TAU;                         // 0 ved kl. 06
+  const lengde=clamp(1.5/Math.max(h,0.12),1,7.5);    // lang i grålysningen
+  // Styrken skal FAKTISK variere gjennom dagen. Med h*1.25 var den klemt fast
+  // på taket fra kl. 08 til 16, så skyggen var like hard i grålysningen som
+  // midt på dagen.
+  const styrke=clamp(h*0.44,0.08,0.42);
+  return {dx:-Math.cos(vinkel)*lengde, dy:Math.sin(vinkel)*lengde*0.55+2.2,
+          lengde, styrke, sol:h};
+}
+// Hvilken av de to statuene lyser? Ligger som funksjon og ikke som et uttrykk
+// inne i tegnekoden, så en sjekk kan spørre den om det samme spilleren ser.
+function severdighetLyser(t){
+  if (t==='okse')  return markedStemning>0.25;
+  if (t==='bjorn') return markedStemning<-0.25;
+  return false;
+}
+// Åpningstid per bygning: et vindu skal ikke lyse i Jobbsenteret klokka to.
+// Kasino Fortuna, derimot.
+function apentNaa(b){
+  const t=dogntid()*24;
+  if (b.id==='kasino'||b.id==='pyramide'||b.id==='krypto') return t>=16||t<4;
+  if (b.id==='leilighet') return t>=16||t<8;
+  if (b.id==='kiosk'||b.id==='bakgata') return t>=20||t<5;
+  if (b.id==='bors') return t>=7 && t<18;
+  return t>=8 && t<17;                               // resten er kontortid
+}
 function erMorkt(){ return nattMengde()>0.30; }
 function klokkeTekst(){
   const t=dogntid()*24, tt=Math.floor(t), mm=Math.floor((t-tt)*60);
@@ -4453,6 +4536,7 @@ function klokkeTekst(){
 let spilltid=0;
 function tegnVerden(){
   const natt=nattMengde();
+  const L=lys();
   ctx.setTransform(DPR,0,0,DPR,0,0);
   ctx.clearRect(0,0,W,H);
   // bakken
@@ -4468,7 +4552,16 @@ function tegnVerden(){
     const p=tilSkjerm(kt.x,kt.y);
     if (p.x<-60||p.y<-60||p.x>W+60||p.y>H+60) return;
     const bob=Math.sin(spilltid*2.2+kt.n)*3.5;
-    if (glodKort) ctx.drawImage(glodKort,p.x-26*kam.z,p.y-26*kam.z+bob,52*kam.z,52*kam.z);
+    // Glødet faller av med avstand, samme regel som lyktene bruker. Før gløda
+    // alle fem kortene i bydelen like sterkt, og de var det lyseste på skjermen
+    // — de overdøvet severdighetene de skulle ligge ved siden av.
+    const dk=dist(sp.x,sp.y,kt.x,kt.y);
+    const glod=clamp((700-dk)/440,0,1);
+    if (glodKort && glod>0.02){
+      ctx.globalAlpha=glod;
+      ctx.drawImage(glodKort,p.x-26*kam.z,p.y-26*kam.z+bob,52*kam.z,52*kam.z);
+      ctx.globalAlpha=1;
+    }
     ctx.save(); ctx.translate(p.x,p.y+bob); ctx.scale(kam.z,kam.z);
     ctx.rotate(Math.sin(spilltid*1.4+kt.n)*0.14);
     ctx.fillStyle='#f0b429'; rr(ctx,-7,-9,14,18,2.5); ctx.fill();
@@ -4482,9 +4575,9 @@ function tegnVerden(){
     const p=tilSkjerm(b.x,b.y);
     const w=b.w*kam.z, h=b.h*kam.z;
     if (p.x+w<-40||p.y+h<-40||p.x>W+40||p.y>H+40) return;
-    // skygge
-    ctx.fillStyle='rgba(0,0,0,.35)';
-    rr(ctx,p.x+7*kam.z,p.y+11*kam.z,w,h,7*kam.z); ctx.fill();
+    // skygge — retning og lengde fra sola, ikke fast
+    ctx.fillStyle='rgba(0,0,0,'+L.styrke.toFixed(3)+')';
+    rr(ctx,p.x+L.dx*3.4*kam.z,p.y+L.dy*3.4*kam.z,w,h,7*kam.z); ctx.fill();
     // vegg
     ctx.fillStyle=b.f; rr(ctx,p.x,p.y,w,h,6*kam.z); ctx.fill();
     // Tak-lysning som to flate bånd i stedet for en gradient.
@@ -4503,13 +4596,56 @@ function tegnVerden(){
     // Glødesprites bare på bygningene du står nær. Om natta er hele skjermen full
     // av opplyste vinduer, og de fjerneste bidrar ikke med noe man ser.
     const naer = dist(sp.x,sp.y,b.x+b.w/2,b.y+b.h/2) < 760;
-    for (let i=0;i<kols;i++) for (let j=0;j<rows;j++){
+    // Børshuset har fasade i stedet for vindusrutenett; ellers ser man vinduene
+    // gjennom gavlen.
+    const harFasade = b.id==='bors' && kam.z>0.4;
+    for (let i=0;i<kols && !harFasade;i++) for (let j=0;j<rows;j++){
       const vx=p.x+(i+0.5)*w/kols-7*kam.z, vy=p.y+(j+0.35)*h/rows-6*kam.z;
-      const tent = natt>0.35 && ((i*7+j*13+b.x)%5)!==0;
+      // Tent hvis det er mørkt OG noen er der. Et par vinduer står tent
+      // uansett — nattevakten, serveren, den som glemte lyset.
+      const apent=apentNaa(b);
+      const tent = natt>0.30 && (apent ? ((i*7+j*13+b.x)%5)!==0
+                                       : ((i*11+j*7+b.x)%9)===0);
       ctx.fillStyle = tent ? 'rgba(240,200,120,.80)' : 'rgba(180,205,225,.16)';
       rr(ctx,vx,vy,14*kam.z,12*kam.z,2*kam.z); ctx.fill();
       if (tent && naer && glodVarm && kam.z>0.55)
         ctx.drawImage(glodVarm,vx-11*kam.z,vy-11*kam.z,36*kam.z,34*kam.z);
+    }
+    // Børshuset skal se ut som en børs, ikke som et avrundet rektangel med
+    // BØRSH… på skiltet. Søyler, gavl og flaggstang — den ene bygningen i byen
+    // som har en silhuett folk kjenner igjen.
+    if (b.id==='bors' && kam.z>0.4){
+      ctx.save(); rr(ctx,p.x,p.y,w,h,6*kam.z); ctx.clip();
+      // seks søyler over nedre halvdel
+      ctx.fillStyle='rgba(236,232,220,.42)';
+      for (let i=0;i<6;i++){
+        const sx=p.x+w*(0.10+i*0.16);
+        ctx.fillRect(sx,p.y+h*0.42,w*0.045,h*0.50);
+      }
+      // arkitrav og trinn
+      ctx.fillStyle='rgba(236,232,220,.55)';
+      ctx.fillRect(p.x+w*0.06,p.y+h*0.37,w*0.88,h*0.06);
+      ctx.fillStyle='rgba(236,232,220,.30)';
+      ctx.fillRect(p.x+w*0.04,p.y+h*0.92,w*0.92,h*0.05);
+      // gavl
+      ctx.fillStyle='rgba(236,232,220,.48)';
+      ctx.beginPath();
+      ctx.moveTo(p.x+w*0.06,p.y+h*0.37);
+      ctx.lineTo(p.x+w*0.50,p.y+h*0.16);
+      ctx.lineTo(p.x+w*0.94,p.y+h*0.37);
+      ctx.closePath(); ctx.fill();
+      ctx.restore();
+      // flaggstang med flagg som blafrer
+      const fx=p.x+w*0.50, fy=p.y+h*0.14;
+      ctx.strokeStyle='#8d959d'; ctx.lineWidth=Math.max(1,1.6*kam.z);
+      ctx.beginPath(); ctx.moveTo(fx,fy); ctx.lineTo(fx,fy-26*kam.z); ctx.stroke();
+      const vind=Math.sin(spilltid*2.1)*0.35+Math.sin(spilltid*3.7)*0.15;
+      ctx.fillStyle='#e0524f';
+      ctx.beginPath(); ctx.moveTo(fx,fy-26*kam.z);
+      ctx.quadraticCurveTo(fx+11*kam.z,fy-(24+vind*4)*kam.z,fx+20*kam.z,fy-(21+vind*7)*kam.z);
+      ctx.lineTo(fx+20*kam.z,fy-(13+vind*7)*kam.z);
+      ctx.quadraticCurveTo(fx+11*kam.z,fy-(16+vind*4)*kam.z,fx,fy-14*kam.z);
+      ctx.closePath(); ctx.fill();
     }
     // dør
     const d=dor(b), dp=tilSkjerm(d.x,d.y);
@@ -4538,15 +4674,21 @@ function tegnVerden(){
   // rekvisitter
   PROPS.forEach(pr=>{
     const p=tilSkjerm(pr.x,pr.y); const z=kam.z;
-    if (p.x<-60||p.y<-60||p.x>W+60||p.y>H+60) return;
+    if (p.x<-90||p.y<-90||p.x>W+90||p.y>H+90) return;
     ctx.save(); ctx.translate(p.x,p.y); ctx.scale(z,z);
+    // Én skyggefunksjon for alle rekvisitter, så de snur samtidig med husene.
+    const skygge=(rx,ry,f)=>{
+      ctx.fillStyle='rgba(0,0,0,'+(L.styrke*(f||1)).toFixed(3)+')';
+      ctx.beginPath();
+      ctx.ellipse(L.dx*2.1,ry*0.8+L.dy*1.1,rx+L.lengde*0.8,ry,0,0,TAU); ctx.fill();
+    };
     switch(pr.t){
       case 'tre':{
         // Rentetreet vokser med formuen — det er hele HUD-en i ett bilde
         const vokst=clamp(formue()/2000000,0,1);
         const r=16+vokst*26;
-        ctx.fillStyle='rgba(0,0,0,.32)'; ctx.beginPath();
-        ctx.ellipse(4,7,r*0.9,r*0.34,0,0,TAU); ctx.fill();
+        ctx.fillStyle='rgba(0,0,0,'+(L.styrke*0.85).toFixed(3)+')'; ctx.beginPath();
+        ctx.ellipse(L.dx*2.2,L.dy*1.6,r*0.9,r*0.34,0,0,TAU); ctx.fill();
         ctx.fillStyle='#4a3a2a'; ctx.fillRect(-4,-6,8,16);
         for (let i=0;i<3;i++){
           ctx.fillStyle=i===0?'#2c7a4f':i===1?'#2fbf7a':'#49d68f';
@@ -4556,8 +4698,8 @@ function tegnVerden(){
         if (vokst>0.5 && glodKort) ctx.drawImage(glodKort,-r,-r-16,r*2,r*2);
         break;}
       case 'statue':{
-        ctx.fillStyle='rgba(0,0,0,.34)'; ctx.beginPath();
-        ctx.ellipse(4,10,26,9,0,0,TAU); ctx.fill();
+        ctx.fillStyle='rgba(0,0,0,'+(L.styrke*0.9).toFixed(3)+')'; ctx.beginPath();
+        ctx.ellipse(L.dx*2.4,10+L.dy*1.2,26,9,0,0,TAU); ctx.fill();
         ctx.fillStyle='#3a4048'; rr(ctx,-20,0,40,12,3); ctx.fill();
         ctx.fillStyle='#8d959d'; rr(ctx,-9,-30,18,32,4); ctx.fill();
         ctx.beginPath(); ctx.arc(0,-36,8,0,TAU); ctx.fill();
@@ -4604,10 +4746,174 @@ function tegnVerden(){
       case 'kum':
         ctx.strokeStyle='rgba(255,255,255,.13)'; ctx.lineWidth=1.6;
         ctx.beginPath(); ctx.arc(0,0,8,0,TAU); ctx.stroke(); break;
+
+      // ── SEVERDIGHETENE ──────────────────────────────────────────────────
+      // Oksen og bjørnen står vendt mot hverandre over torget, og DEN ENE
+      // LYSER etter markedStemning. Slik forteller de deg retningen på
+      // markedet på tvers av plassen — og at okse og bjørn er retninger og
+      // ikke dyr, som er hele grunnen til at de står der.
+      case 'okse': case 'bjorn':{
+        const okse=pr.t==='okse';
+        const paa = severdighetLyser(pr.t);
+        ctx.scale(1.22,1.22);                 // størst av alt på torget
+        skygge(26,9,0.95);
+        // sokkel
+        ctx.fillStyle='#3a4048'; rr(ctx,-26,2,52,13,3); ctx.fill();
+        ctx.fillStyle='rgba(255,255,255,.10)'; ctx.fillRect(-26,2,52,3);
+        const brons = paa ? (okse?'#3fd08a':'#e8894f') : '#7d8590';
+        // kropp
+        ctx.fillStyle=brons;
+        ctx.beginPath(); ctx.ellipse(-2,-12,20,11,okse?-0.10:0.06,0,TAU); ctx.fill();
+        // bein
+        ctx.strokeStyle=brons; ctx.lineWidth=4.4; ctx.lineCap='round';
+        ctx.beginPath();
+        ctx.moveTo(-14,-4); ctx.lineTo(-15,2); ctx.moveTo(-7,-4); ctx.lineTo(-6,2);
+        ctx.moveTo(7,-4);   ctx.lineTo(8,2);   ctx.moveTo(14,-4); ctx.lineTo(15,2);
+        ctx.stroke();
+        if (okse){
+          // hode lavt og framover, horn opp — oksen stanger oppover
+          ctx.fillStyle=brons;
+          ctx.beginPath(); ctx.ellipse(19,-14,9,7,-0.3,0,TAU); ctx.fill();
+          ctx.strokeStyle=brons; ctx.lineWidth=3.4; ctx.lineCap='round';
+          ctx.beginPath();
+          ctx.moveTo(23,-19); ctx.quadraticCurveTo(31,-25,29,-34);
+          ctx.moveTo(14,-19); ctx.quadraticCurveTo(19,-27,14,-34);
+          ctx.stroke();
+          // hale opp
+          ctx.lineWidth=2.2; ctx.beginPath();
+          ctx.moveTo(-21,-16); ctx.quadraticCurveTo(-30,-22,-27,-29); ctx.stroke();
+        } else {
+          // hode høyt, snute ned — bjørnen slår nedover
+          ctx.fillStyle=brons;
+          ctx.beginPath(); ctx.ellipse(-19,-19,9,8,0.25,0,TAU); ctx.fill();
+          ctx.beginPath(); ctx.arc(-25,-25,3.2,0,TAU); ctx.fill();   // øre
+          ctx.beginPath(); ctx.arc(-15,-26,3.2,0,TAU); ctx.fill();
+          ctx.fillStyle='rgba(0,0,0,.35)';
+          ctx.beginPath(); ctx.ellipse(-24,-14,4,3,0.4,0,TAU); ctx.fill();  // snute
+        }
+        if (paa && glodKort){
+          ctx.globalAlpha=0.55+Math.sin(spilltid*1.6)*0.12;
+          ctx.drawImage(glodKort,-34,-50,68,68); ctx.globalAlpha=1;
+        }
+        break;}
+
+      case 'tiger':{
+        // «Tigerstaden» er Bjørnsons bilde av den kalde, rovgriske byen.
+        // Derfor står den i Bakgata og ikke på torget.
+        skygge(24,8,0.9);
+        ctx.fillStyle='#3a4048'; rr(ctx,-24,2,48,11,3); ctx.fill();
+        ctx.fillStyle='#c07a2e';
+        ctx.beginPath(); ctx.ellipse(-1,-11,19,9,-0.05,0,TAU); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(17,-14,8,7,0.1,0,TAU); ctx.fill();     // hode
+        ctx.beginPath(); ctx.arc(13,-21,3,0,TAU); ctx.fill();               // ører
+        ctx.beginPath(); ctx.arc(21,-20,3,0,TAU); ctx.fill();
+        ctx.strokeStyle='#c07a2e'; ctx.lineWidth=4; ctx.lineCap='round';
+        ctx.beginPath();
+        ctx.moveTo(-12,-4); ctx.lineTo(-13,2); ctx.moveTo(-4,-4); ctx.lineTo(-3,2);
+        ctx.moveTo(6,-4);   ctx.lineTo(7,2);   ctx.moveTo(12,-4); ctx.lineTo(13,2);
+        ctx.stroke();
+        ctx.lineWidth=2.4; ctx.beginPath();                                 // hale
+        ctx.moveTo(-19,-13); ctx.quadraticCurveTo(-31,-16,-30,-25); ctx.stroke();
+        // striper
+        ctx.strokeStyle='rgba(30,22,14,.75)'; ctx.lineWidth=2;
+        for (let i=-3;i<=3;i++){ ctx.beginPath();
+          ctx.moveTo(i*5,-19); ctx.lineTo(i*5+1.5,-4); ctx.stroke(); }
+        break;}
+
+      case 'klokke':{
+        // Viserne viser den faktiske klokka, så døgnet er lesbart på avstand.
+        skygge(16,6,0.9);
+        ctx.fillStyle='#4b525c'; rr(ctx,-15,-64,30,72,3); ctx.fill();
+        ctx.fillStyle='rgba(255,255,255,.10)'; ctx.fillRect(-15,-64,30,5);
+        ctx.fillStyle='#2b3138'; rr(ctx,-11,-60,22,22,2); ctx.fill();
+        ctx.fillStyle='#e8e2cf'; ctx.beginPath(); ctx.arc(0,-49,9,0,TAU); ctx.fill();
+        const t24=dogntid()*24;
+        ctx.strokeStyle='#1a1f26'; ctx.lineCap='round';
+        ctx.lineWidth=2.1; ctx.beginPath(); ctx.moveTo(0,-49);              // timeviser
+        ctx.lineTo(Math.sin(t24/12*TAU)*5, -49-Math.cos(t24/12*TAU)*5); ctx.stroke();
+        ctx.lineWidth=1.3; ctx.beginPath(); ctx.moveTo(0,-49);              // minuttviser
+        ctx.lineTo(Math.sin((t24%1)*TAU)*7.5, -49-Math.cos((t24%1)*TAU)*7.5); ctx.stroke();
+        break;}
+
+      case 'rentesoyle':{
+        // Styringsrenta som en fysisk søyle. Skalaen går til 8 %, som er der
+        // bankens stressgulv ligger.
+        skygge(12,5,0.85);
+        ctx.fillStyle='#3a4048'; rr(ctx,-12,0,24,10,2); ctx.fill();
+        ctx.fillStyle='#2b3138'; rr(ctx,-6,-58,12,60,3); ctx.fill();
+        const andel=clamp(SATSER.styringsrente/0.08,0,1);
+        ctx.fillStyle='#f0b429'; rr(ctx,-4,-2-andel*54,8,andel*54,2); ctx.fill();
+        ctx.strokeStyle='rgba(255,255,255,.30)'; ctx.lineWidth=1;
+        for (let i=0;i<=4;i++){ const y=-2-i*13.5; ctx.beginPath();
+          ctx.moveTo(6,y); ctx.lineTo(11,y); ctx.stroke(); }
+        break;}
+
+      case 'ticker':{
+        // Indeksnivået, i verden og ikke bare i en meny.
+        skygge(10,4,0.8);
+        ctx.fillStyle='#2b3138'; rr(ctx,-9,-52,18,56,3); ctx.fill();
+        const opp=markedStemning>=0;
+        ctx.fillStyle=opp?'rgba(47,191,122,.85)':'rgba(224,82,79,.85)';
+        rr(ctx,-7,-48,14,20,2); ctx.fill();
+        ctx.fillStyle='#0d1117'; ctx.font='700 8px ui-monospace,monospace';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(nf0.format(indeks),0,-38);
+        ctx.fillStyle=opp?'#2fbf7a':'#e0524f';
+        ctx.beginPath();
+        if (opp){ ctx.moveTo(0,-26); ctx.lineTo(5,-19); ctx.lineTo(-5,-19); }
+        else    { ctx.moveTo(0,-19); ctx.lineTo(5,-26); ctx.lineTo(-5,-26); }
+        ctx.closePath(); ctx.fill();
+        break;}
+
+      // ── BYMØBLER ────────────────────────────────────────────────────────
+      case 'pullert':
+        skygge(7,3,0.7);
+        ctx.fillStyle='#9aa2ac'; rr(ctx,-4,-14,8,16,2); ctx.fill();
+        ctx.fillStyle='rgba(255,255,255,.18)'; ctx.fillRect(-4,-14,8,3); break;
+      case 'planter':
+        skygge(15,5,0.8);
+        ctx.fillStyle='#6f7681'; rr(ctx,-15,-10,30,14,2); ctx.fill();
+        ctx.fillStyle='#2c7a4f';
+        ctx.beginPath(); ctx.arc(-6,-14,7,0,TAU); ctx.arc(6,-13,6,0,TAU); ctx.fill(); break;
+      case 'sperreband':
+        skygge(14,4,0.7);
+        ctx.fillStyle='#8d959d'; ctx.fillRect(-14,-14,3,16); ctx.fillRect(11,-14,3,16);
+        ctx.strokeStyle='rgba(240,180,41,.75)'; ctx.lineWidth=2.4;
+        ctx.beginPath(); ctx.moveTo(-12,-10); ctx.lineTo(12,-10); ctx.stroke(); break;
+      case 'sykkelstativ':
+        skygge(14,4,0.7);
+        ctx.strokeStyle='#8d959d'; ctx.lineWidth=2;
+        for (let i=-1;i<=1;i++){ ctx.beginPath();
+          ctx.moveTo(i*9,-2); ctx.lineTo(i*9,-12); ctx.stroke(); }
+        ctx.beginPath(); ctx.moveTo(-12,-12); ctx.lineTo(12,-12); ctx.stroke(); break;
+      case 'container':
+        skygge(18,6,0.85);
+        ctx.fillStyle='#3d5148'; rr(ctx,-18,-16,36,20,2); ctx.fill();
+        ctx.fillStyle='#2e3d37'; ctx.fillRect(-19,-19,38,4);
+        ctx.fillStyle='rgba(0,0,0,.25)'; ctx.fillRect(-18,-8,36,2); break;
+      case 'busstopp':
+        skygge(18,5,0.85);
+        ctx.fillStyle='rgba(140,160,185,.30)'; rr(ctx,-18,-30,36,32,2); ctx.fill();
+        ctx.fillStyle='#5a626e'; ctx.fillRect(-18,-32,36,4);
+        ctx.fillStyle='#8d959d'; ctx.fillRect(-17,-30,2,30); ctx.fillRect(15,-30,2,30);
+        ctx.fillStyle='#f0b429'; rr(ctx,-5,-40,10,9,1.5); ctx.fill(); break;
+      case 'sykkel':
+        skygge(9,3,0.6);
+        ctx.strokeStyle='#6f7681'; ctx.lineWidth=1.6;
+        ctx.beginPath(); ctx.arc(-5,-3,4.5,0,TAU); ctx.stroke();
+        ctx.beginPath(); ctx.arc(6,-3,4.5,0,TAU); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(-5,-3); ctx.lineTo(0,-11); ctx.lineTo(6,-3);
+        ctx.moveTo(0,-11); ctx.lineTo(-2,-3); ctx.stroke(); break;
     }
     ctx.restore();
     if (pr.t==='lykt' && natt>0.3 && glodLykt && dist(sp.x,sp.y,pr.x,pr.y)<820){
-      const q=natt*1.05;
+      // Noen lykter i Bakgata stammer. Deterministisk av posisjonen, så det er
+      // alltid de samme som er i stykker.
+      let q=natt*1.05;
+      if (pr.flimmer){
+        const f=Math.sin(spilltid*7.3+pr.x*0.7)+Math.sin(spilltid*17.1+pr.y*0.3);
+        q*= f>-0.4 ? 0.55+0.45*clamp(f,0,1) : 0.06;
+      }
       ctx.globalAlpha=clamp(q,0,1);
       ctx.drawImage(glodLykt,p.x-95*kam.z,p.y-124*kam.z,190*kam.z,190*kam.z);
       ctx.globalAlpha=1;
@@ -4645,19 +4951,33 @@ function tegnVerden(){
     ctx.globalAlpha=1;
   });
 
-  // natt over alt
+  // Natt over alt. Før var dette ett flatt slør som stoppet på 0,55 og leste
+  // som skumring. Nå: et kaldt blått lag som blir dypere, pluss et varmt lag
+  // som legges tilbake DER lyktene står, så byen får kontrast i stedet for
+  // bare å bli mørkere.
   if (natt>0.02){
-    ctx.fillStyle='rgba(14,22,48,'+(natt*0.72).toFixed(3)+')';
+    ctx.fillStyle='rgba(10,17,44,'+(natt*0.86).toFixed(3)+')';
     ctx.fillRect(0,0,W,H);
+    // grålysning og skumring: en varm strek over det hele når sola er lav
+    const gry=clamp(1-Math.abs(L.sol-0.16)*7,0,1);
+    if (gry>0.02){
+      ctx.globalCompositeOperation='overlay';
+      ctx.fillStyle='rgba(255,150,70,'+(gry*0.22).toFixed(3)+')';
+      ctx.fillRect(0,0,W,H);
+      ctx.globalCompositeOperation='source-over';
+    }
   }
   if (!vignett) byggVignett();
   if (vignett && !REDUSERT) ctx.drawImage(vignett,0,0);
 }
 
 function tegnPerson(x,y,z,farge,gang,merk,erSpiller){
+  const L=lys();
   ctx.save(); ctx.translate(x,y); ctx.scale(z,z);
-  ctx.fillStyle='rgba(0,0,0,.32)';
-  ctx.beginPath(); ctx.ellipse(1.5,4,10,4,0,0,TAU); ctx.fill();
+  // Figurskyggen strekker seg og snur med sola, som alt annet.
+  ctx.fillStyle='rgba(0,0,0,'+(L.styrke*0.8).toFixed(3)+')';
+  ctx.beginPath();
+  ctx.ellipse(1.5+L.dx*1.5,4+L.dy*0.6,10+L.lengde*0.9,4,0,0,TAU); ctx.fill();
   // bein
   ctx.strokeStyle='#2a3038'; ctx.lineWidth=3.4; ctx.lineCap='round';
   ctx.beginPath(); ctx.moveTo(-3,0); ctx.lineTo(-3-gang*0.5,6);
@@ -5127,7 +5447,9 @@ function start(){
   }
   kjorer=true;
   lydInit();
-  glodLykt=lagGlod(95,'rgba(255,214,140,.30)');
+  // Var (95, .30) og lyste omtrent ingenting. Natta er nå dypere, så lyktene
+  // må gjøre jobben sin — ellers er Bakgata ikke bare mørk, men ufremkommelig.
+  glodLykt=lagGlod(120,'rgba(255,208,132,.52)');
   glodKort=lagGlod(26,'rgba(240,180,41,.42)');
   glodVarm=lagGlod(18,'rgba(255,208,130,.34)');
   if (!bakkeLerret) byggBakke();
@@ -5201,6 +5523,24 @@ window.RR={
     'rr-gjort','rr-kort','rr-kronikk','rr-livsstil','rr-stat','rr-mnd','rr-besokt','rr-lonn',
     'rr-jobb','rr-indeks','rr-indekshist','rr-bsu','rr-ips'].forEach(k=>store.del(k)); },
   hintTekst(){ return hEl.style.display==='none'?'':hEl.textContent; },
+  // Testkroker for døgnet: uten dem kan ingen sjekk se på byen om natta uten
+  // å vente seksten minutter.
+  settDogn(andel){ spilltid=(andel-DOGN_START+1)%1*DOGN; },
+  // Ren tegnetid, uten vsync: hvor mange millisekunder koster ÉN tegnVerden()?
+  // Uten dette måler fps-testen bare at nettleseren holder 60, ikke hvor mye
+  // hodeplass som er igjen til mer detalj.
+  maalTegning(n){ n=n||60;
+    tegnVerden();                                  // varm opp
+    const t0=performance.now();
+    for (let i=0;i<n;i++) tegnVerden();
+    return (performance.now()-t0)/n; },
+  dogn(){ return {tid:dogntid(), sol:solhoyde(), natt:nattMengde(), klokke:klokkeTekst()}; },
+  lys(){ return lys(); },
+  apentNaa(id){ const b=bygg(id); return b?apentNaa(b):null; },
+  lyser(t){ return severdighetLyser(t); },
+  PROPS,
+  settMnd(m){ mnd=m; },
+  settStemning(v){ markedStemning=v; },
   dialogTekst(){ return dEl.style.display==='none'?'':dEl.querySelector('.txt').textContent; },
   dialogValg(){ return [...dEl.querySelectorAll('.valg button')].map(b=>b.textContent); },
   velgDialog(i){ const b=dEl.querySelectorAll('.valg button')[i]; if (b) b.click(); },
