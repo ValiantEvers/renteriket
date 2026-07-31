@@ -226,10 +226,24 @@ ikke at spilleren regner etter.
   ble funnet slik. Alle kontrollknapper er minst 44×44 px.
 - Auto-pause ved fanebytte, `prefers-reduced-motion` respekteres, indekshistorikken
   er begrenset til 180 punkter.
+- **Minispillene er ekte DOM, og det er også et tilgjengelighetsvalg.** Alle
+  klikkbare elementer i alle fjorten oppdrag kan nås med Tab, brikkene i
+  budsjettpuslespillet er `<button>` og ikke `<div>`, og det finnes en
+  `:focus-visible`-regel så man ser hvor man står. Lerretet har en
+  alternativtekst som sier hvordan man kommer til innholdet, siden et canvas
+  ikke kan leses. To farger måtte lysnes for å komme over 4,5:1 — `--fare`
+  lå på 4,44 og småteksten på tittelskjermen på 3,57. Fare-knappen har sin egen,
+  mørkere bakgrunn, fordi hvit tekst på den lysere rødfargen bare gir 3,7:1.
+- Én kjent begrensning: `user-scalable=no` i viewport-taggen. Touch-kontrollene
+  trenger det for at gassknappen ikke skal zoome, men det hindrer knipezoom.
+  `test-tilgjengelighet.js` skriver det ut ved hver kjøring i stedet for å skjule det.
 
 ## Testing
 
-Sju filer, 778 sjekker. `bash test-alle.sh` kjører alt.
+Åtte filer, 838 sjekker. `bash test-alle.sh` kjører alt over `file://`,
+`bash test-alle.sh --http` starter en lokal server og kjører alt på nytt over HTTP.
+Begge må være grønne: siden serveres over HTTPS i produksjon, og `file://` har sitt
+eget origo-oppsett for `localStorage`.
 
 | Fil | Hva den beviser |
 |---|---|
@@ -239,6 +253,7 @@ Sju filer, 778 sjekker. `bash test-alle.sh` kjører alt.
 | `test-oppdrag.js` | **Alle fjorten oppdrag spilles gjennom med ekte klikk.** For hvert av dem sjekkes også at et *feil* svar ikke gir seier, og at fasitteksten sier det den skal. Til slutt: at fjorten oppdrag gir nivå 12, og at alt løst pluss alle kort gir INVESTOR. |
 | `test-mobil.js` | Ingen HUD-overlapp på tre skjermstørrelser, ingen flate utenfor skjermen, alle knapper minst 44×44, at styrekorset faktisk flytter spilleren, og at MENY lukker minispillet i stedet for å legge menyen oppå det. |
 | `test-lagring.js` | Fremgang overlever omlasting; 294 kombinasjoner av ødelagt lagring tar ikke ned spillet; nullstilling rydder minne så vel som lagring og skriver ikke tilbake etterpå; lagring skjer på timer. |
+| `test-tilgjengelighet.js` | Kontrast regnet ut fra de **faktiske** fargene i DOM-en, ikke fra CSS-en man tror står der — 22 elementer mot WCGA 2.1 AA. At alle klikkbare elementer i alle fjorten oppdrag kan nås med Tab, at brikkene er ekte knapper, at det finnes en `:focus-visible`-regel, at grønt og rødt alltid har tekst ved siden av, og at spillet starter med `prefers-reduced-motion`. |
 | `test-fps.js` | Fps per bydel med musikk på, i løp, om natta, og med hvert graftunge minispill åpent. Måler også spillets egen rammetid og at et skyvedrag i oppdrag G — som kjører 3 × 1 200 simuleringer — tar under 400 ms. |
 
 ### Fire spillfeil funnet av testene, ikke av øyet
@@ -254,6 +269,21 @@ Sju filer, 778 sjekker. `bash test-alle.sh` kjører alt.
    noe. Nå må du trekke i spaken.
 4. **Diversifisering var jukset til.** Indeksfondet i oppdrag H hadde sin egen,
    mildere avkastning, uavhengig av sektorene. Se «Modellvalg» over.
+
+### To funnet ved å spille
+
+Testene beviser at spillet virker, ikke at det er til å holde ut. En gjennomspilling
+av de første minuttene fant to ting ingen sjekk så etter:
+
+- **Å utforske ble straffet.** Faste utgifter løp fra første måned, også før man
+  hadde tatt jobben på Jobbsenteret. Uten inntekt ble de overtrekk, og overtrekk
+  ble forbruksgjeld til 22,9 %. En spiller som gjorde nøyaktig det spillet ber om
+  — se deg rundt — sto etter fem spilte måneder med **106 000 kroner i gjeld og
+  negativ formue**. Nå starter økonomien når du blir ansatt; før det bor du på
+  ingenting. `test-verden.js` har fått en seksjon som holder fella ute.
+- **Oppdrag G møtte deg med 409 ord.** Nesten to minutters lesing før du fikk røre
+  en skyver, mot 42–178 ord i de tretten andre. Kuttet til 288; kravene sto
+  allerede i tabellen under hver skyver.
 
 ### Og nitten funnet av en uavhengig gjennomgang
 
