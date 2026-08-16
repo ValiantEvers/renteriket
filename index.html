@@ -227,8 +227,14 @@ canvas.graf{width:100%;height:auto;display:block;border-radius:9px;background:#0
   font-family:var(--sans)}
 .fane button.pa{background:var(--tekst);color:var(--ink);border-color:var(--tekst)}
 .kortvegg{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:9px}
+/* Playtest 16.08 (F2): «Manipuleringssvindel vokser raskest» målte 138 px i en
+   135 px rute ved 390×844. Norsk er full av lange sammensetninger, så dette er en
+   egenskap ved klassen — ikke ved det ene ordet. `anywhere` (ikke `break-word`)
+   fordi grid-kolonnen må få lov til å KRYMPE: break-word lar min-content forbli
+   det lengste ordet, og da flyter ruta over uansett. `hyphens:auto` gir pen
+   orddeling der nettleseren kan (html lang="nb"), og bryter stygt bare når den må. */
 .kkort{background:var(--ink2);border:1px solid var(--line);border-radius:9px;padding:11px;
-  font-size:12.5px;line-height:1.5}
+  font-size:12.5px;line-height:1.5;overflow-wrap:anywhere;hyphens:auto}
 .kkort.tom{opacity:.34;font-style:italic;color:var(--dim)}
 .kkort .knr{font-family:var(--tall);font-size:10px;color:var(--gull);font-weight:700}
 .kkort .kt{font-weight:800;margin:3px 0 4px;font-size:13px}
@@ -373,7 +379,7 @@ body.touch #pauseknapp{display:none}
 // =====================================================================
 const SATSER = {
   aar: 2026,
-  sjekket: '2026-08-16',
+  sjekket: '2026-08-17',
 
   // --- inntektsskatt ---
   alminnelig: 0.22,                  // sats på alminnelig inntekt (2026)
@@ -445,9 +451,17 @@ const SATSER = {
 
   // --- makro (juli 2026) ---
   styringsrente: 0.0425,             // holdt uendret 18.06.2026; hevet fra 4,00 % 06.05.2026
-  boliglaansrente: 0.0508,           // snitt utestående, mai 2026 (SSB)
-  innskuddsrente: 0.0298,            // snitt husholdninger, mai 2026 (SSB)
-  kpi: 0.027,                        // tolvmånedersvekst juni 2026 (SSB)
+  boliglaansrente: 0.0509,           // snitt utestående, juni 2026 (SSB, publ. 07.08.2026)
+  innskuddsrente: 0.0296,            // snitt husholdninger, juni 2026 (SSB)
+  kpi: 0.030,                        // tolvmånedersvekst juli 2026 (SSB, publ. 10.08.2026;
+                                     // KPI-JAE samme måned 2,7 %)
+  // Forbrukslånsrente. Lå tidligere som `const FORBRUKSRENTE` TO steder i koden
+  // (modulnivå + en lokal skygge i MINI.C) og ikke i SATSER — altså nøyaktig
+  // to-lags-bruddet MINI.N ble tatt for. Oppdaterte man den ene og ikke den andre,
+  // desynket oppdrag C stille fra resten av byen. Flyttet hit 2026-08-17.
+  forbrukslaansrente: 0.226,         // SSB tab. 12844, kredittkortlån der det betales
+                                     // rente, 2026K2 (2025K2 var 22,9 %). Dette er den
+                                     // riktige av SSBs to serier for det spillet viser.
   lonnsvekst: 0.044,                 // nominell årslønnsvekst 2026 (SSB Konjunkturtendensene
                                      // 15.06.2026; samme som frontfagsrammen etter oppgjøret
                                      // 12.04.2026). Rettet 16.08.2026 fra 0,032 — det tallet
@@ -460,7 +474,9 @@ const SATSER = {
   realAksjer: 0.052,
   realObligasjoner: 0.017,
   realKontanter: 0.005,
-  spuReal: 0.0434,                   // Oljefondets faktiske netto realavkastning siden 1998
+  spuReal: 0.0451,                   // Oljefondets faktiske netto realavkastning siden 1998,
+                                     // per 30.06.2026 (NBIM halvårsrapport 2026, tabell 3).
+                                     // 4,34 % var riktig per 31.12.2025.
   volAksjer: 0.17,                   // årlig standardavvik, globalt bredt aksjefond (anslag)
   volObligasjoner: 0.055,
 
@@ -516,6 +532,10 @@ function krKort(n){
   return (n<0?'−':'')+nf0.format(Math.round(a));
 }
 function pst2(x){ return nf2.format(x*100)+' %'; }
+// Én desimal. Trengs fordi flere korttekster var skrevet med én da tallene sto som
+// literaler («KPI 2,7 %»), og pst2 ville gjort dem om til «3,00 %» — falsk presisjon
+// på en tolvmånedersvekst som SSB selv oppgir med én desimal.
+function pst1(x){ return nf1.format(x*100)+' %'; }
 const MND=['jan','feb','mar','apr','mai','jun','jul','aug','sep','okt','nov','des'];
 const MNDLANG=['januar','februar','mars','april','mai','juni','juli','august',
   'september','oktober','november','desember'];
@@ -702,10 +722,22 @@ const F = {
     //    ek = 0,10·pris  →  pris = ek/0,10  →  lån = pris − ek
     const prisAvEk=egenkapital/SATSER.egenkapital;
     const avBelaaning=prisAvEk-egenkapital;
-    // 3) betjeningsevne ved stressrente, etter levekostnader
+    // 3) betjeningsevne ved stressrente, etter levekostnader OG etter terminen på
+    //    gjeld kunden allerede har. Utlånsforskriften § 5 krever at stresstesten
+    //    gjøres på kundens SAMLEDE gjeld, ikke bare på det nye lånet. Fram til
+    //    2026-08-17 reduserte `annenGjeld` kun gjeldsgradsskranken over — målt ga
+    //    400 000 kr i billån da IDENTISK betjeningsevne som ingen gjeld, altså
+    //    gratis gjeld i den skranken som i praksis binder folk.
+    //
+    //    Modellantakelse, verdt å vite: eksisterende gjeld antas å nedbetales som
+    //    annuitet over samme 30 år til samme stressrente. I spillets caser er
+    //    `annenGjeld` fellesgjeld, som normalt løper langt, så antakelsen er
+    //    rimelig — men den er en antakelse, ikke en lovregel.
     const netto=this.lonnsskatt(bruttoInntekt).netto/12;
     const lev=levekostnad===undefined?LEVEKOSTNAD:levekostnad;
-    const avBetjening=this.betjeningsevne(netto,lev,30,r);
+    const terminAnnenGjeld=(annenGjeld||0)>0
+      ? this.terminbelop(annenGjeld,this.stressrente(r)/12,360) : 0;
+    const avBetjening=this.betjeningsevne(netto,lev+terminAnnenGjeld,30,r);
     const laan=Math.min(avGjeldsgrad,avBelaaning,avBetjening);
     const navn={};
     navn[avGjeldsgrad]='gjeldsgrad'; navn[avBelaaning]='egenkapital';
@@ -1217,16 +1249,25 @@ const KORT=[
   {n:7, x:660, y:1450, t:'Nominell rente lyver',
    s:'Effektiv rente tar med gebyrer og rentetermin. Et forbrukslån med 12 % nominell kan ha 15 % effektiv.'},
   {n:8, x:1200,y:1330, t:'Rentefradraget er 22 %',
-   s:'Betaler du 50 000 kr i renter, får du 11 000 tilbake. Boliglånet koster altså 5,08 % nominelt, ca. 3,96 % netto.'},
+   s:'Betaler du 50 000 kr i renter, får du 11 000 tilbake. Boliglånet koster altså '
+     +pst2(SATSER.boliglaansrente)+' nominelt, ca. '
+     +pst2(SATSER.boliglaansrente*(1-SATSER.alminnelig))+' netto.'},
   {n:9, x:1210,y:1050, t:'BSU: 2 750 kr i året',
    s:'10 % fradrag av inntil 27 500 kr spart. Maks 300 000 kr totalt, og bare t.o.m. året du fyller 33.'},
   {n:10,x:300, y:1040, t:'Kredittkortgjeld først',
-   s:'Betaler du ned gjeld til 22,9 %, er det 17,9 % garantert etter rentefradrag. For å slå det i aksjer må du tjene 28,7 % før skatt, hvert år, sikkert.'},
+   s:'Betaler du ned gjeld til '+pst1(SATSER.forbrukslaansrente)+', er det '
+     +pst1(SATSER.forbrukslaansrente*(1-SATSER.alminnelig))
+     +' garantert etter rentefradrag. For å slå det i aksjer må du tjene '
+     +pst1(SATSER.forbrukslaansrente*(1-SATSER.alminnelig)
+           /(1-SATSER.alminnelig*SATSER.oppjustering))
+     +' før skatt, hvert år, sikkert.'},
   // --- BOLIGFELTET ---
   {n:11,x:280, y:340, t:'Egenkapitalkravet er 10 %',
    s:'Ned fra 15 % ved årsskiftet 2024/25. Men gjeldstaket på 5 × brutto inntekt står, og det er ofte det som binder.'},
   {n:12,x:980, y:340, t:'Banken stresstester deg',
-   s:'Du må tåle 3 prosentpoeng høyere rente, minimum 7 %. Med 5,08 % i dag regner banken med 8,08 %.'},
+   s:'Du må tåle 3 prosentpoeng høyere rente, minimum 7 %. Med '
+     +pst2(SATSER.boliglaansrente)+' i dag regner banken med '
+     +pst2(F.stressrente())+'.'},
   {n:13,x:1200,y:620, t:'Dokumentavgift: 2,5 %',
    s:'Av markedsverdien. Ved nybygg som ikke er tatt i bruk betaler du bare av tomteverdien, og borettslagsandeler er helt utenfor.'},
   {n:14,x:290, y:860, t:'Fellesgjeld er din gjeld',
@@ -1257,7 +1298,8 @@ const KORT=[
    s:'Tar du ut pensjon tidlig, fordeles den samme beholdningen på flere år. Årlig beløp blir lavere, livet ut.'},
   // --- RENTETORGET ---
   {n:26,x:1390,y:1040, t:'Realavkastning er den ekte',
-   s:'5 % avkastning med 2,7 % inflasjon er ca. 2,24 % realt. Regn i kjøpekraft, ikke i kroner.'},
+   s:'5 % avkastning med '+pst1(SATSER.kpi)+' inflasjon er ca. '
+     +pst2(F.realrente(0.05,SATSER.kpi))+' realt. Regn i kjøpekraft, ikke i kroner.'},
   {n:27,x:1860,y:1040, t:'Fisher, ikke fratrekk',
    s:'Realrente = (1+nominell)/(1+inflasjon) − 1. Å bare trekke fra gir feil svar, og feilen vokser med tallene.'},
   {n:28,x:1390,y:1460, t:'Et fall på 50 % krever 100 % opp',
@@ -1265,11 +1307,12 @@ const KORT=[
   {n:29,x:1860,y:1460, t:'Styringsrenten er 4,25 %',
    s:'Hevet 6. mai 2026. Alt annet henger etter den: boliglån, sparekonto, obligasjoner.'},
   {n:30,x:1620,y:1420, t:'Inflasjonsmålet er 2 %',
-   s:'Norges Bank styrer mot det. I juni 2026 var KPI 2,7 %, og banken venter å nå målet i 2029.'},
+   s:'Norges Bank styrer mot det. I juli 2026 var KPI '+pst1(SATSER.kpi)
+     +', og banken venter å nå målet i 2029.'},
   // --- BØRSTORGET ---
   {n:31,x:2050,y:1450, t:'Globale aksjer: ca. 5 % realt',
    s:'5,2 % per år 1900–2024 for verdensindeksen. Obligasjoner 1,7 %. Kontanter 0,5 %. Det er hele saken.'},
-  {n:32,x:2930,y:1050, t:'Oljefondet: 4,34 % netto realt',
+  {n:32,x:2930,y:1050, t:'Oljefondet: '+pst2(SATSER.spuReal)+' netto realt',
    s:'Faktisk oppnådd siden 1998, etter kostnader og inflasjon. Med 0,07 % i forvaltningskostnad.'},
   {n:33,x:2450,y:1470, t:'Ett prosentpoeng i gebyr koster nesten en femtedel',
    s:'Over 30 år spiser 1,3 % i stedet for 0,25 % nesten 18 % av sluttbeløpet. Gebyret er det eneste du vet sikkert på forhånd.'},
@@ -1440,7 +1483,8 @@ const LEVEKOSTNAD=(()=>{ let s=0; for (const k in UTGIFT) if (k!=='husleie') s+=
 // All gjeld man kan pådra seg i Renteriket er forbruksgjeld eller overtrekk.
 // Den koster forbrukslånsrente, ikke boliglånsrente — å bruke boliglånsrenten
 // her gjorde forbruksgjeld fire og en halv gang mindre farlig enn den er.
-const FORBRUKSRENTE=0.229;
+// Verdien bor i SATSER (flyttet 2026-08-17) — dette er kun et kortnavn.
+const FORBRUKSRENTE=SATSER.forbrukslaansrente;
 // Prisnivået i byen. Uten dette var overskuddet konstant 10 000 kr i måneden i
 // førti år — i et spill der oppdrag F handler om at kroner lyver over tid og
 // oppdrag N regner med 3,2 % lønnsvekst. Byen motsa altså pensum.
@@ -1963,7 +2007,9 @@ MINI.B=(v)=>{
 MINI.C=(v)=>{
   const utg=Math.round(utgiftSum());
   let bufferValg=Math.round(utg*1.5/1000)*1000, laan=0, buf=0, betaltRente=0, logg=[];
-  const FORBRUKSRENTE=0.229;
+  // (Her sto en lokal `const FORBRUKSRENTE=0.229` som skygget modulkonstanten.
+  //  Fjernet 2026-08-17 — den ville latt oppdrag C beholde gammel rente i det
+  //  stille neste gang satsen endres. Modulnivået leser nå SATSER.)
   // Tre måneder uten jobb, med dagpenger. Uten dette inneholdt stormen bare
   // husholdningsuhell på 2 000–16 000 kr, og da bunnet regnskapet ut på ÉN
   // måneds buffer — altså motsatt av tommelfingerregelen oppdraget lærer bort.
@@ -4333,7 +4379,7 @@ const PRAT={
     '«Kom, jeg skal vise deg tolv måneder av et helt vanlig liv. Du får bestemme én ting: '+
     'hvor stor bufferen skal være.»'],
   rolf:['«Du ser ut som en som trenger penger raskt! Jeg har '+kr(50000)+' klare i dag. '+
-    '<em>Bare 22,9 prosent.</em>»',
+    '<em>Bare '+pst1(SATSER.forbrukslaansrente).replace(' %',' prosent')+'.</em>»',
     'Han sier «bare» om et tall som er fire ganger boliglånsrenten. '+
     '«Eller,» sier han lavere, «du kan la meg vise deg hvordan man kommer <em>ut</em> av fire lån. '+
     'Det er dårligere butikk for meg.»'],
@@ -5288,8 +5334,10 @@ function tegnPause(){
       ['Grunnbeløpet (1. mai '+SATSER.aar+')',kr(SATSER.grunnbelop)],
       ['OTP, minimum',pst2(SATSER.otpMin)],
       ['Styringsrente',pst2(SATSER.styringsrente)],
-      ['Boliglånsrente (snitt, mai '+SATSER.aar+')',pst2(SATSER.boliglaansrente)],
-      ['KPI, tolvmåneders',pst2(SATSER.kpi)],
+      ['Boliglånsrente (snitt utestående, juni '+SATSER.aar+')',pst2(SATSER.boliglaansrente)],
+      ['Innskuddsrente (snitt husholdninger, juni '+SATSER.aar+')',pst2(SATSER.innskuddsrente)],
+      ['Forbrukslånsrente (SSB, '+SATSER.aar+'K2)',pst2(SATSER.forbrukslaansrente)],
+      ['KPI, tolvmåneders (juli '+SATSER.aar+')',pst2(SATSER.kpi)],
       ['Realavkastning aksjer (DMS 1900–2024)',pst2(SATSER.realAksjer)],
       ['Oljefondet, netto realt siden 1998',pst2(SATSER.spuReal)]
     ])));
@@ -5386,9 +5434,19 @@ function oppdater(dt){
   settBrus(s?s.brus:0.3);
 
   // --- hint ---
+  // Playtest 16.08 (F1): løser du oppdrag A gjennom Solveigs DIALOG, blir oppdraget
+  // merket gjort, men ansettelsen ligger bak «Ta jobben»-knappen inne i BYGNINGEN.
+  // Da står `harJobb=false`, hintstripa er tom, og spilleren kan gå tolv månedsskift
+  // med kontanter/gjeld/formue på 0 → 0 — et rentetre som aldri vokser. Figuren og
+  // bygningen ligger nesten oppå hverandre (46 px mot 52 px), så feilen er lett å gjøre.
+  // Hintet peker veien tilbake, men overstyrer aldri et nærmere mål.
+  const trengerJobb = gjort('A') && !harJobb;
   if (!stopp){
     const n=naermeste();
-    if (!n) hint('');
+    if (!n) hint(trengerJobb
+      ? 'Du har løst oppdrag A, men er ikke ansatt ennå — gå inn i '
+        + '<b>JOBBSENTERET</b> i Startgata og trykk <b>Ta jobben</b>.'
+      : '');
     else if (n.type==='bygg'){
       const o=OPPDRAG.find(o=>o.bygg===n.b.id && !gjort(o.id) && laastOpp(o));
       hint('<kbd>'+OKORD+'</kbd> '+n.b.navn+(o?' — oppdrag '+o.id:''));

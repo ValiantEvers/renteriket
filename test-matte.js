@@ -236,7 +236,7 @@ er('kjøpekraft er invers av prisFram',
   console.log('    (sparekonto etter skatt: '+(rr*100).toFixed(2)+' % realt)');
 }
 er('kaffe 52 kr om 25 år ved 2,7 %',
-   await K(()=>RR.F.prisFram(52,RR.SATSER.kpi,25)), 52*Math.pow(1.027,25), 0.01);
+   await K(()=>RR.F.prisFram(52,RR.SATSER.kpi,25)), 52*Math.pow(1+S.kpi,25), 0.01);
 
 console.log('\n=== LÅNERAMME OG BOLIG ===');
 {
@@ -259,10 +259,14 @@ sant('stressrenten er alltid minst 7 %',
    [0,0.01,0.02,0.03,0.039].every(async x=>(await K(y=>RR.F.stressrente(y),x))>=0.07));
 {
   const t=await K(()=>RR.F.stresstest(2280000,30));
-  const i=0.0808/12, A=2280000*i/(1-Math.pow(1+i,-360));
+  // Fasiten utledes av SATSER, ikke hardkodes. Sto tidligere som 0.0808/12 — en
+  // literal som var riktig så lenge boliglånsrenten var 5,08 %, og som ville
+  // rødlagt seg selv ved neste satsrevisjon uten at noe var galt med koden.
+  const iS=Math.max(S.boliglaansrente+S.stresspp,S.stressgulv)/12;
+  const A=2280000*iS/(1-Math.pow(1+iS,-360));
   er('stresstestet terminbeløp', t, A, 0.01);
   sant('stressterminen er høyere enn dagens termin',
-    t > (await K(()=>RR.F.terminbelop(2280000,0.0508/12,360))));
+    t > (await K(r=>RR.F.terminbelop(2280000,r/12,360),S.boliglaansrente)));
 }
 er('dokumentavgift 2,5 %', await K(()=>RR.F.dokumentavgift(3800000,false)), 95000, 0.01);
 er('nybygg: avgift av tomteverdien, ikke fritak',
@@ -302,6 +306,37 @@ console.log('\n=== BETJENINGSEVNE OG DRIFTKORREKSJON ===');
   console.log('    (ved 456 000 og 300 000 i EK: gjeldsgrad '+Math.round(a1.gjeldsgrad)+
     ', betjeningsevne '+Math.round(a1.betjening)+', egenkapital '+Math.round(a1.belaaning)+
     ' → '+a1.bindende+' binder)');
+
+  // --- Utlånsforskriften § 5: stresstesten gjelder SAMLET gjeld -------------
+  // Fram til 2026-08-17 reduserte annenGjeld bare gjeldsgradsskranken.
+  // Målt den gang: 400 000 kr i billån ga IDENTISK betjeningsevne som ingen
+  // gjeld. Disse sjekkene pinner at det ikke kan skje igjen.
+  const b0=await K(()=>RR.F.laaneramme(456000,300000));
+  const b4=await K(()=>RR.F.laaneramme(456000,300000,undefined,400000));
+  sant('§5: eksisterende gjeld MÅ redusere betjeningsevnen', b4.betjening<b0.betjening);
+  er('§5: 400 000 i annen gjeld senker betjeningsevnen med nøyaktig 400 000',
+     b0.betjening-b4.betjening, 400000, 0.01);
+  // Hvorfor akkurat krone for krone: rommet reduseres med terminen D·i/(1−(1+i)^−n),
+  // og annuitetsfaktoren A=(1−(1+i)^−n)/i ganger det opp igjen — (rom − D/A)·A
+  // = rom·A − D. Identiteten er verdt å pinne, for den gjør fasitene etterprøvbare
+  // uten å kjenne stressrenten.
+  {
+    const iS=Math.max(S.boliglaansrente+S.stresspp,S.stressgulv)/12;
+    const A=(1-Math.pow(1+iS,-360))/iS;
+    const netto=await K(()=>RR.F.lonnsskatt(456000).netto/12);
+    const rom=netto-b0.levekostnad;
+    er('§5: betjeningsevne uten gjeld = rom × annuitetsfaktor', b0.betjening, rom*A, 0.01);
+    er('§5: betjeningsevne med gjeld = rom × A − gjeld', b4.betjening, rom*A-400000, 0.01);
+  }
+  // Begge skranker faller like mye, så avstanden mellom dem er invariant i gjelden
+  // — det er nettopp fordi § 5 og § 6 nå begge leser SAMLET gjeld.
+  er('§5: avstanden gjeldsgrad↔betjening er uavhengig av annen gjeld',
+     (b0.betjening-b0.gjeldsgrad)-(b4.betjening-b4.gjeldsgrad), 0, 0.01);
+  sant('§5: nok annen gjeld nuller betjeningsevnen, den blir aldri negativ',
+     (await K(()=>RR.F.laaneramme(456000,300000,undefined,99000000).betjening))===0);
+  console.log('    (§5: uten gjeld '+Math.round(b0.betjening)+
+    ', med 400 000 '+Math.round(b4.betjening)+
+    ' — differanse '+Math.round(b0.betjening-b4.betjening)+')');
 }
 {
   // Driftkorreksjonen: en tilfeldig gang med drift g + σ²/2 skal ha g som
@@ -450,12 +485,15 @@ console.log('\n=== PÅSTANDENE SPILLET GJØR I TEKST ===');
   console.log('    (10 år: '+Math.round(t10)+' · 40 år: '+Math.round(t40)+')');
   // Kort 8: 50 000 i renter gir 11 000 tilbake
   er('kort 8: rentefradrag av 50 000', 50000*S.rentefradrag, 11000, 0.01);
-  // Kort 12: 5,08 % + 3 pp = 8,08 %
-  er('kort 12: stressrente', await K(()=>RR.F.stressrente(RR.SATSER.boliglaansrente)), 0.0808, 1e-9);
-  // Kort 8: netto boliglånsrente ≈ 3,96 %
+  // Kort 12: boliglånsrenten + 3 pp, gulv 7 %. Fasiten utledes av SATSER — sto
+  // tidligere som literalen 0.0808, som låste testen til én bestemt måneds SSB-tall.
+  er('kort 12: stressrente', await K(()=>RR.F.stressrente(RR.SATSER.boliglaansrente)),
+     Math.max(S.boliglaansrente+S.stresspp,S.stressgulv), 1e-9);
+  // Kort 8: netto boliglånsrente etter rentefradrag
   er('kort 8: netto boliglånsrente', await K(()=>RR.F.netterente(RR.SATSER.boliglaansrente)),
-     0.0508*0.78, 1e-9);
-  console.log('    (netto boliglånsrente: '+(0.0508*0.78*100).toFixed(2)+' %)');
+     S.boliglaansrente*(1-S.alminnelig), 1e-9);
+  console.log('    (netto boliglånsrente: '
+    +(S.boliglaansrente*(1-S.alminnelig)*100).toFixed(2)+' %)');
   // Oppdrag D: Bodil må spare klart mer enn Ada
   const adaVed35=await K(()=>RR.F.sluttverdiSerie(2000,RR.F.mndRente(RR.SATSER.realAksjer),120,true));
   const adaSlutt=await K(x=>RR.F.sluttverdi(x,RR.SATSER.realAksjer,32),adaVed35);

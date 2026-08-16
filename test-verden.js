@@ -53,7 +53,8 @@ sant('ingen oppdrag krever seg selv', OPPDRAG.every(o=>!o.krav.includes(o.id)));
 
 console.log('\n=== SLIK EN SPILLER FAKTISK STARTER ===');
 // Denne testen manglet, og det er derfor «det går ikke an å bevege seg» slapp
-// gjennom 838 sjekker: alle de andre kaller RR.flyttTil() eller RR.lukkAlt()
+// gjennom hele pakka (838 sjekker den gang, 970 i dag): alle de andre kaller
+// RR.flyttTil() eller RR.lukkAlt()
 // først, og flytter dermed spilleren vekk fra startposisjonen før de prøver noe.
 // Startposisjonen lå inne i BUTIKKENs kollisjonsboks — begge akser blokkert,
 // spilleren bom fast fra første sekund.
@@ -656,6 +657,44 @@ console.log('\n=== TEGNINGEN HAR HODEPLASS ===');
   sant('tyngste tegning er under 4 ms', verst<4);
   sant('det er minst fire ganger hodeplass igjen', 16.7/verst>4);
   await p.evaluate(()=>RR.settDogn(0.42));
+}
+
+console.log('\n=== LØST OPPDRAG A, MEN IKKE ANSATT (playtest F1) ===');
+// Løser du A gjennom Solveigs DIALOG, blir oppdraget merket gjort mens ansettelsen
+// fortsatt ligger bak «Ta jobben» inne i BYGNINGEN. Da står harJobb=false, og før
+// 2026-08-17 var hintstripa da helt tom: målt 12 månedsskift med kontanter, gjeld
+// og formue 0 → 0. Denne sjekken dekker BEGGE tilstander, for et hint som alltid
+// vises er like ubrukelig som et som aldri vises.
+{
+  // (60,60) er verifisert tomt — ingen bygning, figur eller gjenstand i nærheten,
+  // så hintet som måles er nettopp det som ellers ville vært den tomme strengen.
+  const TOMT=[60,60];
+  await p.evaluate(()=>{ RR.lukkAlt(); RR.nullstill(); });
+  await p.evaluate(xy=>{ RR.flyttTil(xy[0],xy[1]); RR.sett({harJobb:false}); },TOMT);
+  await p.waitForTimeout(200);
+  const foer=await p.evaluate(()=>RR.hintTekst());
+  sant('uten oppdrag A løst er stripa tom (hintet maser ikke fra start)', foer==='');
+
+  await p.evaluate(xy=>{ RR.loesOppdrag('A'); RR.sett({harJobb:false});
+                         RR.flyttTil(xy[0],xy[1]); },TOMT);
+  await p.waitForTimeout(200);
+  const under=await p.evaluate(()=>RR.hintTekst());
+  sant('A løst + ikke ansatt → hintet peker mot Jobbsenteret',
+       /JOBBSENTERET/i.test(under));
+  sant('hintet nevner knappen som faktisk ansetter deg', /Ta jobben/i.test(under));
+
+  await p.evaluate(xy=>{ RR.sett({harJobb:true}); RR.flyttTil(xy[0],xy[1]); },TOMT);
+  await p.waitForTimeout(200);
+  const etter=await p.evaluate(()=>RR.hintTekst());
+  sant('når du ER ansatt forsvinner hintet igjen', etter==='');
+  console.log('    (hint ved A løst + uten jobb: '+JSON.stringify(under.slice(0,60))+'…)');
+
+  // Hintet skal aldri overstyre et nærmere mål — ellers skjuler det navigasjonen.
+  await p.evaluate(()=>{ RR.sett({harJobb:false}); RR.gaaTil('bank'); });
+  await p.waitForTimeout(200);
+  const vedBygg=await p.evaluate(()=>RR.hintTekst());
+  sant('står du ved en bygning vinner bygningshintet', !/Ta jobben/i.test(vedBygg));
+  await p.evaluate(()=>{ RR.nullstill(); RR.sett({harJobb:true}); });
 }
 
 await b.close();

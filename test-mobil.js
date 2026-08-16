@@ -107,6 +107,35 @@ for (const [navn,w,h] of [['iPhone-format 390×844',390,844],['liten Android 360
   const st=await p.evaluate(()=>RR.tilstand);
   sant('MENY lukker minispillet først', !st.mAapen && !st.pause);
 
+  // --- kortveggen: ingen tekst skal flyte ut av ruta si (playtest F2) ----------
+  // «Manipuleringssvindel vokser raskest» målte 138 px i en 135 px rute ved 390×844.
+  // Norsk er full av lange sammensetninger, så dette måles på ALLE 40 kortene i alle
+  // viewports — ikke på det ene ordet som tilfeldigvis ble oppdaget.
+  await p.evaluate(()=>{ RR.lukkAlt(); RR.taAlleKort(); RR.vekslePause(); });
+  await p.evaluate(()=>{
+    const b=[...document.querySelectorAll('#pause button')].find(x=>/kort/i.test(x.textContent));
+    if (b) b.click();
+  });
+  await p.waitForTimeout(200);
+  const vegg=await p.evaluate(()=>{
+    const k=[...document.querySelectorAll('.kkort')];
+    return {
+      antall:k.length,
+      overflyt:k.filter(e=>e.scrollWidth>e.clientWidth+1)
+               .map(e=>({t:(e.querySelector('.kt')||e).textContent.trim().slice(0,40),
+                         s:e.scrollWidth, c:e.clientWidth})),
+      veggBredere:(()=>{ const v=document.querySelector('.kortvegg');
+        return v ? v.scrollWidth>v.clientWidth+1 : false; })()
+    };
+  });
+  sant('kortveggen er rendret på '+navn, vegg.antall>0);
+  sant('ingen kortrute flyter over på '+navn, vegg.overflyt.length===0);
+  sant('selve kortveggen er ikke bredere enn sin egen ramme på '+navn, !vegg.veggBredere);
+  vegg.overflyt.slice(0,4).forEach(o=>
+    console.log('      ✗ overflyt: "'+o.t+'" — '+o.s+' px i '+o.c+' px'));
+  if (!vegg.overflyt.length) console.log('    ('+vegg.antall+' kortruter målt, alle innenfor)');
+  await p.evaluate(()=>RR.lukkAlt());
+
   sant('ingen JavaScript-feil på '+navn, sideFeil.length===0);
   sideFeil.slice(0,5).forEach(f=>console.log('      '+f));
   await p.close();
