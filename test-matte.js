@@ -208,6 +208,16 @@ console.log('\n=== SKATT PÅ SPARING ===');
      await K(()=>RR.F.formuesskatt(8000000,0,0,2000000)), (8000000*0.8-2000000-1900000)*0.01, 0.01);
   er('gjeld som spiser hele grunnlaget gir null, ikke negativ skatt',
      await K(()=>RR.F.formuesskatt(5000000,0,0,4000000)), 0, 1e-9);
+  // sktl. § 4-10 (2): 25 % opp til 14 mill., 70 % av det overskytende. Var flat 25 %
+  // før 16.08.2026, som ga 55 % for lav skatt på en bolig over grensen.
+  er('primærbolig under trinnet: fortsatt flat 25 %',
+     await K(()=>RR.F.formuesskatt(0,0,14000000,0)), (14000000*0.25-1900000)*0.01, 0.01);
+  er('primærbolig over trinnet: 70 % av det overskytende',
+     await K(()=>RR.F.formuesskatt(0,0,15000000,0)),
+     (14000000*0.25 + 1000000*0.70 - 1900000)*0.01, 0.01);
+  sant('boligtrinnet gir høyere skatt enn flat rabatt ville gitt',
+     (await K(()=>RR.F.formuesskatt(0,0,15000000,0))) >
+     (15000000*0.25-1900000)*0.01 + 1);
   sant('trinn 2 gir høyere sats',
      (await K(()=>RR.F.formuesskatt(40000000,0,0,0))) >
      (40000000*0.8-1900000)*0.01 - 1);

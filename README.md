@@ -151,9 +151,10 @@ Kartverket.
 | Minstefradrag, maks | 95 700 kr | 46 % av lønn |
 | Trinnskatt | fem trinn fra 226 100 kr | 1,7 % → 17,8 % |
 | Skjermingsrente | 3,6 % | **gjelder 2025.** 2026-satsen fastsettes i januar 2027 |
-| IPS, maks per år | 25 000 kr | hevet fra 15 000 i 2026 |
+| IPS, maks per år | 25 000 kr | 15 000 i 2025, hevet til 25 000 f.o.m. 2026 |
 | BSU | 10 % av inntil 27 500 kr, tak 300 000 kr | t.o.m. året du fyller 33 |
 | Formuesskatt | bunnfradrag 1 900 000 kr, 1,0 % | omlagt mellom stat og kommune i 2026, samlet sats uendret |
+| Primærbolig, formuesverdi | 25 % opp til 14 mill., 70 % over | grensen hevet fra 10 mill. f.o.m. 2026 |
 | Egenkapitalkrav bolig | 10 % | ned fra 15 % ved årsskiftet 2024/25 |
 | Maks gjeldsgrad | 5 × brutto årsinntekt | uendret, og det er ofte denne som binder |
 | Rentestresstest | +3 prosentpoeng, minimum 7 % | brukes i betjeningsevnekravet |

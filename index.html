@@ -373,7 +373,7 @@ body.touch #pauseknapp{display:none}
 // =====================================================================
 const SATSER = {
   aar: 2026,
-  sjekket: '2026-07-31',
+  sjekket: '2026-08-16',
 
   // --- inntektsskatt ---
   alminnelig: 0.22,                  // sats på alminnelig inntekt (2026)
@@ -414,7 +414,10 @@ const SATSER = {
   formueTrinn2: 21500000,
   formueSats2: 0.011,
   rabattAksjer: 0.20,                // aksjer verdsettes til 80 %
-  rabattPrimaerbolig: 0.75,          // primærbolig verdsettes til 25 % opp til 10 mill.
+  rabattPrimaerbolig: 0.75,          // primærbolig verdsettes til 25 % opp til trinnet
+  formueBoligTrinn: 14000000,        // sktl. § 4-10 (2): grensen ble hevet fra 10 til
+                                     // 14 mill. f.o.m. inntektsåret 2026 (RNB 2026)
+  rabattPrimaerboligOver: 0.30,      // 70 % verdsetting av det som overstiger trinnet
 
   // --- lån og bolig (utlånsforskriften, videreført på ubestemt tid) ---
   egenkapital: 0.10,                 // ENDRET 31.12.2024: krav ned fra 15 % til 10 %
@@ -445,7 +448,10 @@ const SATSER = {
   boliglaansrente: 0.0508,           // snitt utestående, mai 2026 (SSB)
   innskuddsrente: 0.0298,            // snitt husholdninger, mai 2026 (SSB)
   kpi: 0.027,                        // tolvmånedersvekst juni 2026 (SSB)
-  lonnsvekst: 0.032,                 // nominell årslønnsvekst, TBU/SSB-anslag 2026
+  lonnsvekst: 0.044,                 // nominell årslønnsvekst 2026 (SSB Konjunkturtendensene
+                                     // 15.06.2026; samme som frontfagsrammen etter oppgjøret
+                                     // 12.04.2026). Rettet 16.08.2026 fra 0,032 — det tallet
+                                     // var TBUs KPI-anslag for 2026, ikke lønnsveksten.
   inflasjonsmaal: 0.02,              // Norges Bank
 
   // --- langsiktige anslag brukt i simuleringene ---
@@ -669,9 +675,14 @@ const F = {
   // Det gjør tallet litt for lavt for den som har både aksjer og stor gjeld, men det
   // endrer ikke poenget spillet bruker det til (bunnfradrag, rabatt, sats).
   formuesskatt(aksjer,bankinnskudd,primaerbolig,gjeld){
+    // Primærbolig har to trinn: 25 % av verdien opp til grensen, 70 % av det overskytende
+    // (sktl. § 4-10 annet ledd). Rabatten var tidligere flat, så en bolig over grensen ble
+    // verdsatt 55 % for lavt — 15 mill. ga 18 500 kr i skatt der fasit er 41 000.
+    const bolig=primaerbolig||0;
+    const boligVerdi=Math.min(bolig,SATSER.formueBoligTrinn)*(1-SATSER.rabattPrimaerbolig)
+      + Math.max(0,bolig-SATSER.formueBoligTrinn)*(1-SATSER.rabattPrimaerboligOver);
     const grunnlag=Math.max(0,
-      aksjer*(1-SATSER.rabattAksjer) + (bankinnskudd||0) +
-      (primaerbolig||0)*(1-SATSER.rabattPrimaerbolig) - (gjeld||0));
+      aksjer*(1-SATSER.rabattAksjer) + (bankinnskudd||0) + boligVerdi - (gjeld||0));
     const over=Math.max(0,grunnlag-SATSER.formueBunn);
     if (over<=0) return 0;
     const t2=Math.max(0,grunnlag-SATSER.formueTrinn2);
@@ -2224,7 +2235,7 @@ MINI.E=(v)=>{
     {n:'Kredittkort',b:148000,r:0.229,min:0.03},
     {n:'Forbrukslån', b:62000,r:0.135,min:0.02},
     {n:'Billån',     b:205000,r:0.069,min:0.015},
-    {n:'Studielån',   b:38000,r:0.049,min:0.010}
+    {n:'Studielån',   b:38000,r:0.04602,min:0.010}   // Lånekassens flytende rente, aug. 2026
   ];
   const BETALING=13000;
   // Startrekkefølgen er bevisst IKKE den riktige. Er den det, løses oppdraget
@@ -3220,7 +3231,7 @@ MINI.M=(v)=>{
      svindel:true,hvorfor:'Direktørsvindelens lillebror: kontonummer byttes ut før lønnskjøringen. Legitime lønnsendringer skjer i personalsystemet, aldri på e-post. Gå til HR fysisk eller ring.'},
     {fra:'Sparebanken',k:'SMS',t:'Engangskode: 448192. Vi ringer deg ALDRI og ber om denne koden. Har noen bedt deg om den, legg på.',
      svindel:false,hvorfor:'En ekte engangskode med den advarselen bankene har begynt å sette inn nettopp fordi svindlerne ber om koden. Meldingen ber deg ikke gjøre noe. Den forteller deg hva du ikke skal gjøre.'},
-    {fra:'Norges Bank',k:'Nyhetsvarsel',t:'Styringsrenten holdes uendret på 4,25 prosent. Neste rentemøte er 13. august.',
+    {fra:'Norges Bank',k:'Nyhetsvarsel',t:'Styringsrenten holdes uendret på 4,25 prosent. Neste rentebeslutning er 24. september.',
      svindel:false,hvorfor:'Ren informasjon, ingen handling, ingen lenke, ingenting som haster. Slik ser en beskjed ut som bare skal opplyse deg.'}
   ];
   let i=0, riktig=0, feil=0, tid=0;
@@ -3410,7 +3421,7 @@ MINI.N=(v)=>{
     let s=0, innskuddSum=0, skattUnderveis=0, realisertSum=0, hist=[0], lonnVekst=1;
     let uhellskostnad=0, aarsGevinst=0, bruttoGevinst=0;
     for (let m=0;m<AAR*12;m++){
-      if (m>0&&m%12===0) lonnVekst*=1.032;                  // nominell lønnsvekst
+      if (m>0&&m%12===0) lonnVekst*=(1+SATSER.lonnsvekst);  // nominell lønnsvekst
       const spar=NETTO*lonnVekst*(livsstil2?sparerate*Math.pow(0.988,m/12):sparerate);
       s+=spar; innskuddSum+=spar;
       const avk=mu+sig*gauss(r);
