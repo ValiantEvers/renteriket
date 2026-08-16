@@ -1,0 +1,73 @@
+name: Tester
+
+# Renteriket hadde 970 sjekker og ingenting som kjørte dem. Denne lukker det hullet.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+
+      # package-lock.json er sporet siden 2026-08-16 nettopp for at dette skal virke:
+      # `npm ci` nekter å kjøre uten lås, og playwright er hardpinnet til 1.62.1 fordi
+      # chromium-revisjonen må matche versjonen eksakt (revisjon 1234). Med caret ville
+      # en patch-bump gitt feil revisjon, og symptomet er IKKE en tydelig feil — det er
+      # kortplukk-testen som plutselig finner 34–38 av 40 kort. Målt 2026-08-16.
+      - run: npm ci
+
+      # Nedlastingen av chromium er det dyreste steget. Cache den på lock-filens hash,
+      # så den bare skjer når playwright-versjonen faktisk endres.
+      - name: Cache Playwright-chromium
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-chromium-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      # Kjernesuitene: matte, verden, kort, oppdrag — 521 av de 970 sjekkene
+      # (189 + 153 + 17 + 162), målt 1 m 48 s lokalt 2026-08-16, altså ~3 m 40 s her
+      # for begge moduser. Det er disse fire som har fanget ekte spillfeil (uløselig
+      # oppdrag D, uoppnåelig mål i G, finalen som løste seg selv, jukset
+      # diversifisering) — de dekker SATSER/F-laget og hele oppdragsløpet.
+      #
+      # test-mobil / test-tilgjengelighet / test-lagring / test-fps er BEVISST utelatt:
+      # de tre første er treige viewport- og korrupsjonssveip (test-lagring alene
+      # planter 294 kombinasjoner av ødelagt lagring), og test-fps måler bildefrekvens,
+      # som er meningsløst på en delt runner — den ville blitt en flaky port som lærer
+      # deg å ignorere rødt. Kjør full pakke lokalt med `bash test-alle.sh` før noe
+      # skrives av som ferdig.
+      - name: Kjernesuitene (file://)
+        run: |
+          for t in test-matte.js test-verden.js sjekk-kort.js test-oppdrag.js; do
+            echo "──── $t ────"
+            node "$t" || exit 1
+          done
+
+      # Produksjon serverer over HTTPS, og file:// har sitt eget origo-oppsett for
+      # localStorage. Lagringsavhengige feil dukker bare opp i denne moduset.
+      - name: Kjernesuitene (http://)
+        run: |
+          python3 -m http.server 8731 --bind 127.0.0.1 >/dev/null 2>&1 &
+          sleep 1
+          export RR_URL="http://127.0.0.1:8731/index.html"
+          for t in test-matte.js test-verden.js sjekk-kort.js test-oppdrag.js; do
+            echo "──── $t (http) ────"
+            node "$t" || exit 1
+          done
