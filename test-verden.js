@@ -2,11 +2,12 @@
 // Sjekker bevegelse, kollisjon, at hver dør svarer på noe, at hver figur
 // er tilgjengelig, og at alle åtte bydelene kan nås til fots fra Startgata.
 const {chromium}=require('playwright');
+const CHROMIUM=require('./test-chromium');
 let ok=0, feil=0;
 function sant(n,x){ if (x) ok++; else { feil++; console.log('  ✗ '+n); } }
 
 (async()=>{
-const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium',args:['--no-sandbox']});
+const b=await chromium.launch({executablePath:CHROMIUM,args:['--no-sandbox']});
 const p=await b.newPage({viewport:{width:1280,height:820}});
 p.on('pageerror',e=>{ console.log('  ✗ PAGEERROR '+e.message); feil++; });
 await p.goto(process.env.RR_URL||('file://'+__dirname+'/index.html'));

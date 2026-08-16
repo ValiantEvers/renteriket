@@ -2,6 +2,7 @@
 // Måles etter at temaet har gått over fra intro til loop, og med natt påslått
 // i egen runde, siden lykter og opplyste vinduer er det dyreste laget.
 const {chromium}=require('playwright');
+const CHROMIUM=require('./test-chromium');
 let ok=0, feil=0;
 function sant(n,x){ if (x) ok++; else { feil++; console.log('  ✗ '+n); } }
 
@@ -24,7 +25,7 @@ async function maal(p,ms){
 }
 
 (async()=>{
-const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium',
+const b=await chromium.launch({executablePath:CHROMIUM,
   args:['--no-sandbox','--autoplay-policy=no-user-gesture-required']});
 const p=await b.newPage({viewport:{width:1440,height:900}});
 p.on('pageerror',e=>{ console.log('  ✗ PAGEERROR '+e.message); feil++; });

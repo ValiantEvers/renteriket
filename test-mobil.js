@@ -3,6 +3,7 @@
 // 360×640, og testen feiler hvis to av dem overlapper. Grunnen til at dette
 // måles: en HUD som ligger oppå en knapp ser helt fin ut i en skjermdump.
 const {chromium,devices}=require('playwright');
+const CHROMIUM=require('./test-chromium');
 let ok=0, feil=0;
 function sant(n,x){ if (x) ok++; else { feil++; console.log('  ✗ '+n); } }
 const overlapp=(a,b)=>!(a.x+a.w<=b.x||b.x+b.w<=a.x||a.y+a.h<=b.y||b.y+b.h<=a.y);
@@ -10,7 +11,7 @@ const overlapp=(a,b)=>!(a.x+a.w<=b.x||b.x+b.w<=a.x||a.y+a.h<=b.y||b.y+b.h<=a.y);
 const FLATER=['#hud','#minimap','#xpwrap','#oppdragsboks','#hint','#ctl .pad','#ctl .hoy'];
 
 (async()=>{
-const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium',args:['--no-sandbox']});
+const b=await chromium.launch({executablePath:CHROMIUM,args:['--no-sandbox']});
 
 for (const [navn,w,h] of [['iPhone-format 390×844',390,844],['liten Android 360×640',360,640],
                           ['nettbrett 820×1180',820,1180]]){

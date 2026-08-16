@@ -3,6 +3,7 @@
 // Et oppdrag som ikke kan fullføres, låser resten av spillet — derfor er
 // dette den viktigste testen i pakken.
 const {chromium}=require('playwright');
+const CHROMIUM=require('./test-chromium');
 let ok=0, feil=0;
 function sant(n,x){ if (x) ok++; else { feil++; console.log('  ✗ '+n); } }
 
@@ -32,7 +33,7 @@ async function apne(p,id){
 }
 
 (async()=>{
-const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium',args:['--no-sandbox']});
+const b=await chromium.launch({executablePath:CHROMIUM,args:['--no-sandbox']});
 const p=await b.newPage({viewport:{width:1280,height:900}});
 const sideFeil=[];
 p.on('pageerror',e=>sideFeil.push(e.message));

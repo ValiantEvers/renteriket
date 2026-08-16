@@ -2,11 +2,12 @@
 // Et kort inni en vegg er verre enn et kort som ikke finnes: spilleren leter
 // etter noe som ikke kan tas. Derfor måles hvert kort, ikke bare ses over.
 const {chromium}=require('playwright');
+const CHROMIUM=require('./test-chromium');
 let feil=0, ok=0;
 function sant(n,x){ if (x) ok++; else { feil++; console.log('  ✗ '+n); } }
 
 (async()=>{
-const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium',args:['--no-sandbox']});
+const b=await chromium.launch({executablePath:CHROMIUM,args:['--no-sandbox']});
 const p=await b.newPage();
 p.on('pageerror',e=>{ console.log('  ✗ PAGEERROR '+e.message); feil++; });
 await p.goto(process.env.RR_URL||('file://'+__dirname+'/index.html'));

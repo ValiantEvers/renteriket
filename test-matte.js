@@ -4,6 +4,7 @@
 // bruker, eller hentet fra offentlig kilde. Poenget er ikke å bekrefte at
 // koden gjør det den gjør, men at den gjør det RIKTIGE.
 const {chromium}=require('playwright');
+const CHROMIUM=require('./test-chromium');
 // GitHub Pages serverer over HTTPS, ikke file://. RR_URL lar hele pakka
 // kjøres mot en HTTP-server, som er den eneste måten å fange antakelser
 // som bare holder på file:// (localStorage-origo, relative stier).
@@ -20,7 +21,7 @@ function er(navn,fikk,skal,tol){
 function sant(navn,x){ if (x) ok++; else { feil++; console.log('  ✗ '+navn); } }
 
 (async()=>{
-const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium',args:['--no-sandbox']});
+const b=await chromium.launch({executablePath:CHROMIUM,args:['--no-sandbox']});
 const p=await b.newPage();
 p.on('pageerror',e=>{ console.log('  ✗ PAGEERROR: '+e.message); feil++; });
 await p.goto(SPILL);

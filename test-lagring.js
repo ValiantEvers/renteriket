@@ -3,6 +3,7 @@
 // «nullstill» slettet lagringen men ikke tilstanden i minnet — som skrev seg
 // selv tilbake ti sekunder senere.
 const {chromium}=require('playwright');
+const CHROMIUM=require('./test-chromium');
 let ok=0, feil=0;
 function sant(n,x){ if (x) ok++; else { feil++; console.log('  ✗ '+n); } }
 const NØKLER=['rr-kontant','rr-buffer','rr-portfolio','rr-gjeld','rr-innskutt','rr-xp',
@@ -10,7 +11,7 @@ const NØKLER=['rr-kontant','rr-buffer','rr-portfolio','rr-gjeld','rr-innskutt',
   'rr-lonn','rr-jobb','rr-indeks','rr-indekshist','rr-vol','rr-mute','rr-bsu','rr-ips'];
 
 (async()=>{
-const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium',args:['--no-sandbox']});
+const b=await chromium.launch({executablePath:CHROMIUM,args:['--no-sandbox']});
 const p=await b.newPage({viewport:{width:1200,height:800}});
 let sideFeil=[];
 p.on('pageerror',e=>sideFeil.push(e.message));

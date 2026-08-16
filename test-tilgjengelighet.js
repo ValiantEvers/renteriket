@@ -8,6 +8,7 @@
 // Krav: WCAG 2.1 AA — 4,5:1 for brødtekst, 3:1 for stor tekst (≥24px, eller
 // ≥18,66px halvfet) og for grensesnittkomponenter.
 const {chromium}=require('playwright');
+const CHROMIUM=require('./test-chromium');
 const SPILL=process.env.RR_URL||('file://'+__dirname+'/index.html');
 let ok=0, feil=0;
 function sant(n,x){ if (x) ok++; else { feil++; console.log('  ✗ '+n); } }
@@ -44,7 +45,7 @@ const KONTRAST=`(() => {
 })()`;
 
 (async()=>{
-const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium',args:['--no-sandbox']});
+const b=await chromium.launch({executablePath:CHROMIUM,args:['--no-sandbox']});
 const p=await b.newPage({viewport:{width:1280,height:880}});
 p.on('pageerror',e=>{ console.log('  ✗ PAGEERROR '+e.message); feil++; });
 await p.goto(SPILL);

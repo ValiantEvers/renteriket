@@ -3,8 +3,11 @@
 #   bash test-alle.sh              kjører mot file://
 #   bash test-alle.sh --http       starter en lokal HTTP-server og kjører mot den
 #
-# Krever «npm i -D playwright» én gang. Bruker Chromium fra
-# PLAYWRIGHT_BROWSERS_PATH hvis den finnes, ellers Playwrights egen.
+# Krever «npm i -D playwright» + «npx playwright install chromium» én gang.
+# Hvilken Chromium som brukes avgjøres i test-chromium.js: RR_CHROMIUM hvis satt,
+# ellers /opt/pw-browsers/chromium hvis den finnes, ellers Playwrights egen
+# (som selv respekterer PLAYWRIGHT_BROWSERS_PATH).
+# NB: den nedlastede revisjonen må matche playwright-versjonen i package.json.
 #
 # --http er ikke pynt: siden serveres over HTTPS i produksjon, og file:// har sitt
 # eget origo-oppsett for localStorage. Kjør begge før noe skrives av som ferdig.
