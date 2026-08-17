@@ -100,6 +100,20 @@ byggesteg. Playwright er kun testavhengighet.
   test ellers måler et annet spill; `loesAlle()` gjorde det ikke, og «alt løst»
   målte nivå 8 av 15. Legger du til en snarvei i `RR`, skal den gi samme
   sidevirkninger som veien spilleren går.
+- **Lang tankestrek (—) i spillertekst er et BEVISST avvik fra husets praksis.**
+  Besluttet av Valiant 2026-08-17, etter en kartlegging: renteriket har **59 lange
+  og 14 korte** streker i brukertekst (99/10 i kommentarer). Resten av huset går
+  motsatt vei — evers.no-hovedsiden har 45 korte og 0 lange i brukertekst,
+  aksjeskatt 13 korte og 0 lange, og `/klima/` har et nedskrevet totalforbud.
+  Renteriket er det eneste repoet som bruker lang strek i spillertekst, og det er
+  **ikke slurv**: `906951a` (31.07) kuttet 207 em-streker i spillertekst ned til
+  60 med vilje, og beholdt streken kun der den faktisk skiller to ledd — etiketter
+  i knapper og tabellrader («Ferdig — tilbake til byen»), korttitler («STEG 1 —
+  GJETT FØRST»). De 14 korte er utelukkende tallintervall (1900–2024, 30–40 år),
+  så de konkurrerer ikke med de lange; de to tegnene gjør ulike jobber.
+  **Spillet har egen stemme og beholder den.** Ingen test pinner tekst med strek,
+  så en konvertering ville vært gratis teknisk — den er avvist av innholdsgrunner,
+  ikke tekniske. Ikke «rett opp» dette, og ikke flagg det som inkonsistens.
 - **Ingen `Co-Authored-By`-trailer i commits. Push aldri uten godkjenning.**
 
 ## Før noe skrives av som ferdig
