@@ -33,7 +33,10 @@ jobs:
       # så den bare skjer når playwright-versjonen faktisk endres.
       - name: Cache Playwright-chromium
         id: pw-cache
-        uses: actions/cache@v4
+        # v6 kjører på node24. v4 targeter node20, som er deprecated og tvinges til 24
+        # av runneren med en annotasjon på hver kjøring. Inputene er uendret (path, key)
+        # og outputen `cache-hit` finnes fortsatt — verifisert mot action.yml@v6.
+        uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: pw-chromium-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
