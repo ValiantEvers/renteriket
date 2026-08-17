@@ -536,6 +536,12 @@ function pst2(x){ return nf2.format(x*100)+' %'; }
 // literaler («KPI 2,7 %»), og pst2 ville gjort dem om til «3,00 %» — falsk presisjon
 // på en tolvmånedersvekst som SSB selv oppgir med én desimal.
 function pst1(x){ return nf1.format(x*100)+' %'; }
+// pst2/pst1 limer på «%» uansett hva argumentet betyr, så enheten er kallstedets ansvar.
+// Et NIVÅ (en rente, en andel, en sats) er prosent; en DIFFERANSE mellom to satser er
+// prosentPOENG. «Renta stiger 3 %» og «renta stiger 3 prosentpoeng» er to ulike påstander
+// — den første betyr 5,08 → 5,23, den andre 5,08 → 8,08. Bruk pp2 der argumentet er en
+// differanse. (Fem kallsteder rettet 2026-08-17; ingen test pinnet strengene.)
+function pp2(x){ return nf2.format(x*100)+' prosentpoeng'; }
 const MND=['jan','feb','mar','apr','mai','jun','jul','aug','sep','okt','nov','des'];
 const MNDLANG=['januar','februar','mars','april','mai','juni','juli','august',
   'september','oktober','november','desember'];
@@ -2732,7 +2738,7 @@ MINI.I=(v)=>{
 
   v.appendChild(U.hode('OPPDRAG I','Gebyrlekkasjen',
     'To fond. Samme aksjer, samme land, samme risiko. Det ene tar '+pst2(A)+' i året, '+
-    'det andre '+pst2(B)+'. Kjell mener forskjellen er «under én prosent, altså ingenting». '+
+    'det andre '+pst2(B)+'. Kjell mener forskjellen er «bare '+pp2(B-A)+', altså ingenting». '+
     'Finn ut hva den koster.'));
 
   const c=U.graf(250);
@@ -2770,8 +2776,8 @@ MINI.I=(v)=>{
       '· differanse: <b>'+kr(g.differanse)+'</b>, altså '+nf1.format(g.andelTapt*100)+
       ' % av hele sluttbeløpet.<br><br>'+
       'Grunnen til at det blir så mye: gebyret trekkes fra <i>avkastningen</i>, '+
-      'og den avkastningen skulle selv gitt avkastning. Du mister ikke '+pst2(B-A)+' én gang. '+
-      'du mister renters rente på '+pst2(B-A)+' hvert eneste år.<br><br>'+
+      'og den avkastningen skulle selv gitt avkastning. Du mister ikke '+pp2(B-A)+' én gang. '+
+      'du mister renters rente på '+pp2(B-A)+' hvert eneste år.<br><br>'+
       'Til sammenligning: Oljefondet driver på '+pst2(SATSER.gebyrSpu)+'. '+
       'Med den prisen hadde sluttbeløpet vært '+kr(spu.differanse-g.differanse+g.a)+
       ', altså '+kr(spu.differanse-g.differanse)+' mer enn det billige fondet.<br><br>'+
@@ -3143,7 +3149,7 @@ MINI.L=(v)=>{
     'banken». Utlånsforskriften sier <b>tre</b> ting, og den <i>strengeste</i> bestemmer: '+
     'egenkapital minst '+pst2(SATSER.egenkapital)+' av kjøpesummen; samlet gjeld maks '+
     nf1.format(SATSER.gjeldsgrad)+' × brutto årsinntekt; og <b>betjeningsevne</b>, altså at du skal '+
-    'ha nok igjen til normale levekostnader selv om renta stiger '+pst2(SATSER.stresspp)+
+    'ha nok igjen til normale levekostnader selv om renta stiger '+pp2(SATSER.stresspp)+
     ' (minimum '+pst2(SATSER.stressgulv)+').'));
 
   const k=U.kort('DIN SITUASJON');
@@ -4206,7 +4212,7 @@ HUS.bibliotek=(v)=>{
   ]),U.tips('Kilde: UBS/DMS Global Investment Returns Yearbook 2025, verdensindeksen. '+
     'Tallene er <b>realt</b>, altså etter inflasjon, og de er ikke det samme som MSCI World, '+
     'som starter i 1970. Aksjerisikopremien mot veksler er '+
-    pst2(SATSER.realAksjer-SATSER.realKontanter)+' regnet av tallene over.')));
+    pp2(SATSER.realAksjer-SATSER.realKontanter)+' regnet av tallene over.')));
   v.appendChild(U.kort('PRIS PÅ FOND I NORGE',U.tab(['Fondstype','Typisk intervall'],[
     ['Globale indeksfond','0,18 – 0,61 %'],
     ['Norske indeksfond','0,18 – 0,49 %'],
@@ -4391,9 +4397,10 @@ const PRAT={
   aakre:['«Hundre brikker og seks steder å legge dem. Fem runder med uhell.»',
     '«De fleste tror diversifisering handler om å eie mange ting. Det handler om at tingene '+
     'ikke går galt <em>samtidig</em>.»'],
-  kjell:['«To fond. Samme aksjer, samme risiko, samme land. Det ene koster 0,25 prosent, '+
-    'det andre 1,3.»',
-    '«Under én prosent i forskjell. Vil du se hva det blir til over tretti år?»'],
+  kjell:['«To fond. Samme aksjer, samme risiko, samme land. Det ene koster '+
+    pst2(SATSER.gebyrIndeks)+', det andre '+pst2(SATSER.gebyrAktiv)+'.»',
+    '«'+pp2(SATSER.gebyrAktiv-SATSER.gebyrIndeks)+' i forskjell. Vil du se hva det blir '+
+    'til over tretti år?»'],
   nils:['«Jeg solgte i 2008. Og i 2020. Og i 2022. Og i fjor.» Han ser ned. '+
     '«Jeg vet alt du vet. Jeg klarte det bare ikke.»',
     '«Vil du prøve? Tretti år, fire krakk. Jeg skal si når de kommer, og det er mer enn '+
@@ -5327,7 +5334,7 @@ function tegnPause(){
       ['BSU, maks per år / totalt',kr(SATSER.bsuMaks)+' / '+kr(SATSER.bsuTotal)],
       ['Egenkapitalkrav bolig',pst2(SATSER.egenkapital)],
       ['Maks gjeldsgrad',nf1.format(SATSER.gjeldsgrad)+' × brutto'],
-      ['Rentestresstest','+'+pst2(SATSER.stresspp)+', minimum '+pst2(SATSER.stressgulv)],
+      ['Rentestresstest','+'+pp2(SATSER.stresspp)+', minimum '+pst2(SATSER.stressgulv)],
       ['Dokumentavgift',pst2(SATSER.dokumentavgift)],
       ['Rentefradrag',pst2(SATSER.rentefradrag)],
       ['Folketrygd: opptjening',pst2(SATSER.folketrygdSats)+' opp til '+nf1.format(SATSER.folketrygdTak)+' G'],
