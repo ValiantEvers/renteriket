@@ -182,14 +182,143 @@ console.log('\n=== ENTER OG MELLOMROM AKTIVERER, OG FOKUS ER SYNLIG ===');
 }
 
 console.log('\n=== BETYDNING LIGGER IKKE I FARGE ALENE ===');
+/* Eieren av spillet er rød-grønn fargeblind, og det er to KRAV her, ikke ett:
+     1) hvert statuselement bærer et ikke-farge-signal (symbol OG ord),
+     2) fargeparet lar seg fortsatt skille under deuteranopi.
+   En kontrastmåling på 4,5:1 sier ingenting om nummer to. Den gamle paletten
+   oppfylte kontrastkravet hele veien og kollapset likevel til ΔE 19,0 på tekst
+   og 2,7 på flater — praktisk talt samme farge. */
 {
-  await p.evaluate(()=>{ RR.lukkAlt(); RR.aapneMinispill('G',RR.MINI.G); });
-  await p.waitForTimeout(900);
-  const merker=await p.evaluate(()=>
-    [...document.querySelectorAll('#spillinner .pill')].map(e=>e.textContent.trim()));
-  console.log('  merker i bruk: '+[...new Set(merker)].join(' · '));
-  sant('grønne og røde merker har tekst, ikke bare farge',
-    merker.length>0 && merker.every(t=>t.replace(/[✓✗\s]/g,'').length>0));
+  // Alle fjorten minispillene åpnes, så et nytt oppdrag ikke kan snike seg
+  // forbi merkingen. Merkingen skjer sentralt (merkStatus + MutationObserver),
+  // men et minispill som bygger status på en helt egen måte ville dukket opp her.
+  const STATUSVELGERE=['.fasit.ja','.fasit.nei','.valgkort.valgt','.valgkort.feil',
+    '.brikke.valgt','.pill.g','.pill.r','.pill.y','.bakke.over'];
+  const ider=await p.evaluate(()=>Object.keys(RR.MINI));
+  sant('alle fjorten minispillene finnes', ider.length===14);
+  let sett=0, umerkede=[];
+  for (const id of ider){
+    await p.evaluate(k=>{ RR.lukkAlt(); RR.aapneMinispill(k,RR.MINI[k]); }, id);
+    await p.waitForTimeout(260);
+    // Trykk på det første valgkortet: fasit-boksen og «feil»-merket på kortet
+    // finnes ikke før spilleren har svart, så en test som bare åpner spillet
+    // ville aldri sett de to viktigste statuselementene.
+    const harKort=await p.evaluate(()=>!!document.querySelector('#spillinner .valgkort'));
+    if (harKort){
+      await p.evaluate(()=>document.querySelector('#spillinner .valgkort').click());
+      await p.waitForTimeout(420);
+    }
+    const r=await p.evaluate(sel=>{
+      const ut=[]; let n=0;
+      sel.forEach(s=>document.querySelectorAll('#spillinner '+s).forEach(el=>{
+        n++;
+        const m=el.firstElementChild;
+        const ok = m && m.classList.contains('smerke')
+          && m.dataset.status && m.textContent.trim().length>0
+          && m.querySelector('.sr') && m.querySelector('.sr').textContent.trim().length>0;
+        if (!ok) ut.push(s+' → '+(el.textContent||'').trim().slice(0,40));
+      }));
+      return {n, ut};
+    }, STATUSVELGERE);
+    sett+=r.n; umerkede=umerkede.concat(r.ut.map(x=>id+': '+x));
+  }
+  console.log('  statuselementer sett i de fjorten minispillene: '+sett);
+  sant('det finnes statuselementer å måle i det hele tatt', sett>0);
+  sant('hvert statuselement bærer symbol OG ord, ikke bare farge', umerkede.length===0);
+  if (umerkede.length) console.log('      umerket: '+umerkede.slice(0,5).join(' | '));
+
+  // ...og symbolene må faktisk skille tilstandene fra hverandre.
+  await p.evaluate(()=>{ RR.lukkAlt(); RR.aapneMinispill('E',RR.MINI.E); });
+  await p.waitForTimeout(300);
+  const sym=await p.evaluate(()=>{
+    const ut={};
+    document.querySelectorAll('#spillinner .smerke').forEach(n=>{
+      ut[n.dataset.status]=n.textContent.trim().replace(/\s+/g,'');
+    });
+    return ut;
+  });
+  console.log('  symboler i bruk: '+Object.entries(sym).map(([k,v])=>k+'='+v).join(' · '));
+  sant('«ja» og «nei» har FORSKJELLIG symbol', !sym.ja || !sym.nei || sym.ja!==sym.nei);
+  sant('«delvis» skiller seg fra begge', !sym.delvis || (sym.delvis!==sym.ja && sym.delvis!==sym.nei));
+}
+
+console.log('\n=== STATUSFARGENE MÅLES MOT FARGEBLINDHET, IKKE ANTATT ===');
+/* Viénot 1999-simulering i lineært rom, CIE76 ΔE på resultatet. Grensene er
+   satt av hva den gamle paletten faktisk gjorde (tekst 19,0 og flater 2,7 var
+   ubrukelig), så gulvet ligger godt over det og under det nye paret. Fargene
+   leses fra den LEVENDE siden, ikke fra CSS-en jeg tror står der — endrer noen
+   en variabel ett sted, slår det ut her. */
+{
+  const m=await p.evaluate(()=>{
+    const s=getComputedStyle(document.documentElement);
+    const les=n=>s.getPropertyValue(n).trim();
+    const tall=t=>{const a=t.match(/[\d.]+/g)||[];return a.slice(0,3).map(Number);};
+    // Flatene er halvgjennomsiktige: bland dem mot spillbakgrunnen først,
+    // ellers måler vi en farge ingen faktisk ser.
+    const ink=tall(getComputedStyle(document.body).backgroundColor).length===3
+      ? tall(getComputedStyle(document.body).backgroundColor) : [13,17,23];
+    const hex=h=>{h=h.replace('#','');return [0,2,4].map(i=>parseInt(h.slice(i,i+2),16));};
+    const bl=(t,i)=>{const a=t.match(/[\d.]+/g).map(Number);
+      const al=a.length>3?a[3]:1; return [0,1,2].map(k=>a[k]*al+i[k]*(1-al));};
+    return {okT:hex(les('--ok')), feilT:hex(les('--feil')),
+            okTek:hex(les('--ok-tekst')), feilTek:hex(les('--feil-tekst')),
+            okFl:bl(les('--ok-flate'),ink), feilFl:bl(les('--feil-flate'),ink),
+            groDekor:hex(les('--gro'))};
+  });
+  const lin=c=>{c/=255;return c<=0.04045?c/12.92:Math.pow((c+0.055)/1.055,2.4);};
+  const srgb=c=>{c=Math.max(0,Math.min(1,c));
+    return 255*(c<=0.0031308?12.92*c:1.055*Math.pow(c,1/2.4)-0.055);};
+  const lms=rgb=>{const r=lin(rgb[0]),g=lin(rgb[1]),b=lin(rgb[2]);
+    return [17.8824*r+43.5161*g+4.11935*b, 3.45565*r+27.1554*g+3.86714*b,
+            0.0299566*r+0.184309*g+1.46709*b];};
+  const ut=(L,M,S)=>[srgb(0.0809444479*L-0.130504409*M+0.116721066*S),
+                     srgb(-0.0102485335*L+0.0540193266*M-0.113614708*S),
+                     srgb(-0.000365296938*L-0.00412161469*M+0.693511405*S)];
+  const deuter=rgb=>{const [L,M,S]=lms(rgb); return ut(L,0.494207*L+1.24827*S,S);};
+  const protan=rgb=>{const [L,M,S]=lms(rgb); return ut(2.02344*M-2.52581*S,M,S);};
+  const lab=rgb=>{const a=rgb.map(lin);
+    const X=(a[0]*0.4124+a[1]*0.3576+a[2]*0.1805)/0.95047;
+    const Y=a[0]*0.2126+a[1]*0.7152+a[2]*0.0722;
+    const Z=(a[0]*0.0193+a[1]*0.1192+a[2]*0.9505)/1.08883;
+    const f=t=>t>0.008856?Math.cbrt(t):(7.787*t+16/116);
+    return [116*f(Y)-16,500*(f(X)-f(Y)),200*(f(Y)-f(Z))];};
+  const dE=(x,y)=>{const A=lab(x),B=lab(y);
+    return Math.hypot(A[0]-B[0],A[1]-B[1],A[2]-B[2]);};
+
+  const kantD=dE(deuter(m.okT),deuter(m.feilT));
+  const kantP=dE(protan(m.okT),protan(m.feilT));
+  const tekstD=dE(deuter(m.okTek),deuter(m.feilTek));
+  const flateD=dE(deuter(m.okFl),deuter(m.feilFl));
+  const flateP=dE(protan(m.okFl),protan(m.feilFl));
+  console.log('  ΔE deuteranopi: kant '+kantD.toFixed(1)+', tekst '+tekstD.toFixed(1)
+    +', flate '+flateD.toFixed(1));
+  console.log('  ΔE protanopi:   kant '+kantP.toFixed(1)+', flate '+flateP.toFixed(1));
+  sant('statusfargene skilles under deuteranopi (ΔE > 40)', kantD>40);
+  sant('statusfargene skilles under protanopi (ΔE > 40)', kantP>40);
+  sant('statusflatene skilles under deuteranopi (ΔE > 8)', flateD>8);
+  sant('statusflatene skilles under protanopi (ΔE > 8)', flateP>8);
+  sant('statustekstfargene skilles under deuteranopi (ΔE > 8)', tekstD>8);
+  // Spillets grønne er DEKOR. Blir den brukt som «ok» igjen, kollapser
+  // paret mot --feil på nytt — så vi låser fast at de er forskjellige farger.
+  sant('--ok er ikke spillets dekor-grønne', dE(m.okT,m.groDekor)>20);
+}
+
+/* Merkingen henger på en observatør som ser på tre containere. Et statuselement
+   som havner UTENFOR dem blir stille umerket — fargen alene igjen. Denne
+   sjekken følger med på nettopp det. */
+{
+  const utenfor=await p.evaluate(()=>{
+    const SEL=['.fasit.ja','.fasit.nei','.valgkort.valgt','.valgkort.feil',
+      '.brikke.valgt','.pill.g','.pill.r','.pill.y','.bakke.over'];
+    const obs=['#spillinner','#pauseinner','#dialog'].map(s=>document.querySelector(s));
+    const ut=[];
+    SEL.forEach(s=>document.querySelectorAll(s).forEach(el=>{
+      if (!obs.some(c=>c&&c.contains(el))) ut.push(s+' i #'+(el.closest('[id]')||{id:'?'}).id);
+    }));
+    return ut;
+  });
+  sant('ingen statuselementer lever utenfor de observerte containerne', utenfor.length===0);
+  if (utenfor.length) console.log('      utenfor: '+utenfor.slice(0,4).join(' | '));
 }
 
 console.log('\n=== REDUSERT BEVEGELSE RESPEKTERES ===');

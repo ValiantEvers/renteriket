@@ -289,7 +289,7 @@ ikke at spilleren regner etter.
 
 ## Testing
 
-Åtte filer, 967 sjekker. `bash test-alle.sh` kjører alt over `file://`,
+Åtte filer, 1001 sjekker. `bash test-alle.sh` kjører alt over `file://`,
 `bash test-alle.sh --http` starter en lokal server og kjører alt på nytt over HTTP.
 Begge må være grønne: siden serveres over HTTPS i produksjon, og `file://` har sitt
 eget origo-oppsett for `localStorage`.
@@ -302,7 +302,7 @@ eget origo-oppsett for `localStorage`.
 | `test-oppdrag.js` | **Alle fjorten oppdrag spilles gjennom med ekte klikk.** For hvert av dem sjekkes også at et *feil* svar ikke gir seier, og at fasitteksten sier det den skal. Til slutt: at fjorten oppdrag gir nivå 12, og at alt løst pluss alle kort gir INVESTOR. Siden juli 2026 også: at oppdrag J-banen faktisk henter seg inn igjen fire ganger og treffer spillets egen avkastning, at oppdrag N dømmer på medianen av 500 løp og at tabellen går opp krone for krone, at oppdrag H ikke kan klares med flaks og gir de samme fem årene ved omstart, at oppdrag D regner 42 år, at spillerens gjeld spiser av gjeldstaket i oppdrag L, at **ingenting skriver «NaN», «undefined» eller «Infinity»** i noen av de fjorten oppdragene eller de 25 bygningsskjermene, verken for en fersk eller en ferdig spiller; at **ingen oppdrag er løst i det det åpnes** og at ingen (unntatt D, som er ett tall) løses ved å flytte én enkelt skyver; at **ingen bygning tilbyr et oppdrag før kravene er løst**; og at oppdrag C sitt eget regnskap bunner ut der teksten sier at det gjør. |
 | `test-mobil.js` | Ingen HUD-overlapp på tre skjermstørrelser, ingen flate utenfor skjermen, alle knapper minst 44×44, at styrekorset faktisk flytter spilleren, og at MENY lukker minispillet i stedet for å legge menyen oppå det. |
 | `test-lagring.js` | Fremgang overlever omlasting; 294 kombinasjoner av ødelagt lagring tar ikke ned spillet; nullstilling rydder minne så vel som lagring og skriver ikke tilbake etterpå; lagring skjer på timer. |
-| `test-tilgjengelighet.js` | Kontrast regnet ut fra de **faktiske** fargene i DOM-en, ikke fra CSS-en man tror står der: 22 elementer mot WCGA 2.1 AA. At alle klikkbare elementer i alle fjorten oppdrag kan nås med Tab, at brikkene er ekte knapper, at det finnes en `:focus-visible`-regel, at grønt og rødt alltid har tekst ved siden av, og at spillet starter med `prefers-reduced-motion`. |
+| `test-tilgjengelighet.js` | Kontrast regnet ut fra de **faktiske** fargene i DOM-en, ikke fra CSS-en man tror står der: 22 elementer mot WCGA 2.1 AA. At alle klikkbare elementer i alle fjorten oppdrag kan nås med Tab, at brikkene er ekte knapper, at det finnes en `:focus-visible`-regel, at **hvert statuselement i alle fjorten minispillene bærer symbol OG ord** og ikke bare farge — malt etter at det første valgkortet er trykket, siden fasit-boksen og «feil»-merket ikke finnes før spilleren har svart. Og at **statusfargene faktisk skilles under deuteranopi og protanopi** (Viénot 1999-simulering + CIE76 ΔE på de levende fargene): den gamle grønn/rød-paletten lå på ΔE 19,0 på tekst og 2,7 på flater — praktisk talt samme farge — og oppfylte likevel 4,5:1 hele veien. Kontrast og fargeblindhet er to forskjellige krav. Til slutt at spillet starter med `prefers-reduced-motion`. |
 | `test-fps.js` | Fps per bydel med musikk på, i løp, om natta, og med hvert graftunge minispill åpent. Måler også spillets egen rammetid og at et skyvedrag i oppdrag G — som kjører 3 × 1 200 simuleringer — tar under 400 ms. |
 
 ### Fire spillfeil funnet av testene, ikke av øyet

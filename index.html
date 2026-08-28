@@ -34,6 +34,18 @@
      #e35552 gir 4,60:1. Egen, mørkere variant til knapper, der HVIT tekst
      står på fargen: hvit på #c0392b er 5,44:1, hvit på #e35552 bare 3,7:1. */
   --fare:#e35552; --fare-bg:#c0392b; --kald:#4aa3df;
+  /* STATUSFARGENE ER IKKE SPILLETS GRØNNE. Eieren er rød-grønn fargeblind, og
+     status skal aldri bæres av farge alene (husregel). Målt med Viénot 1999 +
+     CIE76 kollapset --gro mot --fare under deuteranopi til ΔE 19,0 på tekst og
+     2,7 på flater — praktisk talt samme farge, selv om kontrastkravet var
+     oppfylt hele veien. Kontrast og fargeblindhet er to FORSKJELLIGE krav.
+     Blå/oransje gir 96,8 og 15,8 (74,8 under protanopi).
+     --gro blir stående som spillets DEKOR-farge: knapper, skyvere, XP-stolpen,
+     figurer og grafserier. Den bærer ingen status. Bruk --ok/--feil til alt som
+     sier riktig/galt — og la symbolet og ordet gjøre jobben uansett. Paletten
+     er nummer to, ikke nummer én. Se test-tilgjengelighet.js. */
+  --ok:#5ab0ef; --ok-flate:rgba(90,176,239,.13); --ok-tekst:#d8ecfb;
+  --feil:#f08050; --feil-flate:rgba(240,128,80,.13); --feil-tekst:#ffe3d5;
   --tekst:#e9eef4; --dim:#9aa8b8;
   --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
   --tall:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
@@ -168,9 +180,13 @@ input[type=range]:focus-visible{outline:3px solid #7cc7ff;outline-offset:4px;bor
 .mfot .fyll{flex:1}
 .fasit{border-radius:11px;padding:14px 16px;margin:14px 0;font-size:14.5px;line-height:1.6;
   display:none;border-left:4px solid}
-.fasit.ja{background:rgba(47,191,122,.13);border-color:var(--gro);color:#d7f7e6}
-.fasit.nei{background:rgba(224,82,79,.13);border-color:var(--fare);color:#ffdedd}
+.fasit.ja{background:var(--ok-flate);border-color:var(--ok);color:var(--ok-tekst)}
+.fasit.nei{background:var(--feil-flate);border-color:var(--feil);color:var(--feil-tekst)}
 .fasit b{color:#fff}
+/* Symbolet er EKTE tekst i DOM-en, ikke ::before: det som bare finnes i CSS
+   lar seg verken lese av alle skjermlesere eller måle av en sjekk. */
+.smerke{font-weight:900;flex:none;margin-right:6px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .fasit .lar{display:block;margin-top:9px;padding-top:9px;border-top:1px solid rgba(255,255,255,.14);
   font-size:13.5px;color:#c3ceda}
 table.tab{width:100%;border-collapse:collapse;font-size:13.5px}
@@ -181,8 +197,8 @@ table.tab td{padding:7px 9px 7px 0;border-top:1px solid rgba(255,255,255,.09);
 table.tab td.n{font-family:var(--tall);text-align:right}
 .pill{display:inline-block;border-radius:99px;padding:2px 9px;font-size:11px;font-weight:800;
   letter-spacing:.4px}
-.pill.g{background:rgba(47,191,122,.19);color:#7ce0ab}
-.pill.r{background:rgba(224,82,79,.19);color:#ff9d9b}
+.pill.g{background:rgba(90,176,239,.19);color:#a9d7f8}
+.pill.r{background:rgba(240,128,80,.19);color:#ffc3a6}
 .pill.y{background:rgba(240,180,41,.19);color:#f7cf76}
 canvas.graf{width:100%;height:auto;display:block;border-radius:9px;background:#0a0e13;
   border:1px solid var(--line);margin:4px 0 10px}
@@ -200,7 +216,7 @@ canvas.graf{width:100%;height:auto;display:block;border-radius:9px;background:#0
 .brikke .kr{font-family:var(--tall);font-size:12px;color:var(--gull)}
 .bakke{border:1.5px dashed var(--line);border-radius:10px;padding:11px;min-height:74px;
   transition:border-color .15s,background .15s}
-.bakke.over{border-color:var(--gro);background:rgba(47,191,122,.07)}
+.bakke.over{border-color:var(--ok);background:rgba(90,176,239,.07)}
 .bakke .btit{font-size:11px;font-weight:850;letter-spacing:1px;text-transform:uppercase;
   color:var(--dim);margin-bottom:8px;display:flex;justify-content:space-between}
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:11px}
@@ -208,8 +224,8 @@ canvas.graf{width:100%;height:auto;display:block;border-radius:9px;background:#0
 .valgkort{background:#0a0e13;border:1.5px solid var(--line);border-radius:11px;padding:13px;
   cursor:pointer;transition:all .13s;text-align:left;font-family:var(--sans);color:var(--tekst)}
 .valgkort:hover{border-color:var(--dim)}
-.valgkort.valgt{border-color:var(--gro);background:rgba(47,191,122,.09)}
-.valgkort.feil{border-color:var(--fare);background:rgba(224,82,79,.09)}
+.valgkort.valgt{border-color:var(--ok);background:rgba(90,176,239,.09)}
+.valgkort.feil{border-color:var(--feil);background:rgba(240,128,80,.09)}
 .valgkort .vt{font-size:14.5px;font-weight:800;margin-bottom:4px}
 .valgkort .vd{font-size:12.5px;color:var(--dim);line-height:1.5}
 .maaler{height:9px;border-radius:99px;background:rgba(255,255,255,.13);overflow:hidden;margin:5px 0}
@@ -241,7 +257,7 @@ canvas.graf{width:100%;height:auto;display:block;border-radius:9px;background:#0
 .lst{list-style:none;padding:0;margin:0}
 .lst li{padding:10px 0;border-top:1px solid rgba(255,255,255,.09);font-size:14px;
   display:flex;gap:11px;align-items:flex-start;line-height:1.5}
-.lst li .ok{color:var(--gro);font-weight:900;flex:none;width:17px}
+.lst li .ok{color:var(--ok);font-weight:900;flex:none;width:17px}
 .lst li .naa{color:var(--gull);font-weight:900;flex:none;width:17px}
 .lst li .laas{color:#54626f;flex:none;width:17px}
 .lst li s{color:#6b7785}
@@ -1666,6 +1682,60 @@ const spillEl=document.getElementById('spill');
 const innerEl=document.getElementById('spillinner');
 const pauseEl=document.getElementById('pause');
 const pauseInner=document.getElementById('pauseinner');
+
+/* -- Status skal ALDRI baeres av farge alene (WCAG 1.4.1) ----------------
+   Eieren er roed-groenn fargeblind. Paletten er byttet (se :root), men en
+   palett alene er ikke nok: hvert statuselement skal ogsaa baere et SYMBOL og
+   et ORD. Ordet er visuelt skjult, men lesbart for skjermlesere og maalbart av
+   testpakken.
+   Merkingen skjer ETT sted, ikke per kallsted. Fasit-boksen bygges fjorten
+   steder og valgkortene fire; en observatoer fanger baade nye statuselementer
+   og klasser som settes underveis - et valgkort som blir 'feil' ved klikk, en
+   fasit-boks som dukker opp etter svar. Nye minispill arver merkingen gratis,
+   som er hele poenget: en regel som lyder «husk symbolet» blir brutt hver gang
+   noen skriver et nytt oppdrag. */
+const SMERKER=[
+  ['.fasit.ja',       'ja',    '✓', 'Riktig'],
+  ['.fasit.nei',      'nei',   '✗', 'Feil'],
+  ['.valgkort.valgt', 'valgt', '✓', 'Valgt'],
+  ['.valgkort.feil',  'feil',  '✗', 'Galt'],
+  ['.brikke.valgt',   'med',   '✓', 'Med i budsjettet'],
+  ['.pill.g',         'ja',    '✓', 'ja'],
+  ['.pill.r',         'nei',   '✗', 'nei'],
+  ['.pill.y',         'delvis','!',       'delvis'],
+  ['.bakke.over',     'over',  '▾', 'Slipp her']
+];
+function merkEtt(el,st,sym,ord){
+  const f=el.firstElementChild;
+  if (f && f.classList.contains('smerke')){
+    if (f.dataset.status===st) return;   // allerede riktig merket
+    f.remove();                          // tilstanden byttet: bytt merket
+  }
+  const m=document.createElement('span');
+  m.className='smerke'; m.dataset.status=st; m.textContent=sym;
+  const o=document.createElement('span');
+  o.className='sr'; o.textContent=' '+ord+' ';
+  m.appendChild(o);
+  el.insertBefore(m,el.firstChild);
+}
+function merkStatus(rot){
+  if (!rot || rot.nodeType!==1) return;
+  for (const [sel,st,sym,ord] of SMERKER){
+    if (rot.matches && rot.matches(sel)) merkEtt(rot,st,sym,ord);
+    if (rot.querySelectorAll) rot.querySelectorAll(sel).forEach(e=>merkEtt(e,st,sym,ord));
+  }
+}
+const statusObs=new MutationObserver(muts=>{
+  for (const m of muts){
+    if (m.type==='childList') m.addedNodes.forEach(merkStatus);
+    else merkStatus(m.target);
+  }
+});
+[innerEl,pauseInner,dEl].forEach(el=>{
+  merkStatus(el);
+  statusObs.observe(el,{childList:true,subtree:true,
+    attributes:true,attributeFilter:['class']});
+});
 
 let bannerTimer=null;
 function banner(a,b){
@@ -4917,12 +4987,13 @@ function tegnVerden(){
         skygge(10,4,0.8);
         ctx.fillStyle='#2b3138'; rr(ctx,-9,-52,18,56,3); ctx.fill();
         const opp=markedStemning>=0;
-        ctx.fillStyle=opp?'rgba(47,191,122,.85)':'rgba(224,82,79,.85)';
+        // Statusfarge, ikke dekor: groenn/roed laa paa dE 19,8 under deuteranopi.
+        ctx.fillStyle=opp?'rgba(90,176,239,.85)':'rgba(240,128,80,.85)';
         rr(ctx,-7,-48,14,20,2); ctx.fill();
         ctx.fillStyle='#0d1117'; ctx.font='700 8px ui-monospace,monospace';
         ctx.textAlign='center'; ctx.textBaseline='middle';
         ctx.fillText(nf0.format(indeks),0,-38);
-        ctx.fillStyle=opp?'#2fbf7a':'#e0524f';
+        ctx.fillStyle=opp?'#5ab0ef':'#f08050';
         ctx.beginPath();
         if (opp){ ctx.moveTo(0,-26); ctx.lineTo(5,-19); ctx.lineTo(-5,-19); }
         else    { ctx.moveTo(0,-19); ctx.lineTo(5,-26); ctx.lineTo(-5,-26); }
