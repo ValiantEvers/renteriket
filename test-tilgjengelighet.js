@@ -242,6 +242,62 @@ console.log('\n=== BETYDNING LIGGER IKKE I FARGE ALENE ===');
   sant('«delvis» skiller seg fra begge', !sym.delvis || (sym.delvis!==sym.ja && sym.delvis!==sym.nei));
 }
 
+/* Et merke som blir staaende etter at tilstanden er borte, er verre enn ingen
+   merking: det lyver aktivt. To avvelgingsmoenstre finnes i spillet, og begge
+   ble innfoert av selve merkefiksen foer denne sjekken kom til:
+     - oppdrag B toggler en brikke inn og ut av budsjettet
+     - oppdrag F er et radiovalg som fjerner 'valgt' fra soesknene
+   Uten en fjern-gren sier en brikke som er TATT UT fortsatt «Med i budsjettet»
+   til skjermleseren, og to kort sier «Valgt» samtidig. */
+{
+  await p.evaluate(()=>{ RR.lukkAlt(); RR.aapneMinispill('B',RR.MINI.B); });
+  await p.waitForTimeout(500);
+  // Observatoeren merker i en mikrotask, saa klikk og maaling maa skilles:
+  // leser man i samme evaluate, er merket ikke satt enda og sjekken feller
+  // en helt korrekt implementasjon.
+  await p.evaluate(()=>{ const br=document.querySelector('#spillinner .brikke'); if(br) br.click(); });
+  await p.waitForTimeout(350);
+  const b1=await p.evaluate(()=>{
+    const br=document.querySelector('#spillinner .brikke'); if(!br) return null;
+    return {etterValg: !!br.querySelector(':scope > .smerke')};
+  });
+  const b2=await p.evaluate(()=>{
+    const br=document.querySelector('#spillinner .brikke'); if(!br) return null;
+    br.click(); return true;
+  });
+  await p.waitForTimeout(300);
+  const b3=await p.evaluate(()=>{
+    const br=document.querySelector('#spillinner .brikke'); if(!br) return null;
+    return {klasse: br.className, merke: !!br.querySelector(':scope > .smerke'),
+            tekst: (br.textContent||'').trim().slice(0,30)};
+  });
+  sant('oppdrag B: en valgt brikke faar merke', !b1 || b1.etterValg);
+  sant('oppdrag B: en AVVALGT brikke mister merket igjen',
+    !b3 || b3.merke===false);
+  if (b3 && b3.merke) console.log('      brikken staar med «'+b3.tekst+'» etter avvalg');
+
+  await p.evaluate(()=>{ RR.lukkAlt(); RR.aapneMinispill('F',RR.MINI.F); });
+  await p.waitForTimeout(500);
+  const f=await p.evaluate(()=>{
+    const k=[...document.querySelectorAll('#spillinner .valgkort')];
+    if (k.length<2) return null;
+    k[0].click(); return null;
+  });
+  await p.waitForTimeout(350);
+  await p.evaluate(()=>{
+    const k=[...document.querySelectorAll('#spillinner .valgkort')];
+    if (k.length>1) k[1].click();
+  });
+  await p.waitForTimeout(400);
+  const f2=await p.evaluate(()=>{
+    const merkede=[...document.querySelectorAll('#spillinner .valgkort')]
+      .filter(e=>{const c=e.firstElementChild; return c&&c.classList.contains('smerke')&&c.dataset.status==='valgt';});
+    return {antall: merkede.length};
+  });
+  sant('oppdrag F: bare ETT kort baerer «Valgt» etter omvalg',
+    f2.antall<=1, 'kort merket valgt: '+f2.antall);
+}
+
 console.log('\n=== STATUSFARGENE MÅLES MOT FARGEBLINDHET, IKKE ANTATT ===');
 /* Viénot 1999-simulering i lineært rom, CIE76 ΔE på resultatet. Grensene er
    satt av hva den gamle paletten faktisk gjorde (tekst 19,0 og flater 2,7 var

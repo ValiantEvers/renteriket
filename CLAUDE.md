@@ -134,7 +134,7 @@ byggesteg. Playwright er kun testavhengighet.
 ## Før noe skrives av som ferdig
 
 `bash test-alle.sh` **og** `bash test-alle.sh --http` skal begge være helt grønne:
-åtte filer, 1001 sjekker. HTTP-modus er ikke pynt: siden serveres over HTTPS i
+åtte filer, 1004 sjekker. HTTP-modus er ikke pynt: siden serveres over HTTPS i
 produksjon, og `file://` har sitt eget origo-oppsett for `localStorage`.
 
 Legger du til innhold, legg til sjekken som beviser at det virker. Fire spillfeil i

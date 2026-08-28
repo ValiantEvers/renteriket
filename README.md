@@ -289,7 +289,7 @@ ikke at spilleren regner etter.
 
 ## Testing
 
-Åtte filer, 1001 sjekker. `bash test-alle.sh` kjører alt over `file://`,
+Åtte filer, 1004 sjekker. `bash test-alle.sh` kjører alt over `file://`,
 `bash test-alle.sh --http` starter en lokal server og kjører alt på nytt over HTTP.
 Begge må være grønne: siden serveres over HTTPS i produksjon, og `file://` har sitt
 eget origo-oppsett for `localStorage`.

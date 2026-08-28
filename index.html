@@ -1718,8 +1718,23 @@ function merkEtt(el,st,sym,ord){
   m.appendChild(o);
   el.insertBefore(m,el.firstChild);
 }
+/* Et merke som blir staaende naar tilstanden er borte, er verre enn ingen
+   merking: en brikke som er TATT UT av budsjettet ville fortsatt sagt
+   «Med i budsjettet» til skjermleseren, og to kort ville sagt «Valgt»
+   samtidig i et radiomoenster. Begge finnes i spillet (oppdrag B toggler,
+   oppdrag F fjerner klassen fra soesknene), saa avvelgingen maa ryddes. */
+function rydd(el){
+  const f = el.firstElementChild;
+  if (!f || !f.classList.contains('smerke')) return;
+  for (const [sel] of SMERKER) if (el.matches(sel)) return;   // fortsatt gyldig
+  f.remove();
+}
 function merkStatus(rot){
   if (!rot || rot.nodeType!==1) return;
+  rydd(rot);
+  if (rot.querySelectorAll) rot.querySelectorAll('.smerke').forEach(m=>{
+    if (m.parentElement) rydd(m.parentElement);
+  });
   for (const [sel,st,sym,ord] of SMERKER){
     if (rot.matches && rot.matches(sel)) merkEtt(rot,st,sym,ord);
     if (rot.querySelectorAll) rot.querySelectorAll(sel).forEach(e=>merkEtt(e,st,sym,ord));
@@ -1728,7 +1743,7 @@ function merkStatus(rot){
 const statusObs=new MutationObserver(muts=>{
   for (const m of muts){
     if (m.type==='childList') m.addedNodes.forEach(merkStatus);
-    else merkStatus(m.target);
+    else merkStatus(m.target);   // rydder OG merker paa nytt
   }
 });
 [innerEl,pauseInner,dEl].forEach(el=>{
@@ -2041,7 +2056,7 @@ MINI.B=(v)=>{
       m.appendChild(i); d.appendChild(m); return d;
     };
     status.appendChild(bar('Sparing',Math.max(0,andel),MAAL_SPAR*1.5,
-      andel>=MAAL_SPAR?'var(--gro)':'var(--fare)',
+      andel>=MAAL_SPAR?'var(--ok)':'var(--feil)',
       kr(spar)+' — '+nf1.format(andel*100)+' % '+(andel>=MAAL_SPAR?'✓':'(mål '+Math.round(MAAL_SPAR*100)+' %)')));
     status.appendChild(bar('Livskvalitet',q,MAAL_Q*1.5,
       q>=MAAL_Q?'var(--gull)':'var(--dim)', q+' poeng '+(q>=MAAL_Q?'✓':'(mål '+MAAL_Q+')')));
@@ -2963,7 +2978,10 @@ MINI.J=(v)=>{
       (kontant>0?' (hvorav '+kr(kontant)+' står i kontanter)':'')+
       ' · benken <b>'+kr(referanse.verdi)+'</b>';
     nmi.style.width=clamp(nerve/100,0,1)*100+'%';
-    nmi.style.background = nerve>66?'var(--fare)':nerve>33?'var(--gull)':'var(--gro)';
+    // Tre baand, og det midterste er gull: --feil mot --gull er bare dE 27,3
+    // under deuteranopi, saa fargen alene baerer ikke skillet. Tallet og
+    // ordet ved siden av gjoer jobben; fargen er stoette.
+    nmi.style.background = nerve>66?'var(--feil)':nerve>33?'var(--gull)':'var(--ok)';
   }
   function steg(n){
     for (let i=0;i<n&&m<360;i++){
