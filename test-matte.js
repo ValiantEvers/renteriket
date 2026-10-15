@@ -37,7 +37,7 @@ er('IPS-tak 2026', S.ipsMaks, 25000, 0);
 er('frikort 2026', S.frikort, 100000, 0);
 er('grunnbeløp 1. mai 2026', S.grunnbelop, 136549, 0);
 er('folketrygdtak 7,1 × snitt-G', S.folketrygdTak*S.grunnbelopSnitt, 954374.9, 1);
-er('styringsrente juli 2026', S.styringsrente, 0.0425, 1e-12);
+er('styringsrente oktober 2026', S.styringsrente, 0.045, 1e-12);
 sant('skjermingsrenten er merket med sitt eget år', S.skjermingsrenteAar===2025);
 sant('trinnskatten har fem trinn', S.trinn.length===5);
 sant('trinnene stiger', S.trinn.every((t,i)=>i===0||t.fra>S.trinn[i-1].fra));
@@ -243,9 +243,15 @@ console.log('\n=== LÅNERAMME OG BOLIG ===');
   const r=await K(()=>RR.F.laaneramme(456000,300000));
   er('gjeldsgrad-skranke = 5 × inntekt', r.gjeldsgrad, 456000*5, 0.01);
   er('egenkapital-skranke = ek/0,10 − ek', r.belaaning, 300000/0.10-300000, 0.01);
-  er('lånerammen er den laveste', r.laan, Math.min(456000*5,2700000), 0.01);
-  sant('gjeldsgraden binder ved 456 000 og 300 000 i EK', r.bindende==='gjeldsgrad');
-  er('maks pris = lån + egenkapital', r.maksPris, 456000*5+300000, 0.01);
+  er('lånerammen er den laveste av de tre', r.laan, Math.min(r.gjeldsgrad,r.belaaning,r.betjening), 0.01);
+  er('maks pris = lån + egenkapital', r.maksPris, r.laan+300000, 0.01);
+  // Hvilken skranke som binder ved 456 000 avhenger av renta. Vippepunktet er ~5,18 %:
+  // junirenta 2026 (5,09 %) gir gjeldsgraden, augustrenta (5,31 %) betjeningsevnen.
+  const rJuni=await K(()=>RR.F.laaneramme(456000,300000,0.0509));
+  const rAug=await K(()=>RR.F.laaneramme(456000,300000,0.0531));
+  sant('gjeldsgraden binder ved 456 000 og 5,09 % (juni 2026)', rJuni.bindende==='gjeldsgrad');
+  er('… og lånet er da 5 × inntekten', rJuni.laan, 456000*5, 0.01);
+  sant('betjeningsevnen binder ved 456 000 og 5,31 % (august 2026)', rAug.bindende==='betjeningsevne');
   // egenkapitalen binder når inntekten er høy nok
   const r2=await K(()=>RR.F.laaneramme(2000000,300000));
   sant('egenkapitalen binder ved høy inntekt', r2.bindende==='egenkapital');
@@ -514,10 +520,11 @@ console.log('\n=== PÅSTANDENE SPILLET GJØR I TEKST ===');
     adaLikt/bodilLikt>1.6);
   console.log('    (samme 2 000/mnd: 42 år gir '+Math.round(adaLikt)+', 32 år gir '+
     Math.round(bodilLikt)+' — '+(adaLikt/bodilLikt).toFixed(2)+' ganger)');
-  // Oppdrag L: gjeldsgraden binder ved startlønna
+  // Oppdrag L: hvilken skranke som binder ved startlønna følger renta (se lånerammen
+  // over). Fasitteksten følger den; alle tre grenene sjekkes i test-oppdrag.js.
   const ram=await K(()=>RR.F.laaneramme(RR.tilstand.bruttoAar,300000));
-  sant('oppdrag L: gjeldsgraden binder ved startlønn og 300 000 i EK',
-    ram.bindende==='gjeldsgrad');
+  sant('oppdrag L: én av de tre skrankene binder ved startlønn',
+    ['gjeldsgrad','egenkapital','betjeningsevne'].includes(ram.bindende));
   sant('oppdrag L: leiligheten på 4,2 mill er utenfor rekkevidde', ram.maksPris<4200000);
   // Kasinoet: husets fordel
   er('kasino: forventet tap per krone', 1-36/37, 1/37, 1e-12);

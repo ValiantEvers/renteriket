@@ -139,7 +139,11 @@ SATSER-blokka i lesbar form, med årstall og forbehold.
 Alle tall som kan endres av politikere står i **én blokk** øverst i fila
 (`SATSER`), med årstall, og ingen andre steder. Verifisert **31. juli 2026** mot
 Skatteetaten, Finansdepartementet, Finanstilsynet, Norges Bank, SSB, NAV og
-Kartverket.
+Kartverket. Makrotallene (styringsrente, boliglåns- og innskuddsrente, KPI og
+lønnsvekst) er oppdatert **15. oktober 2026** mot Norges Bank og SSB. Med
+augustrenten (5,31 %) binder **betjeningsevnen**, ikke gjeldsgraden, ved
+startlønna i oppdrag L. Vippepunktet er 5,18 %. Fasiten i oppdraget følger den
+skranken som faktisk binder, så den tåler neste renteendring.
 
 | Post | Verdi | Merknad |
 |---|---|---|
@@ -162,11 +166,11 @@ Kartverket.
 | Rentefradrag | 22 % | |
 | Folketrygd | 18,1 % opp til 7,1 G | G per 1. mai 2026: 136 549 kr |
 | OTP, minimum | 2 % fra første krone | |
-| Styringsrente | 4,25 % | hevet 6. mai 2026 |
-| Boliglånsrente | 5,08 % | snitt utestående, mai 2026 (SSB) |
-| KPI | 2,7 % | juni 2026 (SSB), mål 2,0 % |
+| Styringsrente | 4,50 % | hevet 24. september 2026 |
+| Boliglånsrente | 5,31 % | snitt utestående, august 2026 (SSB) |
+| KPI | 3,4 % | september 2026 (SSB), mål 2,0 % |
 | Realavkastning aksjer | 5,2 % | DMS verdensindeks 1900–2024 |
-| Oljefondet, netto realt | 4,34 % | faktisk oppnådd siden 1998 (NBIM) |
+| Oljefondet, netto realt | 4,51 % | faktisk oppnådd siden 1998, per 30.06.2026 (NBIM) |
 | Forvaltningshonorar | 0,25 % indeks / 1,30 % aktiv | Finanstilsynets prisundersøkelse nov. 2024: globale indeksfond 0,18–0,61 %, aktive globale 0,75–2,00 % |
 
 **Årlig ettersyn.** Sjekk `SATSER` mot Skatteetaten hver januar. Det som endres

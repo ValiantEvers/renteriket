@@ -442,6 +442,11 @@ console.log('\n=== K — Kontoen som sparer skatt ===');
 }
 
 // ---------------------------------------------------------------- L
+// Hver gren av L-fasiten har et kjennetegn, og ingen gren skal låne de andres.
+const L_KJENNETEGN={gjeldsgrad:/gjelder all gjeld/, betjeningsevne:/Det er renta\./,
+                    egenkapital:/faktisk sparingen som stopper deg/};
+const lForklarer=(t,b)=>L_KJENNETEGN[b].test(t) &&
+  Object.keys(L_KJENNETEGN).filter(k=>k!==b).every(k=>!L_KJENNETEGN[k].test(t));
 console.log('\n=== L — Nøkkelen til boligen ===');
 {
   await apne(p,'L');
@@ -465,6 +470,7 @@ console.log('\n=== L — Nøkkelen til boligen ===');
   sant('L viser stresstestet terminbeløp', /stressrente/i.test(t));
   sant('L viser dokumentavgift', /Dokumentavgift/.test(t));
   sant('L nevner fleksibilitetskvoten', /fleksibilitetskvote/i.test(t));
+  sant('L-fasiten forklarer skranken som binder ('+bindende+')', lForklarer(t,bindende));
   sant('L gir seier', await harSeier(p));
   await klikkTekst(p,'Ferdig');
   sant('L er registrert løst', (await p.evaluate(()=>RR.tilstand.gjort)).includes('L'));
@@ -942,6 +948,32 @@ console.log('\n=== L: SPILLERENS EGEN GJELD SPISER AV GJELDSTAKET ===');
   sant('200 000 i gjeld senker gjeldstaket med 200 000',
     uten!==null && med!==null && Math.abs((uten-med)-200000)<1);
   await p.evaluate(()=>{ RR.sett({gjeld:0}); RR.lukkAlt(); });
+}
+
+console.log('\n=== L: FASITEN FØLGER SKRANKEN SOM BINDER, ALLE TRE ===');
+// Fasiten var skrevet for gjeldsgraden alene og ble feil da renta passerte
+// vippepunktet ved startlønna, og for lønn der egenkapitalen binder. Lønningene
+// letes fram med spillets egen F, så sjekken tåler neste renteendring.
+{
+  const start=await p.evaluate(()=>RR.tilstand.bruttoAar);
+  const lonn=await p.evaluate(()=>{ const ut={};
+    for (let l=300000;l<=1400000;l+=10000){
+      const b=RR.F.laaneramme(l,300000,undefined,0).bindende; if (!(b in ut)) ut[b]=l; }
+    return ut; });
+  sant('alle tre skrankene binder et sted mellom 300 000 og 1,4 mill.',
+    Object.keys(lonn).length===3);
+  for (const [skranke,l] of Object.entries(lonn)){
+    await p.evaluate(x=>{ RR.sett({bruttoAar:x,gjeld:0}); },l);
+    await apne(p,'L');
+    await p.evaluate(v=>{ const b=document.querySelector('#spillinner .valgkort[data-v="'+v+'"]');
+      if (b) b.click(); },skranke);
+    await p.waitForTimeout(160);
+    const t=await tekst(p);
+    sant('lønn '+l+': fasiten forklarer '+skranke, lForklarer(t,skranke) && /Riktig/.test(t));
+    sant('lønn '+l+': ingen NaN eller undefined i fasiten', !/NaN|undefined|Infinity/.test(t));
+    await p.evaluate(()=>RR.lukkAlt());
+  }
+  await p.evaluate(x=>{ RR.sett({bruttoAar:x}); },start);
 }
 
 console.log('\n=== INGEN SIDEFEIL UNDERVEIS ===');

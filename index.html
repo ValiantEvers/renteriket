@@ -465,12 +465,14 @@ const SATSER = {
   grunnbelopSnitt: 134419,           // gjennomsnittlig G for 2026 — det er DENNE taket bruker
   otpMin: 0.02,                      // obligatorisk tjenestepensjon, fra første krone
 
-  // --- makro (juli 2026) ---
-  styringsrente: 0.0425,             // holdt uendret 18.06.2026; hevet fra 4,00 % 06.05.2026
-  boliglaansrente: 0.0509,           // snitt utestående, juni 2026 (SSB, publ. 07.08.2026)
-  innskuddsrente: 0.0296,            // snitt husholdninger, juni 2026 (SSB)
-  kpi: 0.030,                        // tolvmånedersvekst juli 2026 (SSB, publ. 10.08.2026;
-                                     // KPI-JAE samme måned 2,7 %)
+  // --- makro (oktober 2026) ---
+  styringsrente: 0.045,              // hevet fra 4,25 % 24.09.2026 (Norges Bank); 4,25 fra 06.05.2026
+  boliglaansrente: 0.0531,           // snitt utestående, august 2026 (SSB, publ. 25.09.2026).
+                                     // Over 5,18 % binder betjeningsevnen, ikke gjeldsgraden,
+                                     // ved startlønna i oppdrag L. Fasiten der følger skranken.
+  innskuddsrente: 0.0314,            // snitt husholdninger, august 2026 (SSB)
+  kpi: 0.034,                        // tolvmånedersvekst september 2026 (SSB tab. 14700,
+                                     // publ. 09.10.2026; KPI-JAE samme måned 3,0 %)
   // Forbrukslånsrente. Lå tidligere som `const FORBRUKSRENTE` TO steder i koden
   // (modulnivå + en lokal skygge i MINI.C) og ikke i SATSER — altså nøyaktig
   // to-lags-bruddet MINI.N ble tatt for. Oppdaterte man den ene og ikke den andre,
@@ -478,10 +480,10 @@ const SATSER = {
   forbrukslaansrente: 0.226,         // SSB tab. 12844, kredittkortlån der det betales
                                      // rente, 2026K2 (2025K2 var 22,9 %). Dette er den
                                      // riktige av SSBs to serier for det spillet viser.
-  lonnsvekst: 0.044,                 // nominell årslønnsvekst 2026 (SSB Konjunkturtendensene
-                                     // 15.06.2026; samme som frontfagsrammen etter oppgjøret
-                                     // 12.04.2026). Rettet 16.08.2026 fra 0,032 — det tallet
-                                     // var TBUs KPI-anslag for 2026, ikke lønnsveksten.
+  lonnsvekst: 0.043,                 // nominell årslønnsvekst 2026 (SSB Konjunkturtendensene
+                                     // 15.09.2026; 4,4 % i juni-utgaven, = frontfagsrammen
+                                     // etter oppgjøret 12.04.2026). Rettet 16.08.2026 fra
+                                     // 0,032 — det tallet var TBUs KPI-anslag, ikke lønnsveksten.
   inflasjonsmaal: 0.02,              // Norges Bank
 
   // --- langsiktige anslag brukt i simuleringene ---
@@ -1326,10 +1328,10 @@ const KORT=[
    s:'Realrente = (1+nominell)/(1+inflasjon) − 1. Å bare trekke fra gir feil svar, og feilen vokser med tallene.'},
   {n:28,x:1390,y:1460, t:'Et fall på 50 % krever 100 % opp',
    s:'Nedsiden er asymmetrisk. Derfor er det å unngå de store tapene viktigere enn å treffe de store gevinstene.'},
-  {n:29,x:1860,y:1460, t:'Styringsrenten er 4,25 %',
-   s:'Hevet 6. mai 2026. Alt annet henger etter den: boliglån, sparekonto, obligasjoner.'},
+  {n:29,x:1860,y:1460, t:'Styringsrenten er '+pst2(SATSER.styringsrente),
+   s:'Hevet 24. september 2026. Alt annet henger etter den: boliglån, sparekonto, obligasjoner.'},
   {n:30,x:1620,y:1420, t:'Inflasjonsmålet er 2 %',
-   s:'Norges Bank styrer mot det. I juli 2026 var KPI '+pst1(SATSER.kpi)
+   s:'Norges Bank styrer mot det. I september 2026 var KPI '+pst1(SATSER.kpi)
      +', og banken venter å nå målet i 2029.'},
   // --- BØRSTORGET ---
   {n:31,x:2050,y:1450, t:'Globale aksjer: ca. 5 % realt',
@@ -2546,7 +2548,7 @@ MINI.F=(v)=>{
       'verdt noe.<br><br>'+
       'Realrenten regnes ikke som «rente minus inflasjon». Det er en tilnærming som blir feil '+
       'når tallene blir store. Riktig formel er <b>(1+r)/(1+i) − 1</b>. '+
-      'For sparekonto etter skatt i juli 2026: '+
+      'For sparekonto etter skatt høsten 2026: '+
       '(1+'+pst2(SATSER.innskuddsrente*(1-SATSER.alminnelig))+')/(1+'+pst2(SATSER.kpi)+') − 1 = '+
       (F.realrente(SATSER.innskuddsrente*(1-SATSER.alminnelig),SATSER.kpi)<0?'−':'')+
       pst2(Math.abs(F.realrente(SATSER.innskuddsrente*(1-SATSER.alminnelig),SATSER.kpi)))+
@@ -3289,20 +3291,46 @@ MINI.L=(v)=>{
         ])));
         const navn={gjeldsgrad:'gjeldsgraden',egenkapital:'egenkapitalkravet',
                     betjeningsevne:'betjeningsevnen'};
+        // Fasiten følger skranken som FAKTISK binder. Den var skrevet for
+        // gjeldsgraden alene, og ble feil da augustrenta (5,31 %) passerte
+        // vippepunktet 5,18 % ved startlønna, og for alle med lønn over ~540 000,
+        // der egenkapitalen binder. Alle tre grenene testes i test-oppdrag.js.
+        const stressAndel=nf0.format(ram.stresstermin/ram.nettoPerMnd*100)+' % av netto lønn';
+        const forklaring={
+          gjeldsgrad:
+            'Dette er den vanligste feilen folk gjør når de regner på bolig: de sparer opp '+
+            pst2(SATSER.egenkapital)+' og tror det er nok. Men gjeldstaket på '+
+            nf1.format(SATSER.gjeldsgrad)+' × brutto inntekt gjelder <b>all</b> gjeld: '+
+            'billån, studielån, forbrukslån og fellesgjeld i borettslaget. '+
+            'Med '+kr(bruttoAar)+' i inntekt er taket '+kr(ram.gjeldsgrad)+' uansett hvor mye '+
+            'egenkapital du har.<br><br>'+
+            '<b>Men se på de to tallene som ligger tettest:</b> gjeldsgraden gir '+
+            kr(ram.gjeldsgrad)+' og betjeningsevnen '+kr(ram.betjening)+'. '+
+            'Stressterminen på '+kr(ram.stresstermin)+' er '+stressAndel+'. '+
+            'Det er derfor banker sier nei til lån som forskriftens to første krav '+
+            'godtar. Betjeningsevnen er et krav om at du skal <i>leve</i> også, '+
+            'ikke bare betale.<br><br>',
+          betjeningsevne:
+            'De fleste regner bare på de to første kravene: de sparer opp '+
+            pst2(SATSER.egenkapital)+' og sjekker at lånet er under '+
+            nf1.format(SATSER.gjeldsgrad)+' × inntekten. Gjeldstaket ville gitt deg '+
+            kr(ram.gjeldsgrad)+', og likevel sier banken nei.<br><br>'+
+            '<b>Det er renta.</b> Banken må regne som om den stiger til '+
+            pst2(ram.stressrente)+'. Da blir terminen '+kr(ram.stresstermin)+' i måneden, '+
+            stressAndel+', og etter '+kr(ram.levekostnad)+' i levekostnader rekker lønna til '+
+            'et lån på '+kr(ram.betjening)+'. Jo høyere renta er, jo strengere blir dette '+
+            'kravet, mens gjeldstaket står stille. Derfor krymper lånet du kan få når renta '+
+            'stiger, selv om lønna og egenkapitalen er de samme. Betjeningsevnen er et krav om '+
+            'at du skal <i>leve</i> også, ikke bare betale.<br><br>',
+          egenkapital:
+            'Her er det faktisk sparingen som stopper deg, ikke lønna. Egenkapitalen må være '+
+            'minst '+pst2(SATSER.egenkapital)+' av kjøpesummen, så '+kr(300000)+' rekker til '+
+            'en kjøpesum på '+kr(ram.maksPris)+'. Gjeldstaket ville gitt '+kr(ram.gjeldsgrad)+
+            ' og betjeningsevnen '+kr(ram.betjening)+', altså mer enn du har egenkapital '+
+            'til.<br><br>'
+        };
         svar.appendChild(fasit(true,'Riktig, <b>'+navn[riktig]+'</b> binder.',
-          'Dette er den vanligste feilen folk gjør når de regner på bolig: de sparer opp '+
-          pst2(SATSER.egenkapital)+' og tror det er nok. Men gjeldstaket på '+
-          nf1.format(SATSER.gjeldsgrad)+' × brutto inntekt gjelder <b>all</b> gjeld: '+
-          'billån, studielån, forbrukslån og fellesgjeld i borettslaget. '+
-          'Med '+kr(bruttoAar)+' i inntekt er taket '+kr(ram.gjeldsgrad)+' uansett hvor mye '+
-          'egenkapital du har.<br><br>'+
-          '<b>Men se på de to tallene som ligger tettest:</b> gjeldsgraden gir '+
-          kr(ram.gjeldsgrad)+' og betjeningsevnen '+kr(ram.betjening)+'. '+
-          'Stressterminen på '+kr(ram.stresstermin)+' er '+
-          nf0.format(ram.stresstermin/ram.nettoPerMnd*100)+' % av netto lønn. '+
-          'Det er derfor banker sier nei til lån som forskriftens to første krav '+
-          'godtar. Betjeningsevnen er et krav om at du skal <i>leve</i> også, '+
-          'ikke bare betale.<br><br>'+
+          forklaring[riktig]+
           'Egenkapitalkravet ble senket fra 15 % til '+pst2(SATSER.egenkapital)+
           ' ved årsskiftet 2024/25. Gjeldstaket sto stille, og det er derfor lettelsen '+
           'betydde mindre i praksis enn overskriftene ga inntrykk av.<br><br>'+
@@ -3371,7 +3399,7 @@ MINI.M=(v)=>{
      svindel:true,hvorfor:'Direktørsvindelens lillebror: kontonummer byttes ut før lønnskjøringen. Legitime lønnsendringer skjer i personalsystemet, aldri på e-post. Gå til HR fysisk eller ring.'},
     {fra:'Sparebanken',k:'SMS',t:'Engangskode: 448192. Vi ringer deg ALDRI og ber om denne koden. Har noen bedt deg om den, legg på.',
      svindel:false,hvorfor:'En ekte engangskode med den advarselen bankene har begynt å sette inn nettopp fordi svindlerne ber om koden. Meldingen ber deg ikke gjøre noe. Den forteller deg hva du ikke skal gjøre.'},
-    {fra:'Norges Bank',k:'Nyhetsvarsel',t:'Styringsrenten holdes uendret på 4,25 prosent. Neste rentebeslutning er 24. september.',
+    {fra:'Norges Bank',k:'Nyhetsvarsel',t:'Styringsrenten holdes uendret på '+nf2.format(SATSER.styringsrente*100)+' prosent.',
      svindel:false,hvorfor:'Ren informasjon, ingen handling, ingen lenke, ingenting som haster. Slik ser en beskjed ut som bare skal opplyse deg.'}
   ];
   let i=0, riktig=0, feil=0, tid=0;
@@ -5430,10 +5458,10 @@ function tegnPause(){
       ['Grunnbeløpet (1. mai '+SATSER.aar+')',kr(SATSER.grunnbelop)],
       ['OTP, minimum',pst2(SATSER.otpMin)],
       ['Styringsrente',pst2(SATSER.styringsrente)],
-      ['Boliglånsrente (snitt utestående, juni '+SATSER.aar+')',pst2(SATSER.boliglaansrente)],
-      ['Innskuddsrente (snitt husholdninger, juni '+SATSER.aar+')',pst2(SATSER.innskuddsrente)],
+      ['Boliglånsrente (snitt utestående, august '+SATSER.aar+')',pst2(SATSER.boliglaansrente)],
+      ['Innskuddsrente (snitt husholdninger, august '+SATSER.aar+')',pst2(SATSER.innskuddsrente)],
       ['Forbrukslånsrente (SSB, '+SATSER.aar+'K2)',pst2(SATSER.forbrukslaansrente)],
-      ['KPI, tolvmåneders (juli '+SATSER.aar+')',pst2(SATSER.kpi)],
+      ['KPI, tolvmåneders (september '+SATSER.aar+')',pst2(SATSER.kpi)],
       ['Realavkastning aksjer (DMS 1900–2024)',pst2(SATSER.realAksjer)],
       ['Oljefondet, netto realt siden 1998',pst2(SATSER.spuReal)]
     ])));
