@@ -677,7 +677,10 @@ console.log('\n=== LØST OPPDRAG A, MEN IKKE ANSATT (playtest F1) ===');
 
   await p.evaluate(xy=>{ RR.loesOppdrag('A'); RR.sett({harJobb:false});
                          RR.flyttTil(xy[0],xy[1]); },TOMT);
-  await p.waitForTimeout(200);
+  // Hintet settes i spill-løkka (rAF). Fast 200 ms ga én tom streng i CI 18.10 på en kald
+  // runner (grønt ved ny kjøring og lokalt), så vent på det i stedet, men høyst 3 s:
+  // dukker det aldri opp, feiler sjekkene under som før.
+  await p.waitForFunction(()=>/JOBBSENTERET/i.test(RR.hintTekst()),null,{timeout:3000}).catch(()=>{});
   const under=await p.evaluate(()=>RR.hintTekst());
   sant('A løst + ikke ansatt → hintet peker mot Jobbsenteret',
        /JOBBSENTERET/i.test(under));
