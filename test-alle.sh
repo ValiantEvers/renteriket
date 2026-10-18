@@ -17,11 +17,20 @@ FEIL=0
 SRV=""
 if [ "${1:-}" = "--http" ]; then
   PORT=${PORT:-8731}
-  python3 -m http.server "$PORT" --bind 127.0.0.1 >/dev/null 2>&1 &
+  # python3 finnes ikke overalt (Windows har ofte bare python); uten tolk døde serveren stille
+  PY=""
+  for c in python3 python; do
+    if "$c" -c 'import sys; sys.exit(sys.version_info[0] < 3)' >/dev/null 2>&1; then PY=$c; break; fi
+  done
+  if [ -z "$PY" ]; then echo "✗ --http trenger python3 eller python i PATH"; exit 1; fi
+  "$PY" -m http.server "$PORT" --bind 127.0.0.1 >/dev/null 2>&1 &
   SRV=$!
   trap 'kill $SRV 2>/dev/null' EXIT INT TERM
   sleep 1
   export RR_URL="http://127.0.0.1:$PORT/index.html"
+  if ! "$PY" -c "import urllib.request,sys; urllib.request.urlopen(sys.argv[1], timeout=5)" "$RR_URL" >/dev/null 2>&1; then
+    echo "✗ HTTP-serveren svarer ikke på $RR_URL (er porten $PORT opptatt?)"; exit 1
+  fi
   printf 'kjører mot %s\n' "$RR_URL"
 fi
 for t in test-matte.js test-verden.js sjekk-kort.js test-oppdrag.js \
