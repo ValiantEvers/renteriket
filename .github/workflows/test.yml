@@ -29,8 +29,18 @@ jobs:
       # kortplukk-testen som plutselig finner 34–38 av 40 kort. Målt 2026-08-16.
       - run: npm ci
 
+      # Runner-imaget må inn i cache-nøkkelen. `ubuntu-latest` går gradvis over fra 24.04
+      # til 26.04 (2026-10-19 → 11-19, actions/runner-images#14748), og `runner.os` er
+      # «Linux» på begge. Uten imaget får en 26.04-runner 24.04-cachen, hopper over
+      # `--with-deps` og starter chromium uten å ha installert systembibliotekene.
+      # `ImageOS` (ubuntu24 / ubuntu26) settes av GitHub-hostede runnere, ikke i
+      # env-konteksten, derfor går den via GITHUB_ENV. Playwright 1.62.1 kjenner 26.04
+      # offisielt (egen deps-liste i coreBundle.js), så installasjonen ved cache-bom virker.
+      - name: Runner-image til cache-nøkkelen
+        run: echo "IMAGE_OS=${ImageOS:-ukjent}" >> "$GITHUB_ENV"
+
       # Nedlastingen av chromium er det dyreste steget. Cache den på lock-filens hash,
-      # så den bare skjer når playwright-versjonen faktisk endres.
+      # så den bare skjer når playwright-versjonen (eller runner-imaget) faktisk endres.
       - name: Cache Playwright-chromium
         id: pw-cache
         # v6 kjører på node24. v4 targeter node20, som er deprecated og tvinges til 24
@@ -39,7 +49,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
-          key: pw-chromium-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          key: pw-chromium-${{ runner.os }}-${{ env.IMAGE_OS }}-${{ hashFiles('package-lock.json') }}
 
       - if: steps.pw-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
