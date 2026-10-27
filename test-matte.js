@@ -539,6 +539,63 @@ console.log('\n=== PÅSTANDENE SPILLET GJØR I TEKST ===');
               'med 3 000/mnd og 7 % brutto)');
 }
 
+console.log('\n=== KUNNSKAPSKORTENE REGNER TALLENE SELV ===');
+{
+  // Regelen i CLAUDE.md: et tall i en tekst skal regnes ut fra SATSER eller F. Kortene
+  // brøt den 49 ganger (revisjonen 25.10), og bare kort 6, 8 og 12 ble sjekket, så
+  // januar-ettersynet og G-reguleringen ville gjort kort 1, 5, 21 og 23 gale uten at
+  // noe ble rødt. Denne sjekken leser KILDEN: hvert siffer som står i en strengliteral
+  // i KORT må stå på lista under, med grunn. Et nytt tall som speiler en sats, feller den.
+  const fs=require('fs');
+  const src=fs.readFileSync(__dirname+'/index.html','utf8');
+  const a=src.indexOf('const KORT=['), z=src.indexOf('\n];',a);
+  sant('fant KORT-blokka i kilden', a>0 && z>a);
+  const LOV={
+    3:['100 000','2025','70 000'],          // historikk: «har vært … siden 2025, før det …»
+    6:['1 000','5','155 000','10','1,5','40'], // eksempel, regnet om over («kort 6»)
+    7:['12','15'],                          // eksempel på nominell mot effektiv
+    11:['15','2024','25'],                  // historikk: ned fra 15 % ved årsskiftet 2024/25
+    14:['3','700 000','3,7'],               // eksempel: borettslag + fellesgjeld
+    20:['15 000'],                          // historikk: «hevet fra»
+    21:['1'], 23:['1'],                     // «1. mai», datoen G reguleres
+    24:['25','35'],                         // alder i eksemplet
+    25:['62'],                              // tidligste uttaksalder i folketrygden
+    26:['5'],                               // eksempel: 5 % nominelt (samme 0.05 som F.realrente får)
+    27:['1','1','1'],                       // Fisher-formelen
+    28:['50','100'],                        // ren matematikk
+    29:['24','2026'], 30:['2026','2029'],   // datoer: makro-ettersynet etter 05.11 (funn RR-3)
+    31:['1900','2024'],                     // perioden i UBS/DMS-årboka
+    32:['1998'],                            // oljefondets første år
+    33:['30'],                              // horisonten gebyrlekkasjen regnes over
+    36:['2026']                             // Finans Norges trusselbilde for 2026
+  };
+  const deler=src.slice(a,z).split(/\{n:(\d+),/).slice(1);
+  let sett=0;
+  for (let i=0;i<deler.length;i+=2){
+    const n=+deler[i], kode=deler[i+1].replace(/\/\/[^\n]*/g,'');
+    const tall=[];
+    for (const lit of (kode.match(/'(?:[^'\\]|\\.)*'/g)||[]))
+      for (const m of (lit.match(/\d+(?:[ ,.]\d+)*/g)||[])) tall.push(m);
+    const lov=(LOV[n]||[]).slice(), ukjent=[];
+    for (const t of tall){ const j=lov.indexOf(t); if (j>=0) lov.splice(j,1); else ukjent.push(t); }
+    sant('kort '+n+': ingen tall-literaler utenom lista'+(ukjent.length?' (fant '+ukjent.join(', ')+')':''),
+         ukjent.length===0);
+    sett++;
+  }
+  sant('alle førti kortene ble lest', sett===40);
+  // Og det som nå regnes ut, skal stemme med motoren:
+  const kort=await K(()=>RR.KORT.map(k=>k.t+' '+k.s));
+  const l5=await K(()=>RR.F.lonnsskatt(500000));
+  sant('kort 1: nettolønna avrundet til tusen',
+    kort[0].replace(/ /g,' ').includes('rundt '+(Math.round(l5.netto/1000)*1000).toLocaleString('nb-NO').replace(/ /g,' ')));
+  sant('kort 33: andelen gebyret spiser er regnet ut',
+    /(nesten|drøyt) \d+ % av sluttbeløpet/.test(kort[32]));
+  sant('kort 21: taket er 7,1 × snitt-G for G-året',
+    kort[20].replace(/ /g,' ').includes(
+      Math.round(S.folketrygdTak*S.grunnbelopSnitt).toLocaleString('nb-NO').replace(/ /g,' ')
+      +' kr i '+S.grunnbelopAar));
+}
+
 console.log('\n=== ROBUSTHET: ingen NaN, ingen Infinity der det ikke skal ===');
 {
   const rare=[0,1,-1,1e12,0.0001];

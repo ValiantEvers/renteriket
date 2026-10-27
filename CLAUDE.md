@@ -9,7 +9,10 @@ byggesteg. Playwright er kun testavhengighet.
 - **Alle tallfestede satser hører i `SATSER`-blokka øverst**, med årstall, aldri
   skrevet inn i en tekststreng. Skal en tekst nevne et tall, skal den regne det ut
   fra `SATSER` eller fra `F`. Bryter man dette, råtner spillet stille når satsene
-  endres.
+  endres. For kunnskapskortene håndheves det: `test-matte.js` leser KORT-blokka i
+  kilden og feller hvert siffer i en strengliteral som ikke står på `LOV`-lista der,
+  med grunn (historikk, eksempel, dato). Et nytt kort med «22 %» skrevet inn feller
+  pakka; skriv `pst0(SATSER.alminnelig)`.
 - **Alt spillet påstår om penger skal komme fra `F`**, som er rene funksjoner uten
   tilstand. Ingen finansmatte i tegne- eller DOM-koden.
 - **Rentekonvensjonene er ikke utbyttbare:** `mndRente` (geometrisk) for
@@ -134,7 +137,7 @@ byggesteg. Playwright er kun testavhengighet.
 ## Før noe skrives av som ferdig
 
 `bash test-alle.sh` **og** `bash test-alle.sh --http` skal begge være helt grønne:
-åtte filer, 1014 sjekker. HTTP-modus er ikke pynt: siden serveres over HTTPS i
+åtte filer, 1059 sjekker. HTTP-modus er ikke pynt: siden serveres over HTTPS i
 produksjon, og `file://` har sitt eget origo-oppsett for `localStorage`.
 
 Legger du til innhold, legg til sjekken som beviser at det virker. Fire spillfeil i

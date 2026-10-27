@@ -463,6 +463,8 @@ const SATSER = {
   folketrygdTak: 7.1,                // opp til 7,1 G (gjennomsnittlig grunnbeløp)
   grunnbelop: 136549,                // G per 1. mai 2026
   grunnbelopSnitt: 134419,           // gjennomsnittlig G for 2026 — det er DENNE taket bruker
+  grunnbelopAar: 2026,               // året de to G-tallene gjelder. Reguleres 1. mai, ikke i
+                                     // januar, så det følger ikke `aar` (kort 21 og 23 leser det)
   otpMin: 0.02,                      // obligatorisk tjenestepensjon, fra første krone
 
   // --- makro (oktober 2026) ---
@@ -554,6 +556,16 @@ function pst2(x){ return nf2.format(x*100)+' %'; }
 // literaler («KPI 2,7 %»), og pst2 ville gjort dem om til «3,00 %» — falsk presisjon
 // på en tolvmånedersvekst som SSB selv oppgir med én desimal.
 function pst1(x){ return nf1.format(x*100)+' %'; }
+// Hele prosent, for satser loven selv oppgir uten desimal («22 %», «10 %»).
+function pst0(x){ return nf0.format(x*100)+' %'; }
+// Avrundet til nærmeste tusen eller hele prosent, med riktig forord: «nesten» når
+// tallet ligger under det avrundede, «drøyt» når det ligger over. Kort 1 og 33 sa
+// «nesten» som literal; flytter satsene tallet over, ville ordet blitt usant.
+function nestenTusen(x){ const r=Math.round(x/1000)*1000;
+  return (x<r?'nesten ':'drøyt ')+nf0.format(r); }
+function nestenPst(x){ const r=Math.round(x*100);
+  return (x*100<r?'nesten ':'drøyt ')+nf0.format(r)+' %'; }
+const storForbokstav=t=>t.charAt(0).toUpperCase()+t.slice(1);
 // pst2/pst1 limer på «%» uansett hva argumentet betyr, så enheten er kallstedets ansvar.
 // Et NIVÅ (en rente, en andel, en sats) er prosent; en DIFFERANSE mellom to satser er
 // prosentPOENG. «Renta stiger 3 %» og «renta stiger 3 prosentpoeng» er to ulike påstander
@@ -1258,26 +1270,33 @@ function blokkert(x,y,m){
 const KORT=[
   // --- STARTGATA: lønn, budsjett, buffer ---
   {n:1, x:560, y:1960, t:'Brutto er ikke ditt',
-   s:'Av 500 000 kr i lønn sitter du igjen med rundt 389 000 etter skatt. Nesten 111 000 går til skatt. Budsjetter alltid med netto.'},
+   s:(l=>'Av '+kr(l.brutto)+' i lønn sitter du igjen med rundt '
+       +nf0.format(Math.round(l.netto/1000)*1000)+' etter skatt. '
+       +storForbokstav(nestenTusen(l.sum))+' går til skatt. Budsjetter alltid med netto.'
+     )(F.lonnsskatt(500000))},
   {n:2, x:1180,y:1700, t:'Betal deg selv først',
    s:'Sett sparingen som fast trekk samme dag lønna kommer. Det som er igjen sist i måneden, blir sjelden spart.'},
-  {n:3, x:300, y:1660, t:'Frikortgrensen er 100 000 kr',
+  {n:3, x:300, y:1660, t:'Frikortgrensen er '+kr(SATSER.frikort),
    s:'Tjener du under det, betaler du i praksis ingen skatt. Grensen har vært 100 000 siden 2025, før det 70 000.'},
   {n:4, x:880, y:2110, t:'Bufferen er ikke en investering',
    s:'Den skal være kjedelig og tilgjengelig. Tre måneders faste utgifter på en helt vanlig sparekonto.'},
   {n:5, x:1150,y:2120, t:'Marginalskatten er tallet som betyr noe',
-   s:'Spør aldri «hva er skatten min», spør «hva koster den neste tusenlappen». På 600 000 kr er gjennomsnittet 24 %, men marginalskatten 33,6 %.'},
+   s:(l=>'Spør aldri «hva er skatten min», spør «hva koster den neste tusenlappen». På '
+       +kr(l.brutto)+' er gjennomsnittet '+pst0(l.snittsats)+', men marginalskatten '
+       +pst1(F.marginalskatt(l.brutto))+'.')(F.lonnsskatt(600000))},
   // --- BANKGATA: rente, gjeld ---
   {n:6, x:280, y:1400, t:'Renters rente er ikke lineær',
    s:'1 000 kr i måneden ved 5 % blir ca. 155 000 på 10 år og ca. 1,5 millioner på 40: fire ganger så lang tid, nesten ti ganger så mye.'},
   {n:7, x:660, y:1450, t:'Nominell rente lyver',
    s:'Effektiv rente tar med gebyrer og rentetermin. Et forbrukslån med 12 % nominell kan ha 15 % effektiv.'},
-  {n:8, x:1200,y:1330, t:'Rentefradraget er 22 %',
-   s:'Betaler du 50 000 kr i renter, får du 11 000 tilbake. Boliglånet koster altså '
+  {n:8, x:1200,y:1330, t:'Rentefradraget er '+pst0(SATSER.rentefradrag),
+   s:'Betaler du '+kr(50000)+' i renter, får du '+nf0.format(50000*SATSER.rentefradrag)
+     +' tilbake. Boliglånet koster altså '
      +pst2(SATSER.boliglaansrente)+' nominelt, ca. '
      +pst2(SATSER.boliglaansrente*(1-SATSER.alminnelig))+' netto.'},
-  {n:9, x:1210,y:1050, t:'BSU: 2 750 kr i året',
-   s:'10 % fradrag av inntil 27 500 kr spart. Maks 300 000 kr totalt, og bare t.o.m. året du fyller 33.'},
+  {n:9, x:1210,y:1050, t:'BSU: '+kr(SATSER.bsuMaksFradrag)+' i året',
+   s:pst0(SATSER.bsuFradrag)+' fradrag av inntil '+kr(SATSER.bsuMaks)+' spart. Maks '
+     +kr(SATSER.bsuTotal)+' totalt, og bare t.o.m. året du fyller '+SATSER.bsuAlder+'.'},
   {n:10,x:300, y:1040, t:'Kredittkortgjeld først',
    s:'Betaler du ned gjeld til '+pst1(SATSER.forbrukslaansrente)+', er det '
      +pst1(SATSER.forbrukslaansrente*(1-SATSER.alminnelig))
@@ -1286,36 +1305,44 @@ const KORT=[
            /(1-SATSER.alminnelig*SATSER.oppjustering))
      +' før skatt, hvert år, sikkert.'},
   // --- BOLIGFELTET ---
-  {n:11,x:280, y:340, t:'Egenkapitalkravet er 10 %',
-   s:'Ned fra 15 % ved årsskiftet 2024/25. Men gjeldstaket på 5 × brutto inntekt står, og det er ofte det som binder.'},
+  {n:11,x:280, y:340, t:'Egenkapitalkravet er '+pst0(SATSER.egenkapital),
+   s:'Ned fra 15 % ved årsskiftet 2024/25. Men gjeldstaket på '+nf0.format(SATSER.gjeldsgrad)
+     +' × brutto inntekt står, og det er ofte det som binder.'},
   {n:12,x:980, y:340, t:'Banken stresstester deg',
-   s:'Du må tåle 3 prosentpoeng høyere rente, minimum 7 %. Med '
+   s:'Du må tåle '+nf0.format(SATSER.stresspp*100)+' prosentpoeng høyere rente, minimum '
+     +pst0(SATSER.stressgulv)+'. Med '
      +pst2(SATSER.boliglaansrente)+' i dag regner banken med '
      +pst2(F.stressrente())+'.'},
-  {n:13,x:1200,y:620, t:'Dokumentavgift: 2,5 %',
+  {n:13,x:1200,y:620, t:'Dokumentavgift: '+pst1(SATSER.dokumentavgift),
    s:'Av markedsverdien. Ved nybygg som ikke er tatt i bruk betaler du bare av tomteverdien, og borettslagsandeler er helt utenfor.'},
   {n:14,x:290, y:860, t:'Fellesgjeld er din gjeld',
    s:'En borettslagsleilighet til 3 mill. med 700 000 i fellesgjeld koster deg 3,7 mill. Bankene regner den med.'},
   {n:15,x:700, y:860, t:'Bolig er ikke bare avkastning',
    s:'Legg til dokumentavgift, vedlikehold, felleskostnader og renter før du sammenligner med et fond.'},
   // --- SKATTEKVARTALET ---
-  {n:16,x:1390,y:300, t:'Aksjeskatten er 37,84 %',
-   s:'22 % × oppjusteringsfaktor 1,72. Renteinntekt beskattes med 22 %. Det er derfor kontotypen betyr noe.'},
+  {n:16,x:1390,y:300, t:'Aksjeskatten er '+pst2(SATSER.aksjeskatt),
+   s:pst0(SATSER.alminnelig)+' × oppjusteringsfaktor '+nf2.format(SATSER.oppjustering)
+     +'. Renteinntekt beskattes med '+pst0(SATSER.alminnelig)+'. Det er derfor kontotypen betyr noe.'},
   {n:17,x:1860,y:320, t:'Skjermingsfradraget er gratis avkastning',
-   s:'En risikofri del av avkastningen er skattefri. For 2025 var satsen 3,6 %. Ubrukt skjerming går videre til neste år.'},
+   s:'En risikofri del av avkastningen er skattefri. For '+SATSER.skjermingsrenteAar
+     +' var satsen '+pst1(SATSER.skjermingsrente)+'. Ubrukt skjerming går videre til neste år.'},
   {n:18,x:1390,y:860, t:'ASK utsetter, den fritar ikke',
    s:'Du kan bytte fond og selge inne på kontoen uten skatt. Skatten kommer når du tar pengene ut.'},
   {n:19,x:1860,y:860, t:'Rentefond kan ikke ligge på ASK',
-   s:'Bare børsnoterte aksjer i EØS og fond med mer enn 80 % aksjeandel. Rentefond, pengemarkedsfond, enkeltobligasjoner og unoterte aksjer må ligge utenfor.'},
-  {n:20,x:1745,y:465, t:'IPS: 25 000 kr i 2026',
-   s:'Hevet fra 15 000. Fradrag med 22 % inn, 22 % skatt ut, og ingen formuesskatt underveis.'},
+   s:'Bare børsnoterte aksjer i EØS og fond med mer enn '+pst0(SATSER.askAksjeandel)+' aksjeandel. Rentefond, pengemarkedsfond, enkeltobligasjoner og unoterte aksjer må ligge utenfor.'},
+  {n:20,x:1745,y:465, t:'IPS: '+kr(SATSER.ipsMaks)+' i '+SATSER.aar,
+   s:'Hevet fra 15 000. Fradrag med '+pst0(SATSER.alminnelig)+' inn, '+pst0(SATSER.alminnelig)
+     +' skatt ut, og ingen formuesskatt underveis.'},
   // --- PENSJONSHØYDEN ---
-  {n:21,x:2050,y:280, t:'18,1 prosent, hver måned',
-   s:'Så mye av lønna di går inn i pensjonsbeholdningen i folketrygden, opp til 7,1 × GJENNOMSNITTLIG grunnbeløp, altså 954 375 kr i 2026, ikke 7,1 × G per 1. mai.'},
-  {n:22,x:2825,y:250, t:'Arbeidsgiver må spare minst 2 %',
+  {n:21,x:2050,y:280, t:nf1.format(SATSER.folketrygdSats*100)+' prosent, hver måned',
+   s:'Så mye av lønna di går inn i pensjonsbeholdningen i folketrygden, opp til '
+     +nf1.format(SATSER.folketrygdTak)+' × GJENNOMSNITTLIG grunnbeløp, altså '
+     +kr(SATSER.folketrygdTak*SATSER.grunnbelopSnitt)+' i '+SATSER.grunnbelopAar+', ikke '
+     +nf1.format(SATSER.folketrygdTak)+' × G per 1. mai.'},
+  {n:22,x:2825,y:250, t:'Arbeidsgiver må spare minst '+pst0(SATSER.otpMin),
    s:'Obligatorisk tjenestepensjon, fra første krone. Sjekk hva din faktisk sparer. Mange sparer mer.'},
-  {n:23,x:2700,y:290, t:'Grunnbeløpet er 136 549 kr',
-   s:'Per 1. mai 2026. Nesten alt i folketrygden måles i G, så tallet dukker opp overalt.'},
+  {n:23,x:2700,y:290, t:'Grunnbeløpet er '+kr(SATSER.grunnbelop),
+   s:'Per 1. mai '+SATSER.grunnbelopAar+'. Nesten alt i folketrygden måles i G, så tallet dukker opp overalt.'},
   {n:24,x:2135,y:868, t:'Tid er den eneste innsatsfaktoren du ikke kan kjøpe',
    s:'Starter du ved 25 i stedet for 35, dobler du omtrent sluttbeløpet med samme månedsbeløp.'},
   {n:25,x:2930,y:860, t:'62 er ikke det samme som «kan slutte»',
@@ -1330,16 +1357,21 @@ const KORT=[
    s:'Nedsiden er asymmetrisk. Derfor er det å unngå de store tapene viktigere enn å treffe de store gevinstene.'},
   {n:29,x:1860,y:1460, t:'Styringsrenten er '+pst2(SATSER.styringsrente),
    s:'Hevet 24. september 2026. Alt annet henger etter den: boliglån, sparekonto, obligasjoner.'},
-  {n:30,x:1620,y:1420, t:'Inflasjonsmålet er 2 %',
+  {n:30,x:1620,y:1420, t:'Inflasjonsmålet er '+pst0(SATSER.inflasjonsmaal),
    s:'Norges Bank styrer mot det. I september 2026 var KPI '+pst1(SATSER.kpi)
      +', og banken venter å nå målet i 2029.'},
   // --- BØRSTORGET ---
-  {n:31,x:2050,y:1450, t:'Globale aksjer: ca. 5 % realt',
-   s:'5,2 % per år 1900–2024 for verdensindeksen. Obligasjoner 1,7 %. Kontanter 0,5 %. Det er hele saken.'},
+  {n:31,x:2050,y:1450, t:'Globale aksjer: ca. '+pst0(SATSER.realAksjer)+' realt',
+   s:pst1(SATSER.realAksjer)+' per år 1900–2024 for verdensindeksen. Obligasjoner '
+     +pst1(SATSER.realObligasjoner)+'. Kontanter '+pst1(SATSER.realKontanter)+'. Det er hele saken.'},
   {n:32,x:2930,y:1050, t:'Oljefondet: '+pst2(SATSER.spuReal)+' netto realt',
-   s:'Faktisk oppnådd siden 1998, etter kostnader og inflasjon. Med 0,07 % i forvaltningskostnad.'},
+   s:'Faktisk oppnådd siden 1998, etter kostnader og inflasjon. Med '+pst2(SATSER.gebyrSpu)
+     +' i forvaltningskostnad.'},
   {n:33,x:2450,y:1470, t:'Ett prosentpoeng i gebyr koster nesten en femtedel',
-   s:'Over 30 år spiser 1,3 % i stedet for 0,25 % nesten 18 % av sluttbeløpet. Gebyret er det eneste du vet sikkert på forhånd.'},
+   // 7 % brutto og årlige innskudd er det oppdrag I (MINI.I) starter på.
+   s:'Over 30 år spiser '+pst1(SATSER.gebyrAktiv)+' i stedet for '+pst2(SATSER.gebyrIndeks)+' '
+     +nestenPst(F.gebyrlekkasje(1,0.07,SATSER.gebyrIndeks,SATSER.gebyrAktiv,30).andelTapt)
+     +' av sluttbeløpet. Gebyret er det eneste du vet sikkert på forhånd.'},
   {n:34,x:2930,y:1450, t:'Diversifisering fjerner ikke all risiko',
    s:'Den fjerner selskapsrisikoen. Markedsrisikoen står igjen uansett hvor mange aksjer du eier.'},
   {n:35,x:2050,y:1040, t:'Tid i markedet, ikke timing av det',
@@ -4173,7 +4205,7 @@ HUS.skatteetat=(v)=>{
     SATSER.trinn.map((t,i)=>['Trinn '+(i+1),kr(t.fra),pst2(t.sats)]))));
   v.appendChild(U.kort('ANDRE SATSER',U.tab(['Post','Sats'],[
     ['Alminnelig inntekt',pst2(SATSER.alminnelig)],
-    ['Aksjeinntekt (22 % × 1,72)',pst2(SATSER.aksjeskatt)],
+    ['Aksjeinntekt ('+pst0(SATSER.alminnelig)+' × '+nf2.format(SATSER.oppjustering)+')',pst2(SATSER.aksjeskatt)],
     ['Trygdeavgift, lønn',pst2(SATSER.trygdeavgift)],
     ['Frikortgrense',kr(SATSER.frikort)],
     ['Skjermingsrente (for '+SATSER.skjermingsrenteAar+')',pst2(SATSER.skjermingsrente)],
@@ -5441,7 +5473,7 @@ function tegnPause(){
         'Alt regelverk endres. Sjekk alltid mot kilden før du gjør noe med egne penger.'),
       U.tab(['Post','Verdi'],[
       ['Alminnelig inntekt',pst2(SATSER.alminnelig)],
-      ['Aksjeinntekt (22 % × 1,72)',pst2(SATSER.aksjeskatt)],
+      ['Aksjeinntekt ('+pst0(SATSER.alminnelig)+' × '+nf2.format(SATSER.oppjustering)+')',pst2(SATSER.aksjeskatt)],
       ['Trygdeavgift, lønn',pst2(SATSER.trygdeavgift)],
       ['Frikortgrense',kr(SATSER.frikort)],
       ['Personfradrag',kr(SATSER.personfradrag)],
