@@ -140,9 +140,11 @@ Alle tall som kan endres av politikere står i **én blokk** øverst i fila
 (`SATSER`), med årstall, og ingen andre steder. Verifisert **31. juli 2026** mot
 Skatteetaten, Finansdepartementet, Finanstilsynet, Norges Bank, SSB, NAV og
 Kartverket. Makrotallene (styringsrente, boliglåns- og innskuddsrente, KPI og
-lønnsvekst) er oppdatert **15. oktober 2026** mot Norges Bank og SSB. Med
-augustrenten (5,31 %) binder **betjeningsevnen**, ikke gjeldsgraden, ved
-startlønna i oppdrag L. Vippepunktet er 5,18 %. Fasiten i oppdraget følger den
+lønnsvekst) er oppdatert **15. oktober 2026** mot Norges Bank og SSB, og
+boliglåns- og innskuddsrenten på nytt **29. oktober 2026** (septembertall). Med
+septemberrenten (5,31 %, som i august) binder **betjeningsevnen**, ikke
+gjeldsgraden, ved startlønna i oppdrag L. Vippepunktet er 5,18 %. Fasiten i
+oppdraget følger den
 skranken som faktisk binder, så den tåler neste renteendring.
 
 | Post | Verdi | Merknad |
@@ -167,7 +169,7 @@ skranken som faktisk binder, så den tåler neste renteendring.
 | Folketrygd | 18,1 % opp til 7,1 G | G per 1. mai 2026: 136 549 kr |
 | OTP, minimum | 2 % fra første krone | |
 | Styringsrente | 4,50 % | hevet 24. september 2026 |
-| Boliglånsrente | 5,31 % | snitt utestående, august 2026 (SSB) |
+| Boliglånsrente | 5,31 % | snitt utestående, september 2026 (SSB) |
 | KPI | 3,4 % | september 2026 (SSB), mål 2,0 % |
 | Realavkastning aksjer | 5,2 % | DMS verdensindeks 1900–2024 |
 | Oljefondet, netto realt | 4,51 % | faktisk oppnådd siden 1998, per 30.06.2026 (NBIM) |
