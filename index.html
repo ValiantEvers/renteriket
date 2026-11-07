@@ -469,6 +469,11 @@ const SATSER = {
 
   // --- makro (oktober 2026) ---
   styringsrente: 0.045,              // hevet fra 4,25 % 24.09.2026 (Norges Bank); 4,25 fra 06.05.2026
+                                     // Holdt uendret på rentemøtet 05.11.2026.
+  styringsrenteFor: 0.0425,          // nivået før siste endring: gir «Hevet»/«Senket» i kort 29
+  styringsrenteEndret: '2026-09-24', // datoen for siste endring (kort 29)
+  inflasjonsmaalNaas: 2029,          // PPR 3/2026 (24.09.2026): prisveksten skal «komme ned til
+                                     // 2 prosent i 2029» (KPI-JAE). Kort 30. Følger neste PPR.
   boliglaansrente: 0.0531,           // snitt utestående, september 2026 (SSB tab. 10745,
                                      // publ. 29.10.2026; også 5,31 i juli og august).
                                      // Over 5,18 % binder betjeningsevnen, ikke gjeldsgraden,
@@ -477,6 +482,7 @@ const SATSER = {
                                      // publ. 29.10.2026; 3,14 i august)
   kpi: 0.034,                        // tolvmånedersvekst september 2026 (SSB tab. 14700,
                                      // publ. 09.10.2026; KPI-JAE samme måned 3,0 %)
+  kpiMaaned: '2026-09',              // måneden `kpi` gjelder (kort 30); oppdateres sammen med den
   // Forbrukslånsrente. Lå tidligere som `const FORBRUKSRENTE` TO steder i koden
   // (modulnivå + en lokal skygge i MINI.C) og ikke i SATSER — altså nøyaktig
   // to-lags-bruddet MINI.N ble tatt for. Oppdaterte man den ene og ikke den andre,
@@ -577,6 +583,10 @@ function pp2(x){ return nf2.format(x*100)+' prosentpoeng'; }
 const MND=['jan','feb','mar','apr','mai','jun','jul','aug','sep','okt','nov','des'];
 const MNDLANG=['januar','februar','mars','april','mai','juni','juli','august',
   'september','oktober','november','desember'];
+// ISO-dato fra SATSER som tekst: '2026-09-24' → «24. september 2026», '2026-09' → «september 2026».
+// Kortene skriver ikke datoene selv, så makro-ettersynet bare endrer SATSER (funn RR-3).
+function isoDato(iso){ const [a,m,d]=iso.split('-').map(Number); return d+'. '+MNDLANG[m-1]+' '+a; }
+function isoMaaned(iso){ const [a,m]=iso.split('-').map(Number); return MNDLANG[m-1]+' '+a; }
 
 // =====================================================================
 //  §2  FINANS — rene funksjoner, ingen tilstand, ingen tegning.
@@ -1358,10 +1368,11 @@ const KORT=[
   {n:28,x:1390,y:1460, t:'Et fall på 50 % krever 100 % opp',
    s:'Nedsiden er asymmetrisk. Derfor er det å unngå de store tapene viktigere enn å treffe de store gevinstene.'},
   {n:29,x:1860,y:1460, t:'Styringsrenten er '+pst2(SATSER.styringsrente),
-   s:'Hevet 24. september 2026. Alt annet henger etter den: boliglån, sparekonto, obligasjoner.'},
+   s:(SATSER.styringsrente>SATSER.styringsrenteFor?'Hevet ':'Senket ')
+     +isoDato(SATSER.styringsrenteEndret)+'. Alt annet henger etter den: boliglån, sparekonto, obligasjoner.'},
   {n:30,x:1620,y:1420, t:'Inflasjonsmålet er '+pst0(SATSER.inflasjonsmaal),
-   s:'Norges Bank styrer mot det. I september 2026 var KPI '+pst1(SATSER.kpi)
-     +', og banken venter å nå målet i 2029.'},
+   s:'Norges Bank styrer mot det. I '+isoMaaned(SATSER.kpiMaaned)+' var KPI '+pst1(SATSER.kpi)
+     +', og banken venter å nå målet i '+SATSER.inflasjonsmaalNaas+'.'},
   // --- BØRSTORGET ---
   {n:31,x:2050,y:1450, t:'Globale aksjer: ca. '+pst0(SATSER.realAksjer)+' realt',
    s:pst1(SATSER.realAksjer)+' per år 1900–2024 for verdensindeksen. Obligasjoner '

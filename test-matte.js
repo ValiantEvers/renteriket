@@ -563,7 +563,6 @@ console.log('\n=== KUNNSKAPSKORTENE REGNER TALLENE SELV ===');
     26:['5'],                               // eksempel: 5 % nominelt (samme 0.05 som F.realrente får)
     27:['1','1','1'],                       // Fisher-formelen
     28:['50','100'],                        // ren matematikk
-    29:['24','2026'], 30:['2026','2029'],   // datoer: makro-ettersynet etter 05.11 (funn RR-3)
     31:['1900','2024'],                     // perioden i UBS/DMS-årboka
     32:['1998'],                            // oljefondets første år
     33:['30'],                              // horisonten gebyrlekkasjen regnes over
@@ -583,6 +582,12 @@ console.log('\n=== KUNNSKAPSKORTENE REGNER TALLENE SELV ===');
     sett++;
   }
   sant('alle førti kortene ble lest', sett===40);
+  // Kort 29 og 30 skriver ikke datoene selv (funn RR-3): de kommer fra SATSER. Teksten skal
+  // være den samme som da datoene sto skrevet inn, og ingen del skal falle ut som NaN.
+  const makro=await K(()=>RR.KORT.filter(k=>k.n===29||k.n===30).map(k=>k.s));
+  sant('kort 29: datoen for renteendringen fra SATSER', makro[0].startsWith('Hevet 24. september 2026. '));
+  sant('kort 30: KPI-måneden og målåret fra SATSER',
+    makro[1].includes('I september 2026 var KPI ') && makro[1].endsWith('nå målet i 2029.'));
   // Og det som nå regnes ut, skal stemme med motoren:
   const kort=await K(()=>RR.KORT.map(k=>k.t+' '+k.s));
   const l5=await K(()=>RR.F.lonnsskatt(500000));
