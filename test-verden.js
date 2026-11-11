@@ -317,6 +317,27 @@ console.log('\n=== PAUSEMENYEN ===');
     sant('fanen «'+faneNavn[i]+'» viser minst én rute med innhold', r.kort>=1);
     sant('fanen «'+faneNavn[i]+'» har over 150 tegn', r.tegn>150);
   }
+  // Satser-tabellen skrev periodene inn for hånd: «august» sto på innskuddsrenten etter at
+  // tallet var september (29.10), og «september» ville stått på oktober-KPI-en (10.11).
+  // Nå leses periodene fra SATSER; sjekken regner forventet tekst med egen månedsliste.
+  {
+    const MND=['januar','februar','mars','april','mai','juni','juli','august','september',
+      'oktober','november','desember'];
+    const S=await p.evaluate(()=>RR.SATSER);
+    const mnd=iso=>{ const [a,m]=iso.split('-').map(Number); return MND[m-1]+' '+a; };
+    const tekst=await p.evaluate(()=>{
+      [...document.querySelectorAll('#pause .fane button')].find(b=>/Satser/.test(b.textContent)).click();
+      return document.getElementById('pauseinner').textContent; });
+    const forventet=['Grunnbeløpet (1. mai '+S.grunnbelopAar+')',
+      'Boliglånsrente (snitt utestående, '+mnd(S.boliglaansrenteMaaned)+')',
+      'Innskuddsrente (snitt husholdninger, '+mnd(S.innskuddsrenteMaaned)+')',
+      'Forbrukslånsrente (SSB, '+S.forbrukslaansrenteKvartal+')',
+      'KPI, tolvmåneders ('+mnd(S.kpiMaaned)+')'];
+    const mangler=forventet.filter(f=>!tekst.includes(f));
+    sant('satser-tabellen: periodene kommer fra SATSER, ingen NaN/undefined'
+      +(mangler.length?' (mangler: '+mangler.join(' | ')+')':''),
+      mangler.length===0 && !/NaN|undefined/.test(tekst));
+  }
   await p.evaluate(()=>RR.vekslePause());
   sant('pausemenyen lukker', !(await p.evaluate(()=>RR.tilstand.pause)));
 }

@@ -141,7 +141,8 @@ Alle tall som kan endres av politikere står i **én blokk** øverst i fila
 Skatteetaten, Finansdepartementet, Finanstilsynet, Norges Bank, SSB, NAV og
 Kartverket. Makrotallene (styringsrente, boliglåns- og innskuddsrente, KPI og
 lønnsvekst) er oppdatert **15. oktober 2026** mot Norges Bank og SSB, og
-boliglåns- og innskuddsrenten på nytt **29. oktober 2026** (septembertall). Med
+boliglåns- og innskuddsrenten på nytt **29. oktober 2026** (septembertall), KPI
+**10. november 2026** (oktobertall) og forbrukslånsrenten samme dag (2026K3). Med
 septemberrenten (5,31 %, som i august) binder **betjeningsevnen**, ikke
 gjeldsgraden, ved startlønna i oppdrag L. Vippepunktet er 5,18 %. Fasiten i
 oppdraget følger den
@@ -170,7 +171,7 @@ skranken som faktisk binder, så den tåler neste renteendring.
 | OTP, minimum | 2 % fra første krone | |
 | Styringsrente | 4,50 % | hevet 24. september 2026 |
 | Boliglånsrente | 5,31 % | snitt utestående, september 2026 (SSB) |
-| KPI | 3,4 % | september 2026 (SSB), mål 2,0 % |
+| KPI | 3,6 % | oktober 2026 (SSB), mål 2,0 % |
 | Realavkastning aksjer | 5,2 % | DMS verdensindeks 1900–2024 |
 | Oljefondet, netto realt | 4,51 % | faktisk oppnådd siden 1998, per 30.06.2026 (NBIM) |
 | Forvaltningshonorar | 0,25 % indeks / 1,30 % aktiv | Finanstilsynets prisundersøkelse nov. 2024: globale indeksfond 0,18–0,61 %, aktive globale 0,75–2,00 % |
@@ -295,7 +296,7 @@ ikke at spilleren regner etter.
 
 ## Testing
 
-Åtte filer, 1061 sjekker. `bash test-alle.sh` kjører alt over `file://`,
+Åtte filer, 1062 sjekker. `bash test-alle.sh` kjører alt over `file://`,
 `bash test-alle.sh --http` starter en lokal server og kjører alt på nytt over HTTP.
 Begge må være grønne: siden serveres over HTTPS i produksjon, og `file://` har sitt
 eget origo-oppsett for `localStorage`.

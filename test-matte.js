@@ -586,8 +586,13 @@ console.log('\n=== KUNNSKAPSKORTENE REGNER TALLENE SELV ===');
   // være den samme som da datoene sto skrevet inn, og ingen del skal falle ut som NaN.
   const makro=await K(()=>RR.KORT.filter(k=>k.n===29||k.n===30).map(k=>k.s));
   sant('kort 29: datoen for renteendringen fra SATSER', makro[0].startsWith('Hevet 24. september 2026. '));
+  // Måneden regnes her med en egen liste, ikke spillets isoMaaned, så sjekken overlever
+  // makro-ettersynet (10.11: september → oktober) uten å bli en kopi av koden den tester.
+  const MND=['januar','februar','mars','april','mai','juni','juli','august','september',
+    'oktober','november','desember'];
+  const [kpiA,kpiM]=S.kpiMaaned.split('-').map(Number);
   sant('kort 30: KPI-måneden og målåret fra SATSER',
-    makro[1].includes('I september 2026 var KPI ') && makro[1].endsWith('nå målet i 2029.'));
+    makro[1].includes('I '+MND[kpiM-1]+' '+kpiA+' var KPI ') && makro[1].endsWith('nå målet i 2029.'));
   // Og det som nå regnes ut, skal stemme med motoren:
   const kort=await K(()=>RR.KORT.map(k=>k.t+' '+k.s));
   const l5=await K(()=>RR.F.lonnsskatt(500000));

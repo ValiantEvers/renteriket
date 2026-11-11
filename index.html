@@ -467,7 +467,7 @@ const SATSER = {
                                      // januar, så det følger ikke `aar` (kort 21 og 23 leser det)
   otpMin: 0.02,                      // obligatorisk tjenestepensjon, fra første krone
 
-  // --- makro (oktober 2026) ---
+  // --- makro (november 2026) ---
   styringsrente: 0.045,              // hevet fra 4,25 % 24.09.2026 (Norges Bank); 4,25 fra 06.05.2026
                                      // Holdt uendret på rentemøtet 05.11.2026.
   styringsrenteFor: 0.0425,          // nivået før siste endring: gir «Hevet»/«Senket» i kort 29
@@ -478,18 +478,23 @@ const SATSER = {
                                      // publ. 29.10.2026; også 5,31 i juli og august).
                                      // Over 5,18 % binder betjeningsevnen, ikke gjeldsgraden,
                                      // ved startlønna i oppdrag L. Fasiten der følger skranken.
+  boliglaansrenteMaaned: '2026-09',  // måneden `boliglaansrente` gjelder (satser-tabellen)
   innskuddsrente: 0.0316,            // snitt husholdninger, september 2026 (SSB tab. 11018,
                                      // publ. 29.10.2026; 3,14 i august)
-  kpi: 0.034,                        // tolvmånedersvekst september 2026 (SSB tab. 14700,
-                                     // publ. 09.10.2026; KPI-JAE samme måned 3,0 %)
-  kpiMaaned: '2026-09',              // måneden `kpi` gjelder (kort 30); oppdateres sammen med den
+  innskuddsrenteMaaned: '2026-09',   // måneden `innskuddsrente` gjelder (satser-tabellen)
+  kpi: 0.036,                        // tolvmånedersvekst oktober 2026 (SSB tab. 14700,
+                                     // publ. 10.11.2026; 3,4 i september). KPI-JAE samme
+                                     // måned 2,7 % (tab. 14704; 3,0 i september)
+  kpiMaaned: '2026-10',              // måneden `kpi` gjelder (kort 30); oppdateres sammen med den
   // Forbrukslånsrente. Lå tidligere som `const FORBRUKSRENTE` TO steder i koden
   // (modulnivå + en lokal skygge i MINI.C) og ikke i SATSER — altså nøyaktig
   // to-lags-bruddet MINI.N ble tatt for. Oppdaterte man den ene og ikke den andre,
   // desynket oppdrag C stille fra resten av byen. Flyttet hit 2026-08-17.
-  forbrukslaansrente: 0.226,         // SSB tab. 12844, kredittkortlån der det betales
-                                     // rente, 2026K2 (2025K2 var 22,9 %). Dette er den
-                                     // riktige av SSBs to serier for det spillet viser.
+  forbrukslaansrente: 0.227,         // SSB tab. 12844, kredittkortlån der det betales
+                                     // rente, 2026K3 (publ. 29.10.2026; 22,6 i 2026K2 og
+                                     // 23,0 i 2025K3). Dette er den riktige av SSBs to
+                                     // serier for det spillet viser.
+  forbrukslaansrenteKvartal: '2026K3', // kvartalet `forbrukslaansrente` gjelder (satser-tabellen)
   lonnsvekst: 0.043,                 // nominell årslønnsvekst 2026 (SSB Konjunkturtendensene
                                      // 15.09.2026; 4,4 % i juni-utgaven, = frontfagsrammen
                                      // etter oppgjøret 12.04.2026). Rettet 16.08.2026 fra
@@ -5500,13 +5505,16 @@ function tegnPause(){
       ['Dokumentavgift',pst2(SATSER.dokumentavgift)],
       ['Rentefradrag',pst2(SATSER.rentefradrag)],
       ['Folketrygd: opptjening',pst2(SATSER.folketrygdSats)+' opp til '+nf1.format(SATSER.folketrygdTak)+' G'],
-      ['Grunnbeløpet (1. mai '+SATSER.aar+')',kr(SATSER.grunnbelop)],
+      ['Grunnbeløpet (1. mai '+SATSER.grunnbelopAar+')',kr(SATSER.grunnbelop)],
       ['OTP, minimum',pst2(SATSER.otpMin)],
       ['Styringsrente',pst2(SATSER.styringsrente)],
-      ['Boliglånsrente (snitt utestående, august '+SATSER.aar+')',pst2(SATSER.boliglaansrente)],
-      ['Innskuddsrente (snitt husholdninger, august '+SATSER.aar+')',pst2(SATSER.innskuddsrente)],
-      ['Forbrukslånsrente (SSB, '+SATSER.aar+'K2)',pst2(SATSER.forbrukslaansrente)],
-      ['KPI, tolvmåneders (september '+SATSER.aar+')',pst2(SATSER.kpi)],
+      // Periodene leses fra SATSER, ikke skrevet inn: «august» sto her etter at
+      // innskuddsrenten var oppdatert til september (29.10), og «september» ville
+      // stått på oktober-KPI-en. Makro-ettersynet endrer bare SATSER.
+      ['Boliglånsrente (snitt utestående, '+isoMaaned(SATSER.boliglaansrenteMaaned)+')',pst2(SATSER.boliglaansrente)],
+      ['Innskuddsrente (snitt husholdninger, '+isoMaaned(SATSER.innskuddsrenteMaaned)+')',pst2(SATSER.innskuddsrente)],
+      ['Forbrukslånsrente (SSB, '+SATSER.forbrukslaansrenteKvartal+')',pst2(SATSER.forbrukslaansrente)],
+      ['KPI, tolvmåneders ('+isoMaaned(SATSER.kpiMaaned)+')',pst2(SATSER.kpi)],
       ['Realavkastning aksjer (DMS 1900–2024)',pst2(SATSER.realAksjer)],
       ['Oljefondet, netto realt siden 1998',pst2(SATSER.spuReal)]
     ])));
