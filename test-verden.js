@@ -470,7 +470,9 @@ console.log('\n=== BYEN HAR INFLASJON OG LØNNSVEKST ===');
   await p.reload(); await p.waitForTimeout(250);
   await p.evaluate(()=>{ RR.start(); RR.sett({harJobb:true,bruttoAar:456000,
     kontanter:0,portefolje:0,gjeld:0}); });
-  await p.waitForTimeout(300);
+  // start() viser intro-dialogen 500 ms senere. Lukkes den etter 300 ms, er den ikke oppe ennå,
+  // og den dukker i stedet opp midt i en senere seksjon. Vent til den faktisk er åpen.
+  await p.waitForFunction(()=>RR.tilstand.dAapen,null,{timeout:3000}).catch(()=>{});
   await p.evaluate(()=>RR.lukkAlt());
   const S=await p.evaluate(()=>RR.SATSER);
   const start=await p.evaluate(()=>RR.tilstand);
@@ -502,7 +504,9 @@ console.log('\n=== BYEN HAR INFLASJON OG LØNNSVEKST ===');
   await p.evaluate(()=>{ RR.nullstill(); });
   await p.reload(); await p.waitForTimeout(250);
   await p.evaluate(()=>{ RR.start(); RR.sett({harJobb:true,bruttoAar:456000,kontanter:250000}); });
-  await p.waitForTimeout(300);
+  // start() viser intro-dialogen 500 ms senere. Lukkes den etter 300 ms, er den ikke oppe ennå,
+  // og den dukker i stedet opp midt i en senere seksjon. Vent til den faktisk er åpen.
+  await p.waitForFunction(()=>RR.tilstand.dAapen,null,{timeout:3000}).catch(()=>{});
   await p.evaluate(()=>RR.lukkAlt());
 }
 
@@ -698,9 +702,11 @@ console.log('\n=== LØST OPPDRAG A, MEN IKKE ANSATT (playtest F1) ===');
 
   await p.evaluate(xy=>{ RR.loesOppdrag('A'); RR.sett({harJobb:false});
                          RR.flyttTil(xy[0],xy[1]); },TOMT);
-  // Hintet settes i spill-løkka (rAF). Fast 200 ms ga én tom streng i CI 18.10 på en kald
-  // runner (grønt ved ny kjøring og lokalt), så vent på det i stedet, men høyst 3 s:
-  // dukker det aldri opp, feiler sjekkene under som før.
+  // Hintet settes i spill-løkka (rAF), så vent på det, men høyst 3 s: dukker det aldri opp,
+  // feiler sjekkene under som før. Målt 12.11: 5 av 25 HTTP-kjøringer ga tom streng her fordi
+  // intro-dialogen fra siste start() åpnet seg (seksjonen nås 517–557 ms etter start(), dialogen
+  // kommer etter 500), og en åpen dialog tømmer hintstripa. Den tomme strengen i CI 18.10 ble
+  // tilskrevet en kald runner; det er trolig samme kappløp. Rettet der dialogen lukkes, over.
   await p.waitForFunction(()=>/JOBBSENTERET/i.test(RR.hintTekst()),null,{timeout:3000}).catch(()=>{});
   const under=await p.evaluate(()=>RR.hintTekst());
   sant('A løst + ikke ansatt → hintet peker mot Jobbsenteret',
