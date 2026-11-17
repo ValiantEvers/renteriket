@@ -85,7 +85,7 @@ await p.reload();
 await p.evaluate(()=>{ RR.start(); RR.sett({kontanter:999999,xp:5000,harJobb:true});
   RR.loesAlle(); RR.taAlleKort(); });
 await p.waitForTimeout(300);
-sant('alt er løst før nullstilling', (await p.evaluate(()=>RR.tilstand.gjort)).length===14);
+sant('alt er løst før nullstilling', await p.evaluate(()=>RR.tilstand.gjort.length===RR.OPPDRAG.length));
 // nullstill via pausemenyen, slik en spiller ville gjort det
 await p.evaluate(()=>{
   RR.lukkAlt(); RR.vekslePause();

@@ -125,7 +125,7 @@ for (const [navn,sel] of [['ledetekst','#spillinner .mlead'],['ruteoverskrift','
 }
 
 console.log('\n=== ALT SOM ER INTERAKTIVT KAN NÅS MED TAB ===');
-for (const id of ['A','B','C','D','E','F','G','H','I','J','K','L','M','N']){
+for (const id of ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P']){
   const r=await p.evaluate(async i=>{
     RR.lukkAlt(); RR.aapneMinispill(i,RR.MINI[i]);
     await new Promise(r=>setTimeout(r,180));
@@ -189,13 +189,13 @@ console.log('\n=== BETYDNING LIGGER IKKE I FARGE ALENE ===');
    oppfylte kontrastkravet hele veien og kollapset likevel til ΔE 19,0 på tekst
    og 2,7 på flater — praktisk talt samme farge. */
 {
-  // Alle fjorten minispillene åpnes, så et nytt oppdrag ikke kan snike seg
+  // Alle seksten minispillene åpnes, så et nytt oppdrag ikke kan snike seg
   // forbi merkingen. Merkingen skjer sentralt (merkStatus + MutationObserver),
   // men et minispill som bygger status på en helt egen måte ville dukket opp her.
   const STATUSVELGERE=['.fasit.ja','.fasit.nei','.valgkort.valgt','.valgkort.feil',
     '.brikke.valgt','.pill.g','.pill.r','.pill.y','.bakke.over'];
   const ider=await p.evaluate(()=>Object.keys(RR.MINI));
-  sant('alle fjorten minispillene finnes', ider.length===14);
+  sant('alle seksten minispillene finnes', ider.length===16);
   let sett=0, umerkede=[];
   for (const id of ider){
     await p.evaluate(k=>{ RR.lukkAlt(); RR.aapneMinispill(k,RR.MINI[k]); }, id);
@@ -222,7 +222,7 @@ console.log('\n=== BETYDNING LIGGER IKKE I FARGE ALENE ===');
     }, STATUSVELGERE);
     sett+=r.n; umerkede=umerkede.concat(r.ut.map(x=>id+': '+x));
   }
-  console.log('  statuselementer sett i de fjorten minispillene: '+sett);
+  console.log('  statuselementer sett i de seksten minispillene: '+sett);
   sant('det finnes statuselementer å måle i det hele tatt', sett>0);
   sant('hvert statuselement bærer symbol OG ord, ikke bare farge', umerkede.length===0);
   if (umerkede.length) console.log('      umerket: '+umerkede.slice(0,5).join(' | '));

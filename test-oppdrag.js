@@ -1,4 +1,4 @@
-// test-oppdrag.js — kan alle fjorten oppdragene faktisk løses?
+// test-oppdrag.js — kan alle seksten oppdragene faktisk løses?
 // Hvert oppdrag spilles gjennom med ekte klikk og ekte skyvekontroller.
 // Et oppdrag som ikke kan fullføres, låser resten av spillet — derfor er
 // dette den viktigste testen i pakken.
@@ -554,14 +554,148 @@ console.log('\n=== N — Tidsmaskinen ===');
   sant('N er registrert løst', (await p.evaluate(()=>RR.tilstand.gjort)).includes('N'));
 }
 
+// ---------------------------------------------------------------- O
+// Budrunden. Tre steg, og ingen av dem skal gi seier alene. Fella i steg 1 er
+// lån + egenkapital (det oppdrag L viser), og den er startstillingen.
+console.log('\n=== O — Budrunden ===');
+{
+  const tall=s=>+String(s).replace(/[^0-9]/g,'');
+  const fakta=await p.evaluate(()=>{
+    const ram=RR.F.laaneramme(640000,450000);
+    return {laan:ram.laan, naiv:ram.maksPris, grense:RR.F.maksBud(ram.laan,450000,true).bud};
+  });
+  const trinn=Math.floor(fakta.grense/10000)*10000;
+  console.log('    lån '+fakta.laan+' · lån+EK '+fakta.naiv+' · grense '+Math.round(fakta.grense)+' · riktig trinn '+trinn);
+  await apne(p,'O');
+  sant('O er ikke løst ved åpning', !(await harSeier(p)));
+  const start=await p.evaluate(()=>+document.getElementById('oGrense').value);
+  sant('O starter på lån + egenkapital (fella), som er over grensen',
+    start===Math.round(fakta.naiv/10000)*10000 && start>fakta.grense);
+  // steg 1, tre feil og ett riktig
+  await klikkTekst(p,'Lås smertegrensen');
+  sant('startstillingen låser ikke smertegrensen',
+    /Nei\./.test(await tekst(p)) && !/STEG 2/.test(await tekst(p)));
+  await skyv(p,'oGrense',trinn+10000); await klikkTekst(p,'Lås smertegrensen');
+  sant('ett trinn over grensen låser ikke', !/STEG 2/.test(await tekst(p)));
+  await skyv(p,'oGrense',trinn-10000); await klikkTekst(p,'Lås smertegrensen');
+  sant('ett trinn under grensen sier at du kan by mer',
+    /du kan by mer/.test(await tekst(p)) && !/STEG 2/.test(await tekst(p)));
+  await skyv(p,'oGrense',trinn); await klikkTekst(p,'Lås smertegrensen');
+  let t=await tekst(p);
+  sant('riktig trinn låser grensen og åpner budrunden', /Smertegrensen er låst/.test(t) && /STEG 2/.test(t));
+  sant('O forklarer hva omkostningene tar', /dokumentavgiften og tinglysingen/.test(t));
+  sant('steg 1 alene gir ikke seier', !(await harSeier(p)));
+  const nesteBud=async()=>tall(await p.evaluate(()=>[...document.querySelectorAll('#spillinner button')]
+    .find(b=>/^Høyne til/.test(b.textContent)&&!b.disabled)?.textContent||''));
+  // steg 2, feil A: gå ut mens neste bud er innenfor
+  sant('første bud er innenfor grensen', (await nesteBud())<=fakta.grense);
+  await klikkTekst(p,'Gå ut av budrunden');
+  t=await tekst(p);
+  sant('å gå ut for tidlig forklares uten seier', /Du gikk ut, men neste bud/.test(t) && !(await harSeier(p)));
+  // steg 2, feil B: by forbi grensen
+  await klikkTekst(p,'Ta budrunden på nytt');
+  let vakt=0;
+  while (vakt++<30 && !/over smertegrensen/.test(await tekst(p))) await klikkTekst(p,'Høyne til');
+  t=await tekst(p);
+  sant('bud over grensen forklares uten seier', /over smertegrensen/.test(t) && !(await harSeier(p)));
+  sant('bud over grensen sier hva som mangler', /Du mangler/.test(t));
+  // steg 2, riktig: by så lenge neste bud går opp, gå ut når det ikke gjør det
+  await klikkTekst(p,'Ta budrunden på nytt');
+  const dineBud=[];
+  vakt=0;
+  while (vakt++<30 && /STEG 2/.test(await tekst(p)) && !/STEG 3/.test(await tekst(p))){
+    const x=await nesteBud();
+    if (!x) break;
+    if (x<=fakta.grense){ dineBud.push(x); await klikkTekst(p,'Høyne til'); }
+    else { await klikkTekst(p,'Gå ut av budrunden'); break; }
+  }
+  t=await tekst(p);
+  console.log('    dine bud: '+dineBud.join(', '));
+  sant('du byr minst én gang før du går ut', dineBud.length>=1);
+  sant('riktig vei gir steg 3', /STEG 3/.test(t) && /riktig sted|ga seg/.test(t));
+  sant('steg 2 alene gir ikke seier', !(await harSeier(p)));
+  const vinnerbud=Math.max(...(await p.evaluate(()=>[...document.querySelectorAll('#spillinner table')][1]
+    ? [...[...document.querySelectorAll('#spillinner table')][1].querySelectorAll('tbody tr td:last-child')].map(td=>td.textContent)
+    : [])).map(tall));
+  sant('med dagens satser vinner Bjarne over grensen din', vinnerbud>fakta.grense);
+  // steg 3, én feil først
+  const svar=async(i,s)=>p.evaluate(([i,s])=>{
+    const b=document.querySelector('#spillinner .valgkort[data-p="'+i+'"][data-s="'+s+'"]');
+    if (!b||b.disabled) return false; b.click(); return true; },[i,s]);
+  await svar(0,'true'); await svar(1,'false'); await svar(2,'true');
+  await p.waitForTimeout(110);
+  t=await tekst(p);
+  sant('én feil påstand gir ikke seier', /2 av 3 riktige/.test(t) && !(await harSeier(p)));
+  await klikkTekst(p,'Ta påstandene på nytt');
+  await svar(0,'false'); await svar(1,'false'); await svar(2,'true');
+  await p.waitForTimeout(160);
+  t=await tekst(p);
+  sant('O gir seier med alle tre riktige', await harSeier(p));
+  sant('O viser hva vinnerbudet ville krevd av deg', /DET BJARNE BETALTE/.test(t) && /Du ville manglet/.test(t));
+  sant('O nevner avtaleloven og eiendomsmeglingsforskriften',
+    /avtaleloven § 7/.test(t) && /§ 6-3 tredje ledd/.test(t) && /§ 6-4 annet ledd/.test(t));
+  await klikkTekst(p,'Ferdig');
+  sant('O er registrert løst', (await p.evaluate(()=>RR.tilstand.gjort)).includes('O'));
+}
+
+// ---------------------------------------------------------------- P
+// Fellesgjelden. Fella i steg 1 er å glemme at fellesgjelden spiser gjeldstaket;
+// den er startstillingen. Steg 2 har fire valg, og bare ett er felleskostnaden etter
+// den avdragsfrie perioden.
+console.log('\n=== P — Fellesgjelden ===');
+{
+  const fakta=await p.evaluate(()=>{
+    const ram=RR.F.laaneramme(640000,450000,undefined,1500000);
+    const uten=RR.F.laaneramme(640000,450000);
+    return {laan:ram.laan, grense:RR.F.maksBud(ram.laan,450000,false,1500000).bud,
+      naiv:RR.F.maksBud(uten.laan,450000,false).bud,
+      etter:RR.F.felleskost(3200,1500000,RR.SATSER.boliglaansrente,2,28,2)};
+  });
+  const trinn=Math.floor(fakta.grense/10000)*10000;
+  console.log('    lån '+fakta.laan+' · grense '+Math.round(fakta.grense)+' · glemt fellesgjeld '+Math.round(fakta.naiv)+' · felleskost etter '+Math.round(fakta.etter));
+  await apne(p,'P');
+  sant('P er ikke løst ved åpning', !(await harSeier(p)));
+  const start=await p.evaluate(()=>+document.getElementById('pGrense').value);
+  sant('P starter på budet uten fellesgjeld (fella), som er over grensen', start>fakta.grense);
+  await klikkTekst(p,'Lås budet');
+  sant('startstillingen låser ikke budet', /Nei\./.test(await tekst(p)) && !/STEG 2/.test(await tekst(p)));
+  await skyv(p,'pGrense',trinn+10000); await klikkTekst(p,'Lås budet');
+  sant('ett trinn over grensen låser ikke', !/STEG 2/.test(await tekst(p)));
+  await skyv(p,'pGrense',trinn-10000); await klikkTekst(p,'Lås budet');
+  sant('ett trinn under sier at du kan by mer', /du kan by mer/.test(await tekst(p)) && !/STEG 2/.test(await tekst(p)));
+  await skyv(p,'pGrense',trinn); await klikkTekst(p,'Lås budet');
+  let t=await tekst(p);
+  sant('riktig trinn låser budet og åpner steg 2', /Høyeste bud:/.test(t) && /STEG 2/.test(t));
+  sant('P sier at høyeste bud er under prisantydningen', /under prisantydningen/.test(t));
+  sant('steg 1 alene gir ikke seier', !(await harSeier(p)));
+  const valg=await p.evaluate(()=>[...document.querySelectorAll('#spillinner .valgkort')].map(b=>b.dataset.v));
+  sant('steg 2 har fire valg', valg.length===4 && valg.includes('riktig'));
+  for (const v of valg.filter(v=>v!=='riktig')){
+    await p.evaluate(v=>document.querySelector('#spillinner .valgkort[data-v="'+v+'"]').click(),v);
+    await p.waitForTimeout(80);
+    sant('valget «'+v+'» forklares uten seier', /Nei\./.test(await tekst(p)) && !(await harSeier(p)));
+  }
+  await p.evaluate(()=>document.querySelector('#spillinner .valgkort[data-v="riktig"]').click());
+  await p.waitForTimeout(160);
+  t=await tekst(p);
+  sant('P gir seier med riktig felleskostnad', await harSeier(p));
+  const tall=s=>+String(s).replace(/[^0-9]/g,'');
+  const vist=await p.evaluate(()=>document.querySelector('#spillinner .valgkort[data-v="riktig"]').textContent);
+  sant('riktig valgkort viser felleskostnaden fra F.felleskost', Math.abs(tall(vist)-Math.round(fakta.etter))<=1);
+  sant('P sier at renta er en antakelse', /antakelse/.test(t));
+  sant('P sier at borettslaget slipper dokumentavgift', /ingen dokumentavgift/.test(t));
+  await klikkTekst(p,'Ferdig');
+  sant('P er registrert løst', (await p.evaluate(()=>RR.tilstand.gjort)).includes('P'));
+}
+
 // ---------------------------------------------------------------- til slutt
-console.log('\n=== ETTER ALLE FJORTEN ===');
+console.log('\n=== ETTER ALLE SEKSTEN ===');
 {
   const t=await p.evaluate(()=>RR.tilstand);
-  console.log('    løst: '+t.gjort.length+'/14 · nivå '+t.nivaa+' ('+t.tittel+') · XP '+t.xp);
-  sant('alle fjorten oppdrag er løst', t.gjort.length===14);
+  console.log('    løst: '+t.gjort.length+'/16 · nivå '+t.nivaa+' ('+t.tittel+') · XP '+t.xp);
+  sant('alle seksten oppdrag er løst', t.gjort.length===16);
   sant('alle oppdrags-id-ene er dekket', alleOppdrag.every(id=>t.gjort.includes(id)));
-  sant('fjorten oppdrag alene tar deg til minst nivå 11', t.nivaa>=11);
+  sant('seksten oppdrag alene tar deg til minst nivå 11', t.nivaa>=11);
   // En spiller som gjør ALT skal kunne bli INVESTOR. Var kurven for bratt,
   // sto det øverste nivået i menyen som noe ingen kunne nå.
   const topp=await p.evaluate(()=>{ RR.taAlleKort(); return RR.tilstand; });
@@ -571,7 +705,7 @@ console.log('\n=== ETTER ALLE FJORTEN ===');
     const b=[...document.querySelectorAll('#pause .fane button')].find(x=>/Krøniken/.test(x.textContent));
     b.click(); return document.getElementById('pauseinner').textContent; });
   sant('krøniken har fått en linje per oppdrag',
-    (await p.evaluate(()=>document.querySelectorAll('#pauseinner .lst li').length))>=14);
+    (await p.evaluate(()=>document.querySelectorAll('#pauseinner .lst li').length))>=16);
   await p.evaluate(()=>RR.lukkAlt());
 }
 
@@ -596,7 +730,7 @@ console.log('\n=== INGENTING SKRIVER «NaN» PÅ SKJERMEN ===');
     const f=await finn();
     if (f.length){ skitne++; console.log('      oppdrag '+id+': '+f[0]); }
   }
-  sant('ingen av de fjorten oppdragene skriver NaN/undefined/Infinity', skitne===0);
+  sant('ingen av de seksten oppdragene skriver NaN/undefined/Infinity', skitne===0);
   // og alle bygningsskjermene, både for en fersk og en ferdig spiller
   const husIder=await p.evaluate(()=>Object.keys(RR.HUS));
   let skitneHus=0;
@@ -645,7 +779,7 @@ console.log('\n=== INGEN OPPDRAG ER LØST I DET DET ÅPNES ===');
     }
     await p.evaluate(()=>RR.lukkAlt());
   }
-  sant('ingen av de fjorten er løst i det de åpnes', alt===0);
+  sant('ingen av de seksten er løst i det de åpnes', alt===0);
   sant('ingen av dem (unntatt D) løses ved å flytte én enkelt skyver', ettGrep===0);
 }
 

@@ -35,7 +35,7 @@ byggesteg. Playwright er kun testavhengighet.
 - **Ingen tall skal vises uten at noe har regnet det ut.** `MINI.F` skrev
   «NaN % nominelt i året» på alle fire valgkortene i tre uker fordi feltet het
   `brutto` og kortet leste `s.nom`. Sjekken som fanger det leser den *rendrede*
-  teksten i alle fjorten oppdrag og alle 25 bygninger, for både en fersk og en
+  teksten i alle seksten oppdrag og alle 25 bygninger, for både en fersk og en
   ferdig spiller. 854 sjekker hadde sett på tallene og ingen på skjermen.
 - **Alt som slipper inn i et oppdrag skal stå bak `laastOpp()`.** `HUS.kiosk` var
   den eneste bygningen uten sjekken, og en fersk spiller uten jobb kunne ta
@@ -87,7 +87,7 @@ byggesteg. Playwright er kun testavhengighet.
   kom inn: 0,68 ms i verste tilfelle. Det er plass til mer.
 - **Nytt interaktivt element skal være en `<button>` eller en `<input>`**, ikke en
   `<div>` med `onclick`. `test-tilgjengelighet.js` krever at alt klikkbart i alle
-  fjorten oppdrag kan nås med Tab.
+  seksten oppdrag kan nås med Tab.
 - **Nye farger måles, ikke antas.** Kontrastsjekken leser de faktiske fargene fra
   DOM-en, så en variabel som endres ett sted slår ut der.
 - **Status skal ALDRI bæres av farge alene.** Eieren er rød-grønn fargeblind, og
@@ -102,7 +102,7 @@ byggesteg. Playwright er kun testavhengighet.
      skjer sentralt i `merkStatus()` + en MutationObserver, ikke per kallsted, så
      nye minispill arver den gratis. **Innfører du en ny statusklasse, legg den
      i `SMERKER`-lista** — ellers står den udekket, og
-     `test-tilgjengelighet.js` åpner alle fjorten minispillene og feller den.
+     `test-tilgjengelighet.js` åpner alle seksten minispillene og feller den.
   `test-tilgjengelighet.js` simulerer bade deuteranopi og protanopi (Viénot 1999
   + CIE76) på de LEVENDE fargene og måler ΔE — den antar ingenting.
 - **Nullstilling må rydde både lagring og tilstanden i minnet.** Sletter man bare
@@ -137,7 +137,7 @@ byggesteg. Playwright er kun testavhengighet.
 ## Før noe skrives av som ferdig
 
 `bash test-alle.sh` **og** `bash test-alle.sh --http` skal begge være helt grønne:
-åtte filer, 1062 sjekker. HTTP-modus er ikke pynt: siden serveres over HTTPS i
+åtte filer, 1128 sjekker. HTTP-modus er ikke pynt: siden serveres over HTTPS i
 produksjon, og `file://` har sitt eget origo-oppsett for `localStorage`.
 
 Legger du til innhold, legg til sjekken som beviser at det virker. Fire spillfeil i

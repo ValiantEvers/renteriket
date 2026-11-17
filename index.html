@@ -11,7 +11,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d1117'/%3E%3Cpath d='M16 26V12' stroke='%232fbf7a' stroke-width='3' stroke-linecap='round'/%3E%3Cpath d='M16 17c0-4 3-7 7-7 0 4-3 7-7 7zM16 13c0-3.5-2.6-6-6-6 0 3.5 2.6 6 6 6z' fill='%232fbf7a'/%3E%3C/svg%3E">
 <link rel="canonical" href="https://www.evers.no/renteriket/">
 <meta property="og:title" content="RENTERIKET — spillet som gjør deg til investor">
-<meta property="og:description" content="Fjorten oppdrag, førti kunnskapskort og en by der renters rente er et tre som vokser. Norske satser, med kilde og årstall.">
+<meta property="og:description" content="Seksten oppdrag, førti kunnskapskort og en by der renters rente er et tre som vokser. Norske satser, med kilde og årstall.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://www.evers.no/renteriket/">
 <meta property="og:site_name" content="evers.no">
@@ -22,7 +22,7 @@
 <meta property="og:image:alt" content="RENTERIKET — tittelskjermen, med undertittelen om å komme til byen med tom lommebok.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="RENTERIKET — spillet som gjør deg til investor">
-<meta name="twitter:description" content="Fjorten oppdrag, førti kunnskapskort og en by der renters rente er et tre som vokser.">
+<meta name="twitter:description" content="Seksten oppdrag, førti kunnskapskort og en by der renters rente er et tre som vokser.">
 <meta name="twitter:image" content="https://www.evers.no/renteriket/og.png">
 <style>
 :root{
@@ -322,7 +322,7 @@ body.touch #pauseknapp{display:none}
 </head>
 <body>
 <canvas id="cv" role="img" aria-label="Kart over Renteriket. Byen navigeres med
-  piltaster eller WASD. Alt læringsinnholdet — de fjorten oppdragene, satstabellene
+  piltaster eller WASD. Alt læringsinnholdet — de seksten oppdragene, satstabellene
   og kunnskapskortene — ligger i vanlige tekstvinduer du åpner med mellomrom, og de
   kan leses og betjenes med tastatur og skjermleser."></canvas>
 
@@ -364,7 +364,7 @@ body.touch #pauseknapp{display:none}
 <div id="tittel">
   <h1>RENTERIKET</h1>
   <div class="und">Du kommer til byen med tom lommebok og ingen aning.
-    Fjorten oppdrag senere vet du hvordan penger faktisk virker.</div>
+    Seksten oppdrag senere vet du hvordan penger faktisk virker.</div>
   <button class="knapp" id="startknapp">BEGYNN PÅ NULL</button>
   <div class="tast">
     <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> eller piltaster — gå &nbsp;·&nbsp;
@@ -449,6 +449,11 @@ const SATSER = {
   stressgulv: 0.07,                  // … men minimum 7 % rente
   avdragsgrense: 0.60,               // avdragskrav over 60 % belåningsgrad
   dokumentavgift: 0.025,             // 2,5 % av markedsverdi (borettslag er utenfor)
+  tinglysingSkjote: 545,             // tinglysingsgebyr for skjøte (Kartverkets prisliste
+                                     // 2026, lest 2026-11-17)
+  tinglysingPant: 545,               // tinglysingsgebyr for pantedokument (samme prisliste).
+                                     // Borettslag: overføring av andel og pant i andelen koster
+                                     // det samme (boligradar/satser.py, burettslagslova § 6-16)
   tomteandelNybygg: 0.25,            // ved nybygg løper avgiften på tomteverdien;
                                      // 25 % er et grovt anslag og varierer sterkt
                                      // med beliggenhet — oppgis som anslag i teksten
@@ -834,6 +839,41 @@ const F = {
     const grunnlag = nybygg ? pris*(tomteAndel===undefined?SATSER.tomteandelNybygg:tomteAndel) : pris;
     return grunnlag*SATSER.dokumentavgift;
   },
+  // Høyeste bud når lånet er gitt (finansieringsbeviset) og omkostningene skal
+  // betales av egenkapitalen FØR resten går inn i boligen. Lånerammen over gir
+  // `maksPris` = lån + egenkapital, og det er IKKE det høyeste budet: på 3,2 mill.
+  // i lån og 450 000 i egenkapital er forskjellen 90 088 kr (oppdrag O).
+  // To skranker, den strengeste bestemmer:
+  //  1) finansieringen: bud + dokumentavgift + tinglysing ≤ lån + egenkapital
+  //  2) egenkapitalkravet: lånet som faktisk trengs (bud + omkostninger −
+  //     egenkapital) pluss fellesgjelden ≤ belåningsgraden × totalprisen
+  // Selveier betaler dokumentavgift, og den løper på totalprisen (bud + kjøperens
+  // andel av fellesgjelden); borettslagsandeler ligger utenfor ordningen.
+  // `fellesgjeld` er valgfri (0 i oppdrag O). Lånet `laan` må da være regnet med
+  // fellesgjelden som annen gjeld, slik `laaneramme(..., annenGjeld)` gjør (oppdrag P).
+  maksBud(laan,egenkapital,selveier,fellesgjeld){
+    const d=selveier?SATSER.dokumentavgift:0, fg=fellesgjeld||0, b=SATSER.belaaningsgrad;
+    const t=SATSER.tinglysingSkjote+SATSER.tinglysingPant;
+    const avFinansiering=Math.max(0,(laan+egenkapital-t-d*fg)/(1+d));
+    const avEgenkapital=Math.max(0,(egenkapital-t-d*fg-(1-b)*fg)/(1+d-b));
+    const bud=Math.min(avFinansiering,avEgenkapital);
+    return {bud, avFinansiering, avEgenkapital,
+      bindende: avFinansiering<=avEgenkapital?'finansiering':'egenkapital',
+      dokumentavgift:(bud+fg)*d, tinglysing:t};
+  },
+  // Lånet et bud krever når egenkapitalen først dekker omkostningene
+  laanebehov(bud,egenkapital,selveier,fellesgjeld){
+    const d=selveier?SATSER.dokumentavgift:0;
+    return Math.max(0,bud+(bud+(fellesgjeld||0))*d+SATSER.tinglysingSkjote+SATSER.tinglysingPant-egenkapital);
+  },
+  // Felleskostnad per måned i et borettslag, `aar` år fra nå: drift pluss det
+  // borettslaget betaler på DIN andel av fellesgjelden. I den avdragsfrie perioden
+  // er det bare renter; etterpå et annuitetslån over resten av løpetiden.
+  // `rente` er nominell årsrente på fellesgjelden (lån: nominell/12).
+  felleskost(drift,fellesgjeld,rente,avdragsfriAar,loepetidAar,aar){
+    if (aar<avdragsfriAar) return drift+fellesgjeld*this.mndFraNominell(rente);
+    return drift+this.terminbelop(fellesgjeld,this.mndFraNominell(rente),Math.round(loepetidAar*12));
+  },
   // Netto lånekostnad etter rentefradrag
   netterente(rente){ return rente*(1-SATSER.rentefradrag); },
 
@@ -1064,7 +1104,7 @@ function settBrus(niv){
   g.cancelScheduledValues(t); g.setValueAtTime(g.value,t);
   g.linearRampToValueAtTime(niv*0.035,t+0.9);
 }
-// Seiershymne — spilles når alle fjorten oppdrag er løst. 100 BPM, D-dur.
+// Seiershymne — spilles når alle seksten oppdrag er løst. 100 BPM, D-dur.
 function hymne(){
   lydInit(); if (!AC) return;
   stoppMusikk();
@@ -1427,6 +1467,7 @@ const FOLK=[
   figur('bente','BENTE','eiendomsmegler',445,615,'#d8b48a',{oppdrag:'L'}),
   figur('odd','ODD','politibetjent',1975,2020,'#8a9ed8',{oppdrag:'M'}),   // sto inni kiosken før
   figur('signe','SIGNE','byens eldste',2515,645,'#d8c8b4',{oppdrag:'N'}),
+  figur('bjarne','BJARNE','budgiver nummer to',875,625,'#c8a0d8',{oppdrag:'O'}),
   figur('vera','VERA','sju år, spør alt',1700,1180,'#f0b0a0',{}),
   figur('primus','PRIMUS','statuens vokter',1620,1310,'#b0b8c0',{})
 ];
@@ -1643,7 +1684,7 @@ const UFORUTSETT=[
 ];
 
 // =====================================================================
-//  §9  OPPDRAGENE — fjorten stykker, A til N.
+//  §9  OPPDRAGENE — seksten stykker, A til P.
 //  krav = oppdrag som må være løst før dette låses opp.
 // =====================================================================
 const OPPDRAG=[
@@ -1702,7 +1743,15 @@ const OPPDRAG=[
   {id:'N',navn:'Tidsmaskinen',bygg:'pensjon',figur:'signe',krav:['D','F','I','J','K','L'],xp:900,lonn:0,
    tema:'alt sammen, over førti år',
    mal:'Signe i PENSJONSTÅRNET har nøkkelen til toppetasjen. Førti år på noen minutter.',
-   kron:'Signe lot meg se førti år framover. Alt jeg hadde lært i byen sto der som ett eneste tall.'}
+   kron:'Signe lot meg se førti år framover. Alt jeg hadde lært i byen sto der som ett eneste tall.'},
+  {id:'O',navn:'Budrunden',bygg:'visning',figur:'bjarne',krav:['L'],xp:500,lonn:0,
+   tema:'smertegrense, omkostninger, bindende bud',
+   mal:'Bjarne står utenfor VISNINGSBOLIGEN og vil by. Regn ut smertegrensen før budrunden, og hold den.',
+   kron:'Jeg holdt grensen i budrunden. Dokumentavgiften tar sin del av egenkapitalen før noe går inn i boligen, så grensen lå lavere enn lånet og egenkapitalen til sammen.'},
+  {id:'P',navn:'Fellesgjelden',bygg:'borettslag',figur:'bente',krav:['L'],xp:450,lonn:0,
+   tema:'fellesgjeld, totalpris, avdragsfrihet',
+   mal:'Bente har en borettslagsleilighet med lav prisantydning i BORETTSLAGET. Finn ut hva den faktisk koster.',
+   kron:'Den billige borettslagsleiligheten kostet det samme som selveieren. Fellesgjelden var bare lagt et annet sted, og avdragene på den kom to år senere.'}
 ];
 const oppdrag=(id)=>OPPDRAG.find(o=>o.id===id);
 function laastOpp(o){ return o.krav.every(k=>lostGjort.has(k)); }
@@ -1720,7 +1769,7 @@ function fullfor(id,ekstra){
   sfx('riktig');
   lagre();
   if (alleGjort()){ setTimeout(()=>{ hymne();
-    banner('RENTERIKET ER DITT','Alle fjorten oppdrag løst. Se krøniken i menyen'); },1400); }
+    banner('RENTERIKET ER DITT','Alle seksten oppdrag løst. Se krøniken i menyen'); },1400); }
   oppdaterHud();
 }
 
@@ -1740,8 +1789,8 @@ const pauseInner=document.getElementById('pauseinner');
    palett alene er ikke nok: hvert statuselement skal ogsaa baere et SYMBOL og
    et ORD. Ordet er visuelt skjult, men lesbart for skjermlesere og maalbart av
    testpakken.
-   Merkingen skjer ETT sted, ikke per kallsted. Fasit-boksen bygges fjorten
-   steder og valgkortene fire; en observatoer fanger baade nye statuselementer
+   Merkingen skjer ETT sted, ikke per kallsted. Fasit-boksen bygges i seksten
+   minispill og valgkortene i åtte (talt 2026-11-17); en observatoer fanger baade nye statuselementer
    og klasser som settes underveis - et valgkort som blir 'feil' ved klikk, en
    fasit-boks som dukker opp etter svar. Nye minispill arver merkingen gratis,
    som er hele poenget: en regel som lyder «husk symbolet» blir brutt hver gang
@@ -3316,7 +3365,10 @@ MINI.L=(v)=>{
       const riktig=ram.bindende;
       if (x.v===riktig){
         b.classList.add('valgt'); [...g.children].forEach(y=>y.disabled=true);
-        const mangler=BOLIG-ram.laan-300000;
+        // Med dokumentavgift og tinglysing: lånet er gitt, så det er egenkapitalen som
+        // må dekke omkostningene (samme regnestykke som oppdrag O).
+        const mangler=F.laanebehov(BOLIG,300000,true)-ram.laan;
+        const maksBud=F.maksBud(ram.laan,300000,true).bud;
         svar.innerHTML='';
         svar.appendChild(U.kort('REGNESTYKKET',U.tab(['Skranke','Største lån'],[
           ['Gjeldsgrad: '+kr(bruttoAar)+' × '+nf1.format(SATSER.gjeldsgrad),kr(ram.gjeldsgrad)],
@@ -3324,7 +3376,8 @@ MINI.L=(v)=>{
           ['Betjeningsevne ved '+pst2(ram.stressrente)+', etter '+kr(ram.levekostnad)+
             ' i levekostnader',kr(ram.betjening)],
           ['<b>Bindende — laveste tall</b>','<b>'+kr(ram.laan)+'</b>'],
-          ['Høyeste kjøpesum du kan by',kr(ram.maksPris)],
+          ['Lån + egenkapital, før omkostninger',kr(ram.maksPris)],
+          ['Høyeste bud når dokumentavgift og tinglysing er betalt',kr(maksBud)],
           ['Leiligheten koster',kr(BOLIG)],
           ['Du mangler','<b>'+kr(mangler)+'</b> i egenkapital']
         ])));
@@ -3336,7 +3389,7 @@ MINI.L=(v)=>{
           ['Levekostnader banken regner med',kr(ram.levekostnad)],
           ['Igjen til lån etter levekostnader',kr(ram.nettoPerMnd-ram.levekostnad)],
           ['Stresstermin som andel av netto',nf0.format(ram.stresstermin/ram.nettoPerMnd*100)+' %'],
-          ['Dokumentavgift ved kjøp (2,5 %)',kr(F.dokumentavgift(ram.maksPris,false))],
+          ['Dokumentavgift på det budet ('+pst2(SATSER.dokumentavgift)+')',kr(F.dokumentavgift(maksBud,false))],
           ['Netto rentekostnad etter '+pst2(SATSER.rentefradrag)+' fradrag, år 1',kr(ram.laan*F.netterente(SATSER.boliglaansrente))]
         ])));
         const navn={gjeldsgrad:'gjeldsgraden',egenkapital:'egenkapitalkravet',
@@ -3408,12 +3461,13 @@ MINI.L=(v)=>{
       ['Egenkapital ('+pst2(SATSER.egenkapital)+' av pris)',kr(ram.belaaning)],
       ['Betjeningsevne ved '+pst2(ram.stressrente),kr(ram.betjening)],
       ['<b>Bindende</b>','<b>'+kr(ram.laan)+'</b> — '+navn[ram.bindende]],
-      ['Høyeste kjøpesum',kr(ram.maksPris)],
+      ['Lån + egenkapital, før omkostninger',kr(ram.maksPris)],
+      ['Høyeste bud etter dokumentavgift og tinglysing',kr(F.maksBud(ram.laan,ek,true).bud)],
       ['Termin i dag',kr(ram.termin)+' i måneden'],
       ['Termin ved stressrente',kr(ram.stresstermin)+' ('+
         nf0.format(ram.stresstermin/ram.nettoPerMnd*100)+' % av netto)']
     ]));
-    if (ram.maksPris>=BOLIG) ut.appendChild(U.tips(
+    if (F.maksBud(ram.laan,ek,true).bud>=BOLIG) ut.appendChild(U.tips(
       '<span class="pill g">Nå rekker det til leiligheten på '+kr(BOLIG)+'</span>'));
   }
   tegn();
@@ -3776,6 +3830,425 @@ MINI.N=(v)=>{
   tegn();
 };
 
+// ---------------------------------------------------------------- O
+// Budrunden. Tre steg: smertegrensen regnes ut FØR budrunden, budrunden spilles
+// mot Bjarne, og tre påstander om reglene. Utfallet avgjøres av spillerens valg,
+// aldri av flaks: å tape boligen er riktig svar når neste bud er over grensen.
+// Fella er tallet fra oppdrag L: lån + egenkapital er IKKE det høyeste budet,
+// fordi egenkapitalen først skal betale dokumentavgift og tinglysing.
+// Ingen fasit.ja før til slutt: RR.harSeier() leser den, og test-oppdrag.js
+// krever at ingen del av oppdraget gir seier før alle tre stegene er riktige.
+MINI.O=(v)=>{
+  const INNTEKT=640000, EK=450000, PRIS=3290000;   // saken: faste tall, ikke spillerens
+  const START=3300000, STEG=50000, BJARNE_TOPP=3700000, SKYVSTEG=10000;
+  const ram=F.laaneramme(INNTEKT,EK);
+  const LAAN=ram.laan, NAIV=ram.maksPris;           // det oppdrag L kaller lån + egenkapital
+  const mb=F.maksBud(LAAN,EK,true), GRENSE=mb.bud;
+  const TINGL=SATSER.tinglysingSkjote+SATSER.tinglysingPant;
+  const dok=(b)=>F.dokumentavgift(b,false);
+
+  v.appendChild(U.hode('OPPDRAG O','Budrunden',
+    'Leiligheten i Visningsboligen er en selveier med prisantydning <b>'+kr(PRIS)+'</b>. '+
+    'I dette oppdraget har du <b>'+kr(INNTEKT)+'</b> i årsinntekt og <b>'+kr(EK)+'</b> i '+
+    'egenkapital, og banken har gitt deg et finansieringsbevis på <b>'+kr(LAAN)+'</b>: '+
+    'lånerammen fra oppdrag L. Bjarne skal også by, og han har ingen grense. Du skal ha en, '+
+    'og den skal være regnet ut <i>før</i> budrunden starter, ikke midt i den.'));
+
+  // ---------- steg 1: smertegrensen
+  let bud1=Math.round(NAIV/SKYVSTEG)*SKYVSTEG;     // startstillingen ER fella
+  let laast=false, melding1=null;
+  const k1=U.kort('STEG 1 — SMERTEGRENSEN');
+  k1.appendChild(U.tips('Banken låner deg '+kr(LAAN)+', og du har '+kr(EK)+'. Til sammen er det '+
+    kr(NAIV)+', og det er lett å tro at det er det du kan by. Finn det <b>høyeste budet '+
+    'som faktisk går opp</b>, når alt du må betale for å kjøpe er regnet med.'));
+  const s1=U.skyv('oGrense','Høyeste bud',3000000,4000000,SKYVSTEG,bud1,x=>kr(x),x=>{bud1=x;tegn1();});
+  k1.appendChild(s1);
+  const ut1=U.el('div'); k1.appendChild(ut1);
+  const svar1=U.el('div');
+  const laasKnapp=U.knapp('Lås smertegrensen',()=>sjekk1());
+  k1.appendChild(U.fot(laasKnapp)); k1.appendChild(svar1);
+  v.appendChild(k1);
+  const k2=U.el('div'); v.appendChild(k2);
+  const k3=U.el('div'); v.appendChild(k3);
+  const svar=U.el('div'); v.appendChild(svar);
+
+  function tegn1(){
+    const behov=F.laanebehov(bud1,EK,true);
+    ut1.innerHTML='';
+    ut1.appendChild(U.tab(['Post','Beløp'],[
+      ['Budet',kr(bud1)],
+      ['+ dokumentavgift ('+pst2(SATSER.dokumentavgift)+' av budet)',kr(dok(bud1))],
+      ['+ tinglysing av skjøte og pantedokument',kr(TINGL)],
+      ['= det du må betale',kr(bud1+dok(bud1)+TINGL)],
+      ['− egenkapitalen din','−'+kr(EK)],
+      ['<b>= lånet budet krever</b>','<b>'+kr(behov)+'</b>'],
+      ['Finansieringsbeviset ditt',kr(LAAN)],
+      ['Lånet som andel av budet (høyst '+pst2(SATSER.belaaningsgrad)+')',pst2(behov/bud1)]
+    ]));
+  }
+  function sjekk1(){
+    if (laast) return;
+    if (melding1) melding1.remove();
+    const behov=F.laanebehov(bud1,EK,true);
+    const f=melding1=U.el('div','tips');
+    if (bud1>GRENSE){
+      sfx('feil');
+      f.innerHTML = behov>LAAN
+        ? '<b>Nei.</b> Med '+kr(bud1)+' som bud krever du et lån på '+kr(behov)+', og beviset '+
+          'ditt er på '+kr(LAAN)+'. Se på hva dokumentavgiften tar av egenkapitalen før noe '+
+          'av den går inn i boligen.'
+        : '<b>Nei.</b> Lånet ville vært '+pst2(behov/bud1)+' av budet, og banken går ikke over '+
+          pst2(SATSER.belaaningsgrad)+'. Egenkapitalen som er igjen etter omkostningene, '+
+          'rekker ikke.';
+    } else if (bud1<=GRENSE-SKYVSTEG){
+      sfx('feil');
+      f.innerHTML='<b>Det går opp, men du kan by mer.</b> Smertegrensen er det høyeste budet '+
+        'som går opp, ikke et trygt sted godt under det. Ligger den for lavt, taper du '+
+        'budrunder om boliger du hadde råd til.';
+    } else {
+      laast=true; s1.querySelector('input').disabled=true; laasKnapp.disabled=true;
+      sfx('riktig');
+      svar1.innerHTML='';
+      svar1.appendChild(U.tips('<span class="pill g">Smertegrensen er låst: '+kr(bud1)+'</span><br><br>'+
+        'Banken og du har '+kr(NAIV)+' til sammen, men det høyeste budet som går opp er '+
+        kr(GRENSE)+'. Forskjellen, <b>'+kr(NAIV-GRENSE)+'</b>, er dokumentavgiften og '+
+        'tinglysingen. De betales med egenkapital, og banken låner deg ikke penger til dem.'));
+      startRunde();
+      return;
+    }
+    laasKnapp.after(f); setTimeout(()=>f.remove(),6500);
+  }
+  tegn1();
+
+  // ---------- steg 2: budrunden mot Bjarne
+  const PRESS=[
+    '«Det er stor interesse for denne,» sier Bente.',
+    'Bjarne har lagt inn nytt bud med akseptfrist om tretti minutter. Bente minner deg om at '+
+      'det er lov nå, dagen etter visningen.',
+    '«Han sier han går til han får den,» sier Bente.',
+    '«Ett bud til, så er den kanskje din.»',
+    '«Banken sier sikkert ja til litt til. Det gjør de som regel.»'
+  ];
+  let logg=[], siste=0, ferdig2=false;
+  function startRunde(){ logg=[]; ferdig2=false; bjarneByr(START); }
+  function bjarneByr(x){ logg.push(['Bjarne',x]); siste=x; tegn2(); }
+  function duByr(){
+    if (ferdig2) return;
+    const x=siste+STEG; logg.push(['Du',x]); siste=x;
+    if (x>GRENSE) return over(x);
+    if (x+STEG<=BJARNE_TOPP) bjarneByr(x+STEG); else duVant(x);
+  }
+  function gaaUt(){
+    if (ferdig2) return;
+    if (siste+STEG<=GRENSE) return forTidlig(siste+STEG);
+    bjarneVant(siste);
+  }
+  function journal(){
+    return U.tab(['Budgiver','Bud'],logg.map((r,i)=>[(i+1)+' · '+r[0],kr(r[1])]));
+  }
+  function tegn2(){
+    k2.innerHTML='';
+    const k=U.kort('STEG 2 — BUDRUNDEN');
+    const hode=U.tips('Smertegrensen din: <b>'+kr(GRENSE)+'</b>. Bente tar imot bud i trinn '+
+      'på '+kr(STEG)+'. Høyeste bud nå: <b>'+kr(siste)+'</b> ('+logg[logg.length-1][0]+').');
+    hode.style.marginBottom='12px';
+    k.appendChild(hode);
+    k.appendChild(journal());
+    const bjarnesBud=logg.filter(r=>r[0]==='Bjarne').length;
+    if (bjarnesBud>1) k.appendChild(U.tips(PRESS[Math.min(bjarnesBud-2,PRESS.length-1)]));
+    k.appendChild(U.fot(
+      U.knapp('Høyne til '+kr(siste+STEG),()=>duByr()),
+      U.knapp('Gå ut av budrunden',()=>gaaUt(),'sek')));
+    k2.appendChild(k);
+    spillEl.scrollTop=spillEl.scrollHeight;
+  }
+  function avslutt2(boks,igjen){
+    ferdig2=true;
+    k2.innerHTML='';
+    const k=U.kort('STEG 2 — BUDRUNDEN'); k.appendChild(journal()); k.appendChild(boks);
+    if (igjen) k.appendChild(U.fot(U.knapp('Ta budrunden på nytt',()=>startRunde())));
+    k2.appendChild(k);
+    spillEl.scrollTop=spillEl.scrollHeight;
+  }
+  function over(x){
+    const behov=F.laanebehov(x,EK,true);
+    avslutt2(fasit(false,'<b>Budet ditt på '+kr(x)+' er over smertegrensen.</b>',
+      'Et bud er bindende fra det har kommet fram til megleren og til akseptfristen er ute. '+
+      'Aksepterer selgeren, har du kjøpt. Med '+kr(x)+' krever du et lån på '+kr(behov)+
+      (behov>LAAN
+        ? ', og finansieringsbeviset er på '+kr(LAAN)+'. Du mangler <b>'+kr(behov-LAAN)+'</b>, '+
+          'og banken låner deg ikke penger til dokumentavgiften.'
+        : ', altså '+pst2(behov/x)+' av budet. Banken går ikke over '+
+          pst2(SATSER.belaaningsgrad)+', så egenkapitalen rekker ikke.')),true);
+  }
+  function forTidlig(neste){
+    avslutt2(fasit(false,'<b>Du gikk ut, men neste bud på '+kr(neste)+' var innenfor grensen din.</b>',
+      'Smertegrensen er den høyeste prisen du kan betale, ikke et sted du skal holde deg godt '+
+      'under. Du ga fra deg en bolig du hadde råd til. By så lenge neste bud går opp, og gå '+
+      'ut i det øyeblikket det ikke gjør det.'),true);
+  }
+  let vinner=null;
+  function bjarneVant(x){
+    vinner={hvem:'Bjarne',bud:x};
+    avslutt2(U.tips('<span class="pill g">Du gikk ut på riktig sted</span><br><br>'+
+      'Neste bud ville vært '+kr(x+STEG)+', over grensen din. Bjarne fikk leiligheten for '+
+      kr(x)+'. Du fikk den ikke, og det var riktig.'),false);
+    steg3();
+  }
+  function duVant(x){
+    vinner={hvem:'Du',bud:x};
+    avslutt2(U.tips('<span class="pill g">Bjarne ga seg</span><br><br>'+
+      'Han hadde en grense likevel. Du fikk leiligheten for '+kr(x)+', innenfor grensen din.'),false);
+    steg3();
+  }
+
+  // ---------- steg 3: tre påstander om reglene
+  const PAASTAND=[
+    {t:'Når budet ditt har kommet fram til megleren, kan du trekke det når som helst før '+
+       'akseptfristen.', sant:false,
+     hvorfor:'Et bud er bindende fra det har kommet fram og til akseptfristen er ute. Å trekke '+
+       'det virker bare hvis beskjeden kommer fram før eller samtidig med budet (avtaleloven '+
+       '§ 7). Aksepterer selgeren innen fristen, har dere en avtale.'},
+    {t:'Megleren kan formidle et bud med akseptfrist én time etter visningen.', sant:false,
+     hvorfor:'Ikke når kjøperen er forbruker. Megleren skal ikke formidle bud med kortere '+
+       'akseptfrist enn til kl. 12.00 første virkedag etter siste annonserte visning, og lørdag '+
+       'regnes ikke som virkedag (eiendomsmeglingsforskriften § 6-3 tredje ledd). Senere i '+
+       'budrunden er korte frister lov, og det er der presset kommer.'},
+    {t:'Du kan be om kopi av budjournalen selv om du ikke fikk boligen.', sant:true,
+     hvorfor:'Når budrunden er over, kan alle som la inn bud kreve kopi av budjournalen i '+
+       'anonymisert form (eiendomsmeglingsforskriften § 6-4 annet ledd). Da ser du om budene '+
+       'du hørte om, faktisk fantes.'}
+  ];
+  function steg3(){
+    k3.innerHTML=''; svar.innerHTML='';
+    const k=U.kort('STEG 3 — REGLENE I BUDRUNDEN');
+    k.appendChild(U.tips('Sant eller usant? Alle tre må være riktige.'));
+    let besvart=0, riktige=0;
+    PAASTAND.forEach((p,i)=>{
+      const rad=U.el('div'); rad.style.marginTop='12px';
+      rad.appendChild(U.el('div','tips','<b>'+(i+1)+'.</b> '+p.t));
+      const g=U.el('div','grid2');
+      [{t:'SANT',s:true},{t:'USANT',s:false}].forEach(x=>{
+        const b=U.el('button','valgkort'); b.dataset.p=String(i); b.dataset.s=String(x.s);
+        b.innerHTML='<div class="vt">'+x.t+'</div>';
+        b.onclick=()=>{
+          const ok=x.s===p.sant;
+          [...g.children].forEach(y=>y.disabled=true);
+          b.classList.add(ok?'valgt':'feil');
+          sfx(ok?'riktig':'feil');
+          rad.appendChild(U.tips((ok?'<b>Riktig.</b> ':'<b>Feil.</b> ')+p.hvorfor));
+          besvart++; if (ok) riktige++;
+          if (besvart===PAASTAND.length) ferdig3(riktige);
+        };
+        g.appendChild(b);
+      });
+      rad.appendChild(g); k.appendChild(rad);
+    });
+    k3.appendChild(k);
+    spillEl.scrollTop=spillEl.scrollHeight;
+  }
+  function ferdig3(riktige){
+    svar.innerHTML='';
+    if (riktige<PAASTAND.length){
+      svar.appendChild(fasit(false,'<b>'+riktige+' av '+PAASTAND.length+' riktige.</b>',
+        'Les forklaringene over og ta påstandene på nytt.'));
+      svar.appendChild(U.fot(U.knapp('Ta påstandene på nytt',()=>steg3())));
+      spillEl.scrollTop=spillEl.scrollHeight;
+      return;
+    }
+    const x=vinner.bud, behov=F.laanebehov(x,EK,true);
+    svar.appendChild(U.kort(vinner.hvem==='Bjarne'?'DET BJARNE BETALTE, MED DINE TALL':'DET DU BETALTE',
+      U.tab(['Post','Beløp'],[
+        ['Vinnerbudet',kr(x)],
+        ['+ dokumentavgift',kr(dok(x))],
+        ['+ tinglysing',kr(TINGL)],
+        ['− egenkapitalen din','−'+kr(EK)],
+        ['<b>= lånet det krever</b>','<b>'+kr(behov)+'</b>'],
+        ['Finansieringsbeviset ditt',kr(LAAN)],
+        [behov>LAAN?'<b>Du ville manglet</b>':'Til overs i beviset',
+         '<b>'+kr(Math.abs(LAAN-behov))+'</b>']
+      ])));
+    svar.appendChild(fasit(true,'Riktig, alle tre. <b>Du holdt grensen.</b>',
+      'Smertegrensen settes hjemme, ikke på visningen. Tallet du tar med deg er ikke lån pluss '+
+      'egenkapital, men det høyeste budet som går opp når dokumentavgiften ('+
+      pst2(SATSER.dokumentavgift)+' av kjøpesummen på selveier) og tinglysingen er betalt. '+
+      'Her var forskjellen '+kr(NAIV-GRENSE)+'.<br><br>'+
+      'I borettslag er det ingen dokumentavgift, men fellesgjelden er en del av prisen: '+
+      'by på totalprisen, ikke på prisantydningen. Se BORETTSLAGET.<br><br>'+
+      'Og et bud du har gitt, kan du ikke trekke når det passer deg. Er du i tvil, er svaret '+
+      'å la være å by, ikke å by og håpe.'));
+    seier(svar,'O','','',0);
+  }
+};
+
+// ---------------------------------------------------------------- P
+// Fellesgjelden. Samme kjøper som i O. Annonsen har lav prisantydning fordi en stor
+// del av prisen ligger som fellesgjeld, og lav felleskostnad fordi fellesgjelden er
+// avdragsfri i to år til. Steg 1: høyeste bud når fellesgjelden spiser gjeldstaket
+// (det er UNDER prisantydningen). Steg 2: felleskostnaden når avdragene starter.
+// Ingen fasit.ja før til slutt (se O).
+MINI.P=(v)=>{
+  const INNTEKT=640000, EK=450000;                  // samme kjøper som i oppdrag O
+  const PRIS=2150000, FELLES=1500000, DRIFT=3200;   // annonsen
+  const AVDRAGSFRI=2, LOEPETID=28, SKYVSTEG=10000;  // år igjen uten avdrag, år med avdrag etterpå
+  const RENTE=SATSER.boliglaansrente;               // ANTAKELSE: samme rente som boliglån
+  const ramUten=F.laaneramme(INNTEKT,EK);           // det banken ga for selveieren i O
+  const ram=F.laaneramme(INNTEKT,EK,undefined,FELLES);
+  const LAAN=ram.laan;
+  const mb=F.maksBud(LAAN,EK,false,FELLES), GRENSE=mb.bud;
+  const NAIV=F.maksBud(ramUten.laan,EK,false).bud;  // fellesgjelden glemt
+  const TINGL=SATSER.tinglysingSkjote+SATSER.tinglysingPant;
+  const NAA=F.felleskost(DRIFT,FELLES,RENTE,AVDRAGSFRI,LOEPETID,0);
+  const ETTER=F.felleskost(DRIFT,FELLES,RENTE,AVDRAGSFRI,LOEPETID,AVDRAGSFRI);
+
+  v.appendChild(U.hode('OPPDRAG P','Fellesgjelden',
+    'Bente har en borettslagsleilighet: prisantydning <b>'+kr(PRIS)+'</b>, felleskostnad <b>'+
+    kr(NAA)+'</b> i måneden. Den er mye billigere enn selveieren i Visningsboligen, ser det ut '+
+    'til. Under står det med liten skrift: fellesgjeld <b>'+kr(FELLES)+'</b>, avdragsfri i '+
+    AVDRAGSFRI+' år til, deretter nedbetalt over '+LOEPETID+' år som annuitetslån. '+
+    'Du er samme kjøper som i oppdrag O: <b>'+kr(INNTEKT)+'</b> i årsinntekt og <b>'+kr(EK)+
+    '</b> i egenkapital.'));
+
+  // ---------- steg 1: høyeste bud
+  let bud1=Math.round(NAIV/SKYVSTEG)*SKYVSTEG;      // startstillingen ER fella: fellesgjelden glemt
+  let laast=false, melding1=null;
+  const k1=U.kort('STEG 1 — HVOR MYE KAN DU BY?');
+  k1.appendChild(U.tips('For selveieren i O ga banken deg et finansieringsbevis på '+kr(ramUten.laan)+
+    '. Finn det <b>høyeste budet</b> du kan gi på denne leiligheten.'));
+  const s1=U.skyv('pGrense','Høyeste bud',1500000,4000000,SKYVSTEG,bud1,x=>kr(x),x=>{bud1=x;tegn1();});
+  k1.appendChild(s1);
+  const ut1=U.el('div'); k1.appendChild(ut1);
+  const svar1=U.el('div');
+  const laasKnapp=U.knapp('Lås budet',()=>sjekk1());
+  k1.appendChild(U.fot(laasKnapp)); k1.appendChild(svar1);
+  v.appendChild(k1);
+  const k2=U.el('div'); v.appendChild(k2);
+  const svar=U.el('div'); v.appendChild(svar);
+
+  function tegn1(){
+    const behov=F.laanebehov(bud1,EK,false,FELLES);
+    ut1.innerHTML='';
+    ut1.appendChild(U.tab(['Det budet krever','Beløp'],[
+      ['Budet',kr(bud1)],
+      ['+ tinglysing av overføring og pantedokument',kr(TINGL)],
+      ['− egenkapitalen din','−'+kr(EK)],
+      ['<b>= lånet budet krever</b>','<b>'+kr(behov)+'</b>']
+    ]));
+    const luft=(el)=>{ el.style.marginTop='18px'; return el; };
+    ut1.appendChild(luft(U.tab(['Det banken gir for denne boligen','Beløp'],[
+      ['Gjeldstaket ('+nf1.format(SATSER.gjeldsgrad)+' × inntekt)',kr(INNTEKT*SATSER.gjeldsgrad)],
+      ['− din andel av fellesgjelden','−'+kr(FELLES)],
+      ['<b>= finansieringsbeviset</b>','<b>'+kr(LAAN)+'</b>']
+    ])));
+    ut1.appendChild(luft(U.tab(['Totalprisen','Beløp'],[
+      ['Budet',kr(bud1)],
+      ['+ din andel av fellesgjelden',kr(FELLES)],
+      ['<b>= totalprisen</b>','<b>'+kr(bud1+FELLES)+'</b>'],
+      ['Lån + fellesgjeld som andel av totalprisen (høyst '+pst2(SATSER.belaaningsgrad)+')',
+        pst2((behov+FELLES)/(bud1+FELLES))]
+    ])));
+  }
+  function sjekk1(){
+    if (laast) return;
+    if (melding1) melding1.remove();
+    const behov=F.laanebehov(bud1,EK,false,FELLES);
+    const f=melding1=U.el('div','tips');
+    if (bud1>GRENSE){
+      sfx('feil');
+      f.innerHTML = behov>LAAN
+        ? '<b>Nei.</b> Med '+kr(bud1)+' som bud trenger du '+kr(behov)+' i lån, og banken gir '+
+          'deg '+kr(LAAN)+' for denne boligen. Gjeldstaket gjelder lånet ditt og fellesgjelden '+
+          'til sammen.'
+        : '<b>Nei.</b> Lån og fellesgjeld blir '+pst2((behov+FELLES)/(bud1+FELLES))+' av totalprisen, '+
+          'og banken går ikke over '+pst2(SATSER.belaaningsgrad)+'.';
+    } else if (bud1<=GRENSE-SKYVSTEG){
+      sfx('feil');
+      f.innerHTML='<b>Det går opp, men du kan by mer.</b> Finn det høyeste budet som går opp.';
+    } else {
+      laast=true; s1.querySelector('input').disabled=true; laasKnapp.disabled=true;
+      sfx('riktig');
+      svar1.innerHTML='';
+      svar1.appendChild(U.tips('<span class="pill g">Høyeste bud: '+kr(bud1)+'</span><br><br>'+
+        'Det høyeste budet som går opp, er '+kr(GRENSE)+'. '+
+        (GRENSE<PRIS
+          ? 'Det er <b>under prisantydningen på '+kr(PRIS)+'</b>. '
+          : 'Det er bare '+kr(GRENSE-PRIS)+' over prisantydningen på '+kr(PRIS)+'. ')+
+        'Totalprisen da er '+kr(GRENSE+FELLES)+', omtrent det samme som '+
+        'lån + egenkapital ga deg i O ('+kr(ramUten.maksPris)+'). Den lave prisantydningen '+
+        'betyr ikke at boligen er billigere. Den betyr at '+kr(FELLES)+' av prisen ligger i '+
+        'borettslagets lån, og at du ikke kan låne de samme pengene to ganger.'));
+      steg2();
+      return;
+    }
+    laasKnapp.after(f); setTimeout(()=>f.remove(),6500);
+  }
+  tegn1();
+
+  // ---------- steg 2: felleskostnaden når avdragene starter
+  function steg2(){
+    k2.innerHTML='';
+    const k=U.kort('STEG 2 — FELLESKOSTNADEN OM '+AVDRAGSFRI+' ÅR');
+    k.appendChild(U.tips('I dag er felleskostnaden '+kr(NAA)+': drift '+kr(DRIFT)+' og renter på '+
+      'din andel av fellesgjelden. Om '+AVDRAGSFRI+' år starter avdragene, og fellesgjelden '+
+      'nedbetales over '+LOEPETID+' år som annuitetslån. <b>Hva blir felleskostnaden da?</b> '+
+      'Renta er satt lik boliglånsrenta, '+pst2(RENTE)+'. Det er en antakelse: borettslaget '+
+      'har sitt eget lån og sin egen rente.'));
+    const renterMnd=FELLES*F.mndFraNominell(RENTE);
+    const termin=ETTER-DRIFT;
+    const VALG=[
+      {v:'avdrag',belop:DRIFT+FELLES/(LOEPETID*12),
+       hvorfor:'Det er drift pluss avdrag fordelt likt over '+LOEPETID+' år, uten renter. '+
+         'Renta forsvinner ikke når avdragene starter.'},
+      {v:'riktig',belop:ETTER, hvorfor:''},
+      {v:'uendret',belop:NAA,
+       hvorfor:'Det er dagens felleskostnad. Den gjelder bare så lenge fellesgjelden er avdragsfri.'},
+      {v:'dobbelt',belop:DRIFT+renterMnd+termin,
+       hvorfor:'Her er renta regnet to ganger. Terminbeløpet på et annuitetslån er renter og '+
+         'avdrag til sammen.'}
+    ];
+    const g=U.el('div','grid2');
+    VALG.forEach(x=>{
+      const b=U.el('button','valgkort'); b.dataset.v=x.v;
+      b.innerHTML='<div class="vt">'+kr(x.belop)+' i måneden</div>';
+      b.onclick=()=>{
+        if (x.v==='riktig'){
+          b.classList.add('valgt'); [...g.children].forEach(y=>y.disabled=true);
+          ferdig(renterMnd,termin);
+        } else {
+          b.classList.add('feil'); b.disabled=true; sfx('feil');
+          const f=U.tips('<b>Nei.</b> '+x.hvorfor); g.after(f); setTimeout(()=>f.remove(),6500);
+        }
+      };
+      g.appendChild(b);
+    });
+    k.appendChild(g);
+    k2.appendChild(k);
+    spillEl.scrollTop=spillEl.scrollHeight;
+  }
+  function ferdig(renterMnd,termin){
+    svar.innerHTML='';
+    svar.appendChild(U.kort('FELLESKOSTNADEN, I DAG OG OM '+AVDRAGSFRI+' ÅR',U.tab(['Post','I dag','Om '+AVDRAGSFRI+' år'],[
+      ['Drift',kr(DRIFT),kr(DRIFT)],
+      ['Renter på fellesgjelden',kr(renterMnd),'(i terminen)'],
+      ['Terminbeløp, '+LOEPETID+' år annuitet','—',kr(termin)],
+      ['<b>Felleskostnad</b>','<b>'+kr(NAA)+'</b>','<b>'+kr(ETTER)+'</b>'],
+      ['Økning per måned','','<b>'+kr(ETTER-NAA)+'</b>'],
+      ['Økning per år','',kr((ETTER-NAA)*12)]
+    ])));
+    svar.appendChild(fasit(true,'Riktig. <b>'+kr(ETTER)+'</b> i måneden når avdragene starter.',
+      'Fellesgjeld er gjeld du tar over sammen med leiligheten. Den regnes med i gjeldstaket '+
+      'ditt og i egenkapitalkravet, så <b>by på totalprisen, ikke på prisantydningen</b>. '+
+      'To leiligheter med samme totalpris og samme rente koster omtrent det samme, uansett '+
+      'hvordan prisen er delt mellom kjøpesum og fellesgjeld.<br><br>'+
+      'En lav felleskostnad på grunn av avdragsfrihet er utsatt betaling, ikke rabatt. Regn '+
+      'budsjettet ditt på felleskostnaden <i>etter</i> den avdragsfrie perioden, og husk at '+
+      'renta på fellesgjelden kan endres uten at du blir spurt.<br><br>'+
+      'Borettslaget har én fordel: ingen dokumentavgift. På en selveier med samme totalpris '+
+      'hadde den vært '+kr(F.dokumentavgift(GRENSE+FELLES,false))+'.'));
+    seier(svar,'P','','',0);
+  }
+};
+
 // =====================================================================
 //  §13  BYGNINGENE — hver dør svarer på noe.
 //  test-verden.js sjekker at ingen bygning er tom.
@@ -4081,7 +4554,8 @@ HUS.megler=(v)=>{
     ['Maks lån etter egenkapitalkrav',kr(ram.belaaning)],
     ['Maks lån etter betjeningsevne',kr(ram.betjening)],
     ['<b>Låneramme</b>','<b>'+kr(ram.laan)+'</b> — '+navn[ram.bindende]+' binder'],
-    ['Høyeste kjøpesum',kr(ram.maksPris)],
+    ['Lån + egenkapital, før omkostninger',kr(ram.maksPris)],
+    ['Høyeste bud etter dokumentavgift og tinglysing (selveier)',kr(F.maksBud(ram.laan,kontanter+buffer+bsuSaldo,true).bud)],
     ['Termin ved stressrente '+pst2(ram.stressrente),kr(ram.stresstermin)+' i måneden']
   ])));
   if (!gjort('L') && laastOpp(oppdrag('L')))
@@ -4109,11 +4583,12 @@ HUS.visning=(v)=>{
     ['<b>Faktisk ut av lomma (med avdrag)</b>','<b>'+kr(plan.termin+FELLES+PRIS*VEDLIKEHOLD/12+1350)+'</b>'],
     ['Leie av tilsvarende',kr(leie)]
   ])));
+  const TINGL=SATSER.tinglysingSkjote+SATSER.tinglysingPant;
   v.appendChild(U.kort('ENGANGSKOSTNADER',U.tab(['Post','Beløp'],[
     ['Egenkapital ('+pst2(SATSER.egenkapital)+')',kr(PRIS*SATSER.egenkapital)],
     ['Dokumentavgift ('+pst2(SATSER.dokumentavgift)+')',kr(F.dokumentavgift(PRIS,false))],
-    ['Tinglysing og gebyrer',kr(1000)],
-    ['<b>Sum du må ha i banken</b>','<b>'+kr(PRIS*SATSER.egenkapital+F.dokumentavgift(PRIS,false)+1000)+'</b>']
+    ['Tinglysing av skjøte og pantedokument',kr(TINGL)],
+    ['<b>Sum du må ha i banken</b>','<b>'+kr(PRIS*SATSER.egenkapital+F.dokumentavgift(PRIS,false)+TINGL)+'</b>']
   ]),U.tips('Dokumentavgiften er lavere ved kjøp av <b>nybygg som ikke er tatt i bruk</b>, '+
     'der den bare løper på tomteverdien, og faller helt bort ved kjøp av '+
     '<b>borettslagsandel</b>, som ligger utenfor ordningen.<br><br>'+
@@ -4145,6 +4620,13 @@ HUS.visning=(v)=>{
       'penger, og vedlikeholdet er ditt. Spørsmålet avgjøres ikke av månedskostnaden. '+
       'Regn på <i>din</i> situasjon, ikke på overskriftene.')));
   }
+  if (gjort('O') || laastOpp(oppdrag('O')))
+    v.appendChild(U.fot(U.knapp(gjort('O')?'Ta budrunden om igjen':'Bli med i budrunden (oppdrag O)',
+      ()=>aapneMinispill('O',MINI.O))));
+  else v.appendChild(U.kort('BUDRUNDEN',U.tips('Bjarne står utenfor og vil by på leiligheten. '+
+    'Bente slipper deg ikke inn i budrunden før du har vært på MEGLERKONTORET og regnet ut '+
+    'hvor mye du kan låne (oppdrag L). Uten et finansieringsbevis er budet ditt ikke verdt '+
+    'stort.')));
 };
 
 HUS.byggbo=(v)=>{
@@ -4190,6 +4672,12 @@ HUS.borettslag=(v)=>{
     'ikke, at renta på den kan stige uten at du blir spurt, og at du er avhengig av at '+
     'laget er godt drevet. Sjekk alltid vedtatte, men ikke gjennomførte prosjekter: '+
     'det er der overraskelsene bor.')));
+  if (gjort('P') || laastOpp(oppdrag('P')))
+    v.appendChild(U.fot(U.knapp(gjort('P')?'Regn på fellesgjelden igjen':'Regn på annonsen (oppdrag P)',
+      ()=>aapneMinispill('P',MINI.P))));
+  else v.appendChild(U.kort('ANNONSEN PÅ OPPSLAGET',U.tips('Bente har hengt opp en annonse med lav '+
+    'prisantydning. Regn på den når du har vært på MEGLERKONTORET og funnet lånerammen din '+
+    '(oppdrag L).')));
 };
 
 HUS.skatteetat=(v)=>{
@@ -4576,6 +5064,9 @@ const PRAT={
   bente:['«Denne leiligheten er helt perfekt for deg! Fire komma to.»',
     'Hun sier det uten å ha spurt hva du tjener. «Det ordner seg med banken.» '+
     'Det gjør det ikke, men <em>du</em> kan regne ut hvorfor.'],
+  bjarne:['«Jeg har ingen grense. Jeg vil ha den leiligheten, og jeg går til jeg får den.»',
+    'Han har ikke snakket med banken. «Det ordner seg.» Du har hørt den før, fra Bente. '+
+    'Budrunden er i morgen. Vil du by mot ham, med en grense du har regnet ut <em>før</em> du står der?'],
   odd:['«Ni av ti nordmenn opplever et svindelforsøk. Tolv prosent blir faktisk svindlet.»',
     '«Det handler ikke om å være smart. Metodene er bygget for å slå ut vurderingsevnen '+
     'med tidspress og autoritet. Kom, jeg har fjorten meldinger i permen.»'],
@@ -5351,7 +5842,7 @@ function handle(){
 }
 function visOppslagstavla(){
   aapneMinispill('tavle',v=>{
-    v.appendChild(U.hode('OPPSLAGSTAVLA','Alle fjorten oppdrag',
+    v.appendChild(U.hode('OPPSLAGSTAVLA','Alle seksten oppdrag',
       'Løst: <b>'+lostGjort.size+' av '+OPPDRAG.length+'</b> · '+
       'Kunnskapskort: <b>'+funnetKort.size+' av '+KORT.length+'</b>'));
     const l=U.el('ul','lst');
@@ -5409,7 +5900,7 @@ function tegnPause(){
         '<span style="color:#9aa8b8;font-size:13px">'+o.tema+' · '+bygg(o.bygg).navn+'</span></span>';
       l.appendChild(li);
     });
-    k.appendChild(U.kort('FJORTEN OPPDRAG — '+lostGjort.size+' LØST',l));
+    k.appendChild(U.kort('SEKSTEN OPPDRAG — '+lostGjort.size+' LØST',l));
   }
   if (pauseFane==='kort'){
     const vegg=U.el('div','kortvegg');
@@ -5705,7 +6196,7 @@ function start(){
     setTimeout(()=>{
       snakk('RENTERIKET','#2fbf7a',[
         'Du står i <b>Startgata</b> med tom lommebok. Byen har åtte bydeler, '+
-        'fjorten oppdrag og førti kunnskapskort gjemt rundt om.',
+        'seksten oppdrag og førti kunnskapskort gjemt rundt om.',
         'Begynn med <em>Solveig på Jobbsenteret</em>. Hun er den med utropstegn over hodet. '+
         'Alt annet følger derfra.',
         'Gå med <b>WASD</b> eller piltastene. Trykk <b>'+OKORD+'</b> når noe står i stripa nederst.'

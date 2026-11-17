@@ -1,10 +1,10 @@
 # renteriket — spillet som gjør deg til investor
 
 Et originalt læringsspill om privatøkonomi og investering, for voksne som starter
-på null. Du kommer til byen med tom lommebok og ingen aning; fjorten oppdrag
+på null. Du kommer til byen med tom lommebok og ingen aning; seksten oppdrag
 senere vet du hvordan penger faktisk virker.
 
-Åtte bydeler, tjuefem bygninger du kan gå inn i, femten figurer, **fjorten
+Åtte bydeler, tjuefem bygninger du kan gå inn i, seksten figurer, **seksten
 oppdrag med hvert sitt minispill**, og **førti kunnskapskort** gjemt rundt om.
 Én `index.html`, ingen avhengigheter, ingen eksterne ressurser, ingen byggesteg:
 du åpner fila og spiller.
@@ -69,7 +69,7 @@ og indeksen står på MEGA-SKJERMEN over Børshuset enten du ser på den eller i
 
 ## Oppdragene
 
-Fjorten oppdrag, A til N. Hvert av dem er et minispill der du må gjøre noe som
+Seksten oppdrag, A til P. Hvert av dem er et minispill der du må gjøre noe som
 faktisk krever forståelse, ikke en flervalgsprøve med tekst rundt.
 
 | | Oppdrag | Hva du gjør | Hva det lærer |
@@ -88,10 +88,15 @@ faktisk krever forståelse, ikke en flervalgsprøve med tekst rundt.
 | **L** | Nøkkelen til boligen | Finn ut hvilken av tre skranker som faktisk stopper deg | at gjeldstaket og betjeningsevnen binder før egenkapitalen |
 | **M** | Svindelsjekken | Fjorten meldinger, fem av dem ekte | mønsteret, ikke produktet |
 | **N** | Tidsmaskinen | Seks valg, førti år, ett tall | alt sammen, satt sammen |
+| **O** | Budrunden | Regn ut smertegrensen hjemme, by mot Bjarne, og hold den | at egenkapitalen betaler dokumentavgiften før noe går inn i boligen, og at et bud er bindende |
+| **P** | Fellesgjelden | Finn høyeste bud på en borettslagsleilighet med lav prisantydning, og felleskostnaden når avdragene starter | at fellesgjelden spiser gjeldstaket, og at avdragsfrihet er utsatt betaling |
 
 Oppdragene låser opp hverandre i en rekkefølge som er der av en grunn: du får
 ikke regne på boliglån før du har vært gjennom gjeld og risiko, og
 **Tidsmaskinen** i toppetasjen av Pensjonstårnet krever seks av de andre.
+**Budrunden** i Visningsboligen og **Fellesgjelden** i Borettslaget krever oppdrag L, og
+står utenfor finalen: de kom inn 2026-11-17, og en spiller som alt har løst N, skal ikke
+miste det.
 
 Ingen oppdrag kan løses ved å gjette. Der du kan svare feil, får du en forklaring
 på hvorfor det var feil, og lov til å prøve igjen.
@@ -147,6 +152,10 @@ septemberrenten (5,31 %, som i august) binder **betjeningsevnen**, ikke
 gjeldsgraden, ved startlønna i oppdrag L. Vippepunktet er 5,18 %. Fasiten i
 oppdraget følger den
 skranken som faktisk binder, så den tåler neste renteendring.
+Tinglysingsgebyrene (545 kr for skjøte og 545 kr for pantedokument) er lest i
+Kartverkets prisliste for 2026 den **17. november 2026**. Budreglene i oppdrag O
+er lest på Lovdata samme dag: eiendomsmeglingsforskriften § 6-3 tredje ledd og
+§ 6-4 annet ledd, og avtaleloven § 7.
 
 | Post | Verdi | Merknad |
 |---|---|---|
@@ -296,7 +305,7 @@ ikke at spilleren regner etter.
 
 ## Testing
 
-Åtte filer, 1062 sjekker. `bash test-alle.sh` kjører alt over `file://`,
+Åtte filer, 1128 sjekker. `bash test-alle.sh` kjører alt over `file://`,
 `bash test-alle.sh --http` starter en lokal server og kjører alt på nytt over HTTP.
 Begge må være grønne: siden serveres over HTTPS i produksjon, og `file://` har sitt
 eget origo-oppsett for `localStorage`.
@@ -306,10 +315,10 @@ eget origo-oppsett for `localStorage`.
 | `test-matte.js` | Finansmotoren mot **uavhengig regnede** fasitverdier: samme svar, andre formler. Måler også at driftkorreksjonen faktisk gjør medianen lik den oppgitte avkastningen — innenfor 0,05 pp, på de tre kombinasjonene spillet bruker — og at `F.nominell` er Fisher og ikke `r + i`. Skatt på ni inntektsnivåer, annuitetsplaner, IRR med gebyr, ASK-uttak, formuesskatt, Fisher, lånerammer, stresstest, diversifiseringsgrense. Sjekker også hver tallpåstand spillet gjør i **tekst**. |
 | `test-verden.js` | At skyggene peker vestover om morgenen og østover om kvelden, er kortest og hardest midt på dagen og nesten borte om natta. At natta er dypere i januar enn i juli. At Jobbsenteret er mørkt kl. 02 og Kasino Fortuna lyser. At alle elleve severdighetene kan nås til fots, står i minst fire bydeler, og at oksen lyser i oppgang og bjørnen i nedgang. At ingen bydel er mer enn 520 px fra en lyktestolpe. At tyngste tegnede ramme er under 4 ms av de 16,7 som finnes. At byen har inflasjon og lønnsvekst, og at ingenting sprekker over førti år. At Fondsbutikken trekker skatten den lover. Bevegelse i seks retninger, at Shift faktisk er raskere, at vegger stopper og dører ikke gjør det, at **alle åtte bydeler kan nås til fots** (bredde-først-søk gjennom spillets egen kollisjon), at hver av de 25 dørene svarer med minst 160 tegn innhold, og at hver figur har minst to dialoglinjer. Og siden juli 2026: at en spiller som *står inne i en vegg* kommer seg ut med tastene, at `start()` aldri setter spillet i gang på et blokkert punkt, og at dialogtelleren teller linjene som er igjen, ikke den du leser. |
 | `sjekk-kort.js` | Alle førti kort er fysisk mulige å plukke opp, ligger inne på kartet, er spredt over bydelene, og plukkes faktisk opp når man går dit. |
-| `test-oppdrag.js` | **Alle fjorten oppdrag spilles gjennom med ekte klikk.** For hvert av dem sjekkes også at et *feil* svar ikke gir seier, og at fasitteksten sier det den skal. Til slutt: at fjorten oppdrag gir nivå 12, og at alt løst pluss alle kort gir INVESTOR. Siden juli 2026 også: at oppdrag J-banen faktisk henter seg inn igjen fire ganger og treffer spillets egen avkastning, at oppdrag N dømmer på medianen av 500 løp og at tabellen går opp krone for krone, at oppdrag H ikke kan klares med flaks og gir de samme fem årene ved omstart, at oppdrag D regner 42 år, at spillerens gjeld spiser av gjeldstaket i oppdrag L, at **ingenting skriver «NaN», «undefined» eller «Infinity»** i noen av de fjorten oppdragene eller de 25 bygningsskjermene, verken for en fersk eller en ferdig spiller; at **ingen oppdrag er løst i det det åpnes** og at ingen (unntatt D, som er ett tall) løses ved å flytte én enkelt skyver; at **ingen bygning tilbyr et oppdrag før kravene er løst**; og at oppdrag C sitt eget regnskap bunner ut der teksten sier at det gjør. |
+| `test-oppdrag.js` | **Alle seksten oppdrag spilles gjennom med ekte klikk.** For hvert av dem sjekkes også at et *feil* svar ikke gir seier, og at fasitteksten sier det den skal. Til slutt: at seksten oppdrag gir nivå 13, og at alt løst pluss alle kort gir INVESTOR. Siden juli 2026 også: at oppdrag J-banen faktisk henter seg inn igjen fire ganger og treffer spillets egen avkastning, at oppdrag N dømmer på medianen av 500 løp og at tabellen går opp krone for krone, at oppdrag H ikke kan klares med flaks og gir de samme fem årene ved omstart, at oppdrag D regner 42 år, at spillerens gjeld spiser av gjeldstaket i oppdrag L, at **ingenting skriver «NaN», «undefined» eller «Infinity»** i noen av de seksten oppdragene eller de 25 bygningsskjermene, verken for en fersk eller en ferdig spiller; at **ingen oppdrag er løst i det det åpnes** og at ingen (unntatt D, som er ett tall) løses ved å flytte én enkelt skyver; at **ingen bygning tilbyr et oppdrag før kravene er løst**; og at oppdrag C sitt eget regnskap bunner ut der teksten sier at det gjør. Fra november 2026: at oppdrag O starter på fella (lån + egenkapital), at verken et bud over grensen eller å gå ut mens neste bud er innenfor gir seier, og at ingen av de tre stegene gir seier alene; og at oppdrag P starter på budet uten fellesgjeld, og at ingen av de tre gale felleskostnadene gir seier. |
 | `test-mobil.js` | Ingen HUD-overlapp på tre skjermstørrelser, ingen flate utenfor skjermen, alle knapper minst 44×44, at styrekorset faktisk flytter spilleren, og at MENY lukker minispillet i stedet for å legge menyen oppå det. |
 | `test-lagring.js` | Fremgang overlever omlasting; 294 kombinasjoner av ødelagt lagring tar ikke ned spillet; nullstilling rydder minne så vel som lagring og skriver ikke tilbake etterpå; lagring skjer på timer. |
-| `test-tilgjengelighet.js` | Kontrast regnet ut fra de **faktiske** fargene i DOM-en, ikke fra CSS-en man tror står der: 22 elementer mot WCGA 2.1 AA. At alle klikkbare elementer i alle fjorten oppdrag kan nås med Tab, at brikkene er ekte knapper, at det finnes en `:focus-visible`-regel, at **hvert statuselement i alle fjorten minispillene bærer symbol OG ord** og ikke bare farge — malt etter at det første valgkortet er trykket, siden fasit-boksen og «feil»-merket ikke finnes før spilleren har svart. Og at **statusfargene faktisk skilles under deuteranopi og protanopi** (Viénot 1999-simulering + CIE76 ΔE på de levende fargene): den gamle grønn/rød-paletten lå på ΔE 19,0 på tekst og 2,7 på flater — praktisk talt samme farge — og oppfylte likevel 4,5:1 hele veien. Kontrast og fargeblindhet er to forskjellige krav. Til slutt at spillet starter med `prefers-reduced-motion`. |
+| `test-tilgjengelighet.js` | Kontrast regnet ut fra de **faktiske** fargene i DOM-en, ikke fra CSS-en man tror står der: 22 elementer mot WCGA 2.1 AA. At alle klikkbare elementer i alle seksten oppdrag kan nås med Tab, at brikkene er ekte knapper, at det finnes en `:focus-visible`-regel, at **hvert statuselement i alle seksten minispillene bærer symbol OG ord** og ikke bare farge — malt etter at det første valgkortet er trykket, siden fasit-boksen og «feil»-merket ikke finnes før spilleren har svart. Og at **statusfargene faktisk skilles under deuteranopi og protanopi** (Viénot 1999-simulering + CIE76 ΔE på de levende fargene): den gamle grønn/rød-paletten lå på ΔE 19,0 på tekst og 2,7 på flater — praktisk talt samme farge — og oppfylte likevel 4,5:1 hele veien. Kontrast og fargeblindhet er to forskjellige krav. Til slutt at spillet starter med `prefers-reduced-motion`. |
 | `test-fps.js` | Fps per bydel med musikk på, i løp, om natta, og med hvert graftunge minispill åpent. Måler også spillets egen rammetid og at et skyvedrag i oppdrag G — som kjører 3 × 1 200 simuleringer — tar under 400 ms. |
 
 ### Fire spillfeil funnet av testene, ikke av øyet
@@ -589,6 +598,17 @@ måneden i førti år, i et spill der oppdrag F handler om at kroner lyver over 
 og oppdrag N regner med 3,2 % lønnsvekst. Nå følger utgiftene KPI og lønna
 lønnsveksten, og både statistikken og banken viser formuen i kroner fra da du
 begynte: etter førti år 7 466 442 kr, som er 2 572 148 kr i startkroner.
+
+### Én funnet av å bygge et nytt oppdrag (2026-11-17)
+
+Oppdrag L og Meglerkontoret kalte lån + egenkapital for «høyeste kjøpesum du kan
+by». Det er det ikke. Dokumentavgiften og tinglysingen betales av egenkapitalen,
+og banken låner ikke til dem. Med 3,2 mill. i lån og 450 000 i egenkapital er det
+høyeste budet 3 559 912 kr, ikke 3 650 000. Raden heter nå «lån + egenkapital, før
+omkostninger», en ny rad viser høyeste bud fra `F.maksBud`, og «Du mangler» i L
+regner med omkostningene. Funnet ble oppdrag O, og oppdrag P tar det samme regnestykket
+med fellesgjeld. Visningsboligen brukte i tillegg
+1 000 kr skrevet inn for «tinglysing og gebyrer»; den leser nå `SATSER`.
 
 ## Om universet
 

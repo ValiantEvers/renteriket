@@ -25,8 +25,8 @@ const OPPDRAG=await p.evaluate(()=>RR.OPPDRAG);
 console.log('\n=== GRUNNTALL ===');
 sant('åtte bydeler', SONER.length===8);
 sant('25 bygninger', BYGG.length===25);
-sant('femten figurer', FOLK.length===15);
-sant('fjorten oppdrag', OPPDRAG.length===14);
+sant('seksten figurer', FOLK.length===16);
+sant('seksten oppdrag', OPPDRAG.length===16);
 sant('alle bygg-id-er er unike', new Set(BYGG.map(b=>b.id)).size===BYGG.length);
 sant('alle oppdrag peker på en bygning som finnes',
   OPPDRAG.every(o=>BYGG.some(b=>b.id===o.bygg)));

@@ -606,6 +606,99 @@ console.log('\n=== KUNNSKAPSKORTENE REGNER TALLENE SELV ===');
       +' kr i '+S.grunnbelopAar));
 }
 
+console.log('\n=== HØYESTE BUD: OMKOSTNINGENE BETALES AV EGENKAPITALEN (OPPDRAG O) ===');
+// F.maksBud løser to ulikheter med en lukket formel. Her finnes svaret ved
+// halvering mot de to kravene slik de står i ord, uten formelen:
+//   1) bud + dokumentavgift + tinglysing ≤ lån + egenkapital
+//   2) lånet som trengs ≤ belåningsgraden × budet
+{
+  const halver=(laan,ek,selveier)=>{
+    const t=S.tinglysingSkjote+S.tinglysingPant, d=selveier?S.dokumentavgift:0;
+    const gaarOpp=b=>{ const behov=b+b*d+t-ek;
+      return b+b*d+t<=laan+ek+1e-6 && behov<=S.belaaningsgrad*b+1e-6; };
+    let lo=0, hi=(laan+ek)*2;
+    for (let i=0;i<200;i++){ const m=(lo+hi)/2; if (gaarOpp(m)) lo=m; else hi=m; }
+    return lo;
+  };
+  er('tinglysing 2026: skjøte + pantedokument = 1 090 kr (Kartverket)',
+     S.tinglysingSkjote+S.tinglysingPant, 1090, 0);
+  const saker=[[3200000,450000,true,'oppdrag O'],[3200000,450000,false,'samme sak, borettslag'],
+               [5000000,300000,true,'egenkapitalkravet binder'],[2280000,300000,true,'oppdrag L ved startlønn']];
+  for (const [laan,ek,sv,navn] of saker){
+    const m=await K(a=>RR.F.maksBud(a[0],a[1],a[2]),[laan,ek,sv]);
+    er('maksBud, '+navn, m.bud, halver(laan,ek,sv), 0.5);
+    const behov=await K(a=>RR.F.laanebehov(a[0],a[1],a[2]),[m.bud,ek,sv]);
+    sant('maksBud går opp for '+navn+': lånet som trengs er innenfor',
+      behov<=laan+0.5 && behov<=S.belaaningsgrad*m.bud+0.5);
+  }
+  const mE=await K(()=>RR.F.maksBud(5000000,300000,true));
+  sant('når lånet er stort, er det egenkapitalkravet som binder', mE.bindende==='egenkapital');
+  // Saken i oppdrag O: 640 000 i inntekt og 450 000 i egenkapital
+  const ram=await K(()=>RR.F.laaneramme(640000,450000));
+  const o=await K(l=>RR.F.maksBud(l,450000,true),ram.laan);
+  console.log('    oppdrag O: lån '+Math.round(ram.laan)+', lån + egenkapital '+Math.round(ram.maksPris)+
+    ', høyeste bud '+Math.round(o.bud)+' ('+o.bindende+')');
+  sant('oppdrag O: høyeste bud er under lån + egenkapital', o.bud<ram.maksPris);
+  er('oppdrag O: forskjellen er nøyaktig dokumentavgift + tinglysing på budet',
+     ram.maksPris-o.bud, o.bud*S.dokumentavgift+S.tinglysingSkjote+S.tinglysingPant, 0.5);
+  // Stigen i budrunden: start 3 300 000, trinn 50 000. Spilleren skal få by minst
+  // én gang, og grensen skal ligge innenfor skyveren (3 000 000–4 000 000, trinn 10 000).
+  sant('oppdrag O: første bud du kan legge inn (3 350 000) er innenfor grensen', 3350000<=o.bud);
+  sant('oppdrag O: grensen ligger innenfor skyveren', o.bud>=3010000 && o.bud<=4000000);
+  sant('oppdrag O: startstillingen (lån + egenkapital) er over grensen',
+    Math.round(ram.maksPris/10000)*10000>o.bud);
+  // Fasiten i O viser hva Bjarnes vinnerbud ville krevd av deg. Vinnerbudet er
+  // Bjarnes siste bud: første trinn i stigen der DITT neste bud er over grensen.
+  let bud=3300000, bjarne=bud;
+  while (bud+50000<=o.bud){ bud+=50000; bud+=50000; bjarne=bud; }
+  const behovB=await K(x=>RR.F.laanebehov(x,450000,true),bjarne);
+  console.log('    Bjarne vinner på '+bjarne+'; med dine tall krever det lån på '+Math.round(behovB));
+  sant('oppdrag O: Bjarnes vinnerbud ville krevd mer enn finansieringsbeviset', behovB>ram.laan);
+}
+
+console.log('\n=== FELLESGJELD: TOTALPRIS OG AVDRAGSFRIHET (OPPDRAG P) ===');
+// maksBud med fellesgjeld, funnet ved halvering mot kravene slik de står i ord:
+//   1) bud + dokumentavgift på totalprisen + tinglysing ≤ lån + egenkapital
+//   2) lånet som trengs + fellesgjelden ≤ belåningsgraden × totalprisen
+// Og felleskostnaden etter avdragsfriheten, regnet som nåverdi-likning i stedet
+// for med terminbeløpsformelen.
+{
+  const halverFG=(laan,ek,selveier,fg)=>{
+    const t=S.tinglysingSkjote+S.tinglysingPant, d=selveier?S.dokumentavgift:0;
+    const gaarOpp=b=>{ const behov=b+(b+fg)*d+t-ek;
+      return behov<=laan+1e-6 && behov+fg<=S.belaaningsgrad*(b+fg)+1e-6; };
+    let lo=0, hi=(laan+ek)*2;
+    for (let i=0;i<200;i++){ const m=(lo+hi)/2; if (gaarOpp(m)) lo=m; else hi=m; }
+    return lo;
+  };
+  const ram=await K(()=>RR.F.laaneramme(640000,450000,undefined,1500000));
+  er('oppdrag P: fellesgjelden spiser gjeldstaket (5 × 640 000 − 1 500 000)', ram.gjeldsgrad, 640000*5-1500000, 0.01);
+  for (const [laan,ek,sv,fg,navn] of [[ram.laan,450000,false,1500000,'oppdrag P (borettslag)'],
+       [ram.laan,450000,true,1500000,'samme sak, selveier med fellesgjeld'],
+       [4000000,300000,false,900000,'egenkapitalkravet binder']]){
+    const m=await K(a=>RR.F.maksBud(a[0],a[1],a[2],a[3]),[laan,ek,sv,fg]);
+    er('maksBud med fellesgjeld, '+navn, m.bud, halverFG(laan,ek,sv,fg), 0.5);
+  }
+  const mP=await K(l=>RR.F.maksBud(l,450000,false,1500000).bud,ram.laan);
+  sant('oppdrag P: høyeste bud er under prisantydningen (2 150 000)', mP<2150000);
+  sant('oppdrag P: totalprisen ved høyeste bud er innenfor 2 000 kr av lån + egenkapital i O',
+    Math.abs(mP+1500000-3650000)<2000);
+  // felleskost: annuiteten T løser T·(1−(1+i)^−n)/i = lån, her funnet ved halvering
+  const i=S.boliglaansrente/12, n=28*12;
+  let lo=0, hi=1500000;
+  for (let k=0;k<200;k++){ const T=(lo+hi)/2; let nv=0, f=1;
+    for (let m=1;m<=n;m++){ f/=1+i; nv+=T*f; }
+    if (nv<1500000) lo=T; else hi=T; }
+  const etter=await K(()=>RR.F.felleskost(3200,1500000,RR.SATSER.boliglaansrente,2,28,2));
+  const naa=await K(()=>RR.F.felleskost(3200,1500000,RR.SATSER.boliglaansrente,2,28,0));
+  er('oppdrag P: felleskost etter avdragsfriheten = drift + annuitet', etter, 3200+(lo+hi)/2, 0.01);
+  er('oppdrag P: felleskost i dag = drift + renter', naa, 3200+1500000*S.boliglaansrente/12, 0.01);
+  er('felleskost ett år før avdragene starter er fortsatt bare renter',
+     await K(()=>RR.F.felleskost(3200,1500000,RR.SATSER.boliglaansrente,2,28,1)), naa, 0.01);
+  sant('oppdrag P: felleskosten stiger når avdragene starter', etter>naa);
+  console.log('    oppdrag P: høyeste bud '+Math.round(mP)+', felleskost '+Math.round(naa)+' → '+Math.round(etter));
+}
+
 console.log('\n=== ROBUSTHET: ingen NaN, ingen Infinity der det ikke skal ===');
 {
   const rare=[0,1,-1,1e12,0.0001];
