@@ -147,12 +147,19 @@ byggesteg. Playwright er kun testavhengighet.
   inn der; når `SATSER` går over til 2027 i januar, gjelder kalenderen fortsatt 2026
   og testen slutter å sammenligne satsene (den sier hvorfor). Ny julekalender for 2027
   er en ny fil, ikke en redigering av denne.
+- **`sw.js` henter fra nettet først, alltid.** Spillet kan installeres og spilles uten nett,
+  men den lagrede kopien skal bare svare når nettet svikter: satsene skifter hver januar, og en
+  «lagret kopi først»-strategi ville latt spillere sitte med fjorårets tall. `cache: 'no-cache'`
+  på hentingen er nødvendig, ikke pynt: uten den holder GitHub Pages' `max-age=600` igjen den nye
+  utgaven (`test-pwa.js` måler det mot en server med samme hoder). Lærermodus registrerer ingen
+  service worker og `?laerer` lagres ikke. Endres `FORHAAND`-lista, bytt `VERSJON`; ved activate
+  slettes bare cacher som begynner på `renteriket-`, fordi evers.no deler origo med andre apper.
 - **Ingen `Co-Authored-By`-trailer i commits. Push aldri uten godkjenning.**
 
 ## Før noe skrives av som ferdig
 
 `bash test-alle.sh` **og** `bash test-alle.sh --http` skal begge være helt grønne:
-ti filer, 1310 sjekker. HTTP-modus er ikke pynt: siden serveres over HTTPS i
+elleve filer, 1349 sjekker. HTTP-modus er ikke pynt: siden serveres over HTTPS i
 produksjon, og `file://` har sitt eget origo-oppsett for `localStorage`.
 
 Legger du til innhold, legg til sjekken som beviser at det virker. Fire spillfeil i

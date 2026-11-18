@@ -6,6 +6,8 @@
 <title>RENTERIKET — spillet som gjør deg til investor</title>
 <meta name="description" content="Et spill som lærer deg privatøkonomi og investering fra null: budsjett, buffer, renters rente, fond, skatt, bolig og svindel, gjennom oppdrag og puslespill.">
 <meta name="theme-color" content="#0d1117">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="ikon-180.png">
 <!-- Inline favicon. Uten en icon-lenke ber nettleseren om /favicon.ico og får 404
      i konsollen ved hver lasting. Data-URI holder spillet på én fil. -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d1117'/%3E%3Cpath d='M16 26V12' stroke='%232fbf7a' stroke-width='3' stroke-linecap='round'/%3E%3Cpath d='M16 17c0-4 3-7 7-7 0 4-3 7-7 7zM16 13c0-3.5-2.6-6-6-6 0 3.5 2.6 6 6 6z' fill='%232fbf7a'/%3E%3C/svg%3E">
@@ -6048,7 +6050,10 @@ function tegnPause(){
       // Ny fane: spillet lagrer hvert sjette sekund, så å forlate fanen kan koste det siste.
       '<br><br><b>Er du lærer?</b> <a href="laerer.html" target="_blank" rel="noopener" id="laererlenke">'+
       'Lærersiden</a> kobler hvert oppdrag til et kompetansemål, har et opplegg for én skoletime '+
-      'og forklarer lærermodus, der alt er åpent og ingenting lagres.')));
+      'og forklarer lærermodus, der alt er åpent og ingenting lagres.'+
+      '<br><br><b>Uten nett:</b> Spillet kan installeres som en app og spilles uten nett når det '+
+      'først er lastet. I Chrome, Edge og på Android: «Installer» i adressefeltet eller menyen. '+
+      'På iPhone og iPad: Del, så «Legg til på Hjem-skjerm».')));
   }
   const av=U.knapp('Tilbake til byen',()=>vekslePause());
   pauseInner.appendChild(U.fot(av));
@@ -6339,6 +6344,12 @@ window.RR={
   antallOppdrag:OPPDRAG.length, antallKort:KORT.length, antallBygg:BYGG.length,
   START_POS
 };
+
+// Uten nett (idé 77, sw.js): service workeren registreres bare over http(s), og aldri i
+// lærermodus, som ikke skal etterlate noe i nettleseren.
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol) && !LAERER) {
+  addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+}
 </script>
 </body>
 </html>
