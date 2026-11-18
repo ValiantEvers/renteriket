@@ -34,7 +34,7 @@ if [ "${1:-}" = "--http" ]; then
   printf 'kjører mot %s\n' "$RR_URL"
 fi
 for t in test-matte.js test-verden.js sjekk-kort.js test-oppdrag.js \
-         test-mobil.js test-tilgjengelighet.js test-lagring.js test-laerer.js test-fps.js; do
+         test-mobil.js test-tilgjengelighet.js test-lagring.js test-laerer.js test-jul.js test-fps.js; do
   printf '\n\033[1m════ %s ════\033[0m\n' "$t"
   if node "$t"; then :; else FEIL=$((FEIL+1)); fi
 done

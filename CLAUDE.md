@@ -141,12 +141,18 @@ byggesteg. Playwright er kun testavhengighet.
   oppdatert: ny rad i tabellen, tallordet («seksten») og kompetansemål sitert ordrett fra
   Udir. Kompetansemålene kan ikke sjekkes uten nett; les dem hos Udir og oppdater datoen i
   bunnteksten.
+- **`julekalender.html` siterer spillet og regner med satsene for 2026.** Får et kort
+  i kalenderen ny tittel eller flytter til en annen bydel, feller `test-jul.js` til
+  luka er oppdatert. Fasiten regnes ut på nytt i testen med satsene for 2026 skrevet
+  inn der; når `SATSER` går over til 2027 i januar, gjelder kalenderen fortsatt 2026
+  og testen slutter å sammenligne satsene (den sier hvorfor). Ny julekalender for 2027
+  er en ny fil, ikke en redigering av denne.
 - **Ingen `Co-Authored-By`-trailer i commits. Push aldri uten godkjenning.**
 
 ## Før noe skrives av som ferdig
 
 `bash test-alle.sh` **og** `bash test-alle.sh --http` skal begge være helt grønne:
-ni filer, 1213 sjekker. HTTP-modus er ikke pynt: siden serveres over HTTPS i
+ti filer, 1310 sjekker. HTTP-modus er ikke pynt: siden serveres over HTTPS i
 produksjon, og `file://` har sitt eget origo-oppsett for `localStorage`.
 
 Legger du til innhold, legg til sjekken som beviser at det virker. Fire spillfeil i

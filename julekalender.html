@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Renterikets julekalender</title>
+<meta name="description" content="24 bankbokser i hvelvet i Renteriket. Én åpner seg hver morgen fram til julaften, med et kunnskapskort fra spillet og en oppgave om privatøkonomi.">
+<link rel="canonical" href="https://www.evers.no/renteriket/julekalender.html">
+<meta property="og:title" content="Renterikets julekalender">
+<meta property="og:description" content="24 bankbokser, én oppgave om privatøkonomi hver morgen fram til julaften.">
+<meta property="og:url" content="https://www.evers.no/renteriket/julekalender.html">
+<meta name="theme-color" content="#0d1117">
+<style>
+/* Hvelvet: en vegg av bankbokser i stål, messingskilt med nummer. Spillets mørke
+   palett, messing som eneste aksent. Status bæres av tekst og form (nøkkelhull mot
+   håndtak, «LÅST» mot «ÅPNE»), aldri av farge alene: eieren er rød-grønn fargeblind. */
+:root{
+  --ink:#0d1117; --ink2:#151d27; --staal:#1b2430; --staal2:#232e3b; --kant:#334152;
+  --tekst:#e9eef4; --dim:#9aa8b8; --messing:#d9b45a; --messing2:#a8873a; --fokus:#7cc7ff;
+  --serif:'Iowan Old Style','Palatino Linotype','Book Antiqua',Palatino,Georgia,serif;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html{background:var(--ink);color:var(--tekst);font-family:var(--sans);font-size:17px;line-height:1.55}
+body{margin:0 auto;max-width:980px;padding:44px 22px 70px}
+a{color:var(--messing);text-underline-offset:3px}
+a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var(--fokus);outline-offset:3px}
+
+header{display:grid;grid-template-columns:1fr auto;gap:8px 28px;align-items:end;margin-bottom:30px}
+.over{grid-column:1/-1;margin:0;font-size:12px;font-weight:800;letter-spacing:2.4px;color:var(--messing)}
+h1{margin:0;font-family:var(--serif);font-weight:700;font-size:clamp(34px,6.4vw,62px);line-height:1;letter-spacing:-1px}
+.ingress{grid-column:1;margin:6px 0 0;max-width:34em;color:var(--dim)}
+#status{grid-column:2;grid-row:2/4;margin:0;max-width:15em;text-align:right;font-family:var(--serif);
+  font-size:19px;line-height:1.35;color:var(--tekst)}
+#status b{color:var(--messing);font-weight:700}
+
+/* Veggen: seks kolonner, noen bokser dobbelt så store. Rekkefølgen i DOM-en er
+   rekkefølgen på veggen, så Tab går slik øyet leser, uten «dense»-pakking. */
+.hvelv{position:relative;display:grid;grid-template-columns:repeat(6,1fr);grid-auto-rows:118px;gap:10px;
+  padding:14px;border-radius:6px;background:
+  radial-gradient(circle at 9px 9px,#5d6a78 0 2.5px,transparent 3.5px) 0 0/100% 100% no-repeat,
+  radial-gradient(circle at calc(100% - 9px) 9px,#5d6a78 0 2.5px,transparent 3.5px) 0 0/100% 100% no-repeat,
+  radial-gradient(circle at 9px calc(100% - 9px),#5d6a78 0 2.5px,transparent 3.5px) 0 0/100% 100% no-repeat,
+  radial-gradient(circle at calc(100% - 9px) calc(100% - 9px),#5d6a78 0 2.5px,transparent 3.5px) 0 0/100% 100% no-repeat,
+  linear-gradient(#10161e,#0b1016);border:1px solid var(--kant);box-shadow:inset 0 2px 18px #0008}
+.b2{grid-column:span 2} .h2{grid-row:span 2} .s2{grid-column:span 2;grid-row:span 2}
+
+.boks{position:relative;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;
+  padding:10px 11px 9px;border:1px solid var(--kant);border-radius:4px;color:var(--tekst);
+  font:inherit;text-align:left;cursor:pointer;
+  background:repeating-linear-gradient(90deg,#ffffff05 0 1px,transparent 1px 3px),
+             linear-gradient(160deg,var(--staal2),var(--staal));
+  box-shadow:inset 0 1px 0 #ffffff12,inset 0 -2px 0 #0006;
+  transition:transform .18s ease,box-shadow .18s ease}
+.skilt{display:inline-block;min-width:38px;padding:1px 8px 2px;border-radius:3px;text-align:center;
+  font-family:var(--serif);font-weight:700;font-size:21px;font-variant-numeric:lining-nums tabular-nums;
+  color:#1a1408;background:linear-gradient(180deg,#ecd08a,var(--messing) 55%,var(--messing2));
+  box-shadow:0 1px 0 #0008,inset 0 1px 0 #fff6}
+.s2 .skilt{font-size:42px;min-width:70px;padding:2px 12px 4px}
+.merke{font-size:11.5px;font-weight:800;letter-spacing:1.3px;color:var(--dim)}
+/* Nøkkelhull (låst) og håndtak (åpen): formen sier det fargen ikke skal måtte si. */
+.boks::after{content:'';position:absolute;right:13px;top:50%;transform:translateY(-50%)}
+.laast::after{width:12px;height:18px;
+  background:radial-gradient(circle at 50% 5px,#06090d 0 4.5px,transparent 5px),
+             linear-gradient(#06090d,#06090d) 50% 100%/4px 11px no-repeat}
+.aapen::after{width:7px;height:30px;border-radius:4px;background:linear-gradient(90deg,#8d99a6,#cfd7df,#8d99a6);
+  box-shadow:0 1px 2px #0009}
+.aapen .merke{color:var(--tekst)}
+.aapen:hover{transform:translateY(-2px);box-shadow:inset 0 1px 0 #ffffff1c,0 6px 14px #0008}
+.laast{cursor:default}
+.idag{border-color:var(--messing);box-shadow:inset 0 0 0 1px var(--messing),0 0 0 3px #d9b45a33}
+.idag .merke{color:var(--messing)}
+/* Luke 24 er hvelvdøra: en kodelås-skive midt på. Ringen av streker er skalaen,
+   navet over den dekker midten. Ren dekor, aria-hidden via pseudo-element. */
+.s2::before{content:'';position:absolute;left:50%;top:54%;width:108px;height:108px;border-radius:50%;
+  transform:translate(-50%,-50%);
+  background:radial-gradient(circle,#3a4757 0 9%,#232e3b 10% 33%,#11171f 34% 37%,transparent 38%),
+    repeating-conic-gradient(from -2deg,#7d8a98 0 2.5deg,transparent 2.5deg 15deg),
+    radial-gradient(circle,#1d2632 0 64%,#0c1117 66% 100%);
+  box-shadow:inset 0 0 0 4px #3a4757,inset 0 0 0 5px #0008,0 3px 8px #0009}
+
+/* Døra går opp før kortet vises. Én bevegelse, og ingen for dem som har slått den av. */
+.hvelv{perspective:900px}
+.boks.gaar-opp{transform-origin:left center;transform:rotateY(-24deg);transition:transform .22s ease-in}
+@media (prefers-reduced-motion:reduce){.boks,.boks.gaar-opp{transition:none;transform:none}}
+
+#melding{min-height:1.6em;margin:12px 2px 0;color:var(--dim);font-size:15px}
+
+dialog{width:min(560px,calc(100% - 28px));max-height:calc(100% - 28px);overflow:auto;padding:24px 24px 20px;
+  border:1px solid var(--kant);border-radius:10px;color:var(--tekst);background:var(--ink2);box-shadow:0 24px 60px #000c}
+dialog::backdrop{background:#05080bcc}
+@media (prefers-reduced-motion:no-preference){dialog[open]{animation:inn .2s ease-out}
+  @keyframes inn{from{opacity:0;transform:translateY(10px) scale(.98)}}}
+.lukk{position:absolute;top:10px;right:10px;width:38px;height:38px;border:1px solid var(--kant);border-radius:6px;
+  background:transparent;color:var(--tekst);font-size:18px;cursor:pointer}
+.lkode{margin:0 44px 4px 0;font-size:12px;font-weight:800;letter-spacing:2px;color:var(--messing)}
+dialog h2{margin:0 44px 6px 0;font-family:var(--serif);font-size:26px;line-height:1.2}
+.kilde{margin:0 0 18px;font-size:14px;color:var(--dim)}
+dialog h3{margin:0 0 4px;font-size:12px;letter-spacing:1.6px;color:var(--dim)}
+.oppg{margin:0 0 16px}
+details{border-top:1px solid var(--kant);padding-top:12px}
+summary{cursor:pointer;font-weight:800;color:var(--messing);width:max-content;max-width:100%}
+.svar{margin:10px 0 6px;font-size:19px;font-family:var(--serif)}
+.forkl{margin:0;color:#c3ceda;font-size:15.5px}
+.tilspill{margin:18px 0 0;font-size:15px}
+
+footer{margin-top:38px;padding-top:16px;border-top:1px solid var(--kant);color:var(--dim);font-size:14.5px}
+footer p{margin:0 0 8px;max-width:46em}
+
+@media (max-width:620px){
+  body{padding:28px 14px 56px}
+  header{grid-template-columns:1fr}
+  #status{grid-column:1;grid-row:auto;text-align:left;max-width:none;margin-top:10px}
+  .hvelv{grid-template-columns:repeat(4,1fr);grid-auto-rows:92px;gap:7px;padding:10px}
+  .boks{padding:7px 7px 6px}
+  .skilt{font-size:18px;min-width:32px;padding:0 6px 1px}
+  .s2 .skilt{font-size:34px;min-width:56px}
+  .merke{font-size:10px;letter-spacing:.6px}
+  .boks::after{right:8px}
+  .mdato{display:none}
+  .s2::before{width:66px;height:66px}
+}
+</style>
+</head>
+<body>
+<header>
+  <p class="over">RENTERIKET · DESEMBER 2026</p>
+  <h1>Julekalenderen</h1>
+  <p class="ingress">24 bankbokser i hvelvet i Bankgata. Én åpner seg hver morgen fram til julaften,
+  med et kunnskapskort fra spillet og en oppgave du kan regne på før du ser svaret.</p>
+  <p id="status" aria-live="polite"></p>
+</header>
+
+<main>
+  <noscript><p>Julekalenderen trenger JavaScript for å vite hvilken dag det er.</p></noscript>
+  <div class="hvelv" id="hvelv"></div>
+  <p id="melding" role="status"></p>
+</main>
+
+<dialog id="luke" aria-labelledby="ltit">
+  <form method="dialog"><button class="lukk" aria-label="Lukk luka">✕</button></form>
+  <p class="lkode" id="lkode"></p>
+  <h2 id="ltit"></h2>
+  <p class="kilde" id="lkilde"></p>
+  <h3>OPPGAVE</h3>
+  <p class="oppg" id="loppg"></p>
+  <details id="ldet">
+    <summary>Vis svaret</summary>
+    <p class="svar" id="lsvar"></p>
+    <p class="forkl" id="lforkl"></p>
+  </details>
+  <p class="tilspill"><a href="/renteriket/">Finn kortet i spillet →</a></p>
+</dialog>
+
+<footer>
+  <p>Tallene er norske satser for 2026, de samme som i spillet, og hver fasit regnes ut på nytt av
+  en automatisk sjekk. Dette er læring, ikke finansiell rådgivning.</p>
+  <p>Ida, Jonas og besteforeldrene er oppdiktet. <a href="/renteriket/">Til spillet</a></p>
+</footer>
+
+<script>
+'use strict';
+// Kortnavnene står slik spillet skriver dem, og test-jul.js leser dem mot spillet.
+// Fasiten regnes ut på nytt i test-jul.js med egne formler, så et tall her som
+// ikke stemmer, feller pakka.
+const LUKER = [
+ {d:1, kort:1, tittel:'Brutto er ikke ditt', bydel:'Startgata',
+  oppgave:'Du får jobb med 500 000 kr i årslønn. Omtrent hvor mye betaler du i skatt i 2026, og hvor mye får du utbetalt i måneden?',
+  svar:'Rundt 110 600 kr i skatt, og rundt 32 450 kr i måneden.',
+  forkl:'Skatten er 22 % av det som er igjen av lønna etter minstefradraget og personfradraget, pluss trinnskatt og 7,6 % trygdeavgift av hele lønna. Budsjetter alltid med det som kommer inn på kontoen.'},
+ {d:2, kort:3, tittel:'Frikortgrensen er 100 000 kr', bydel:'Startgata',
+  oppgave:'Du har sommerjobb og tjener 90 000 kr i 2026. Hvor mye skatt betaler du?',
+  svar:'0 kr.',
+  forkl:'Minstefradraget (46 % av lønna) og personfradraget (114 540 kr) er til sammen større enn lønna, og trygdeavgift betaler du først over 99 650 kr. Med frikort trekker arbeidsgiveren ingen skatt så lenge du er under 100 000 kr.'},
+ {d:3, kort:5, tittel:'Marginalskatten er tallet som betyr noe', bydel:'Startgata',
+  oppgave:'Du tjener 600 000 kr og får 10 000 kr i lønnstillegg. Hvor mye av tillegget får du beholde?',
+  svar:'6 640 kr.',
+  forkl:'Marginalskatten på 600 000 kr er 33,6 %: 22 % skatt på alminnelig inntekt, 4 % trinnskatt og 7,6 % trygdeavgift. Snittskatten din er lavere, men det er marginalskatten som avgjør hva tillegget er verdt.'},
+ {d:4, kort:4, tittel:'Bufferen er ikke en investering', bydel:'Startgata',
+  oppgave:'De faste utgiftene dine er 18 000 kr i måneden. Hvor stor bør bufferen være, og hvor bør den stå?',
+  svar:'54 000 kr, på en vanlig sparekonto.',
+  forkl:'Tre måneders faste utgifter. Bufferen skal være kjedelig og kunne hentes samme dag, så den hører ikke hjemme i fond som kan ha falt akkurat den uka du trenger dem.'},
+ {d:5, kort:6, tittel:'Renters rente er ikke lineær', bydel:'Bankgata',
+  oppgave:'Du sparer 1 000 kr i måneden i 40 år, og pengene vokser med 5 % i året. Hvor mye har du satt inn, og hvor mye har du til slutt?',
+  svar:'Du har satt inn 480 000 kr og har rundt 1,48 millioner.',
+  forkl:'Etter 10 år har du rundt 154 000 kr. Fire ganger så lang tid gir nesten ti ganger så mye, fordi avkastningen også gir avkastning.'},
+ {d:6, kort:7, tittel:'Nominell rente lyver', bydel:'Bankgata',
+  oppgave:'Et forbrukslån koster 1 % rente i måneden. Hva er den effektive årsrenten?',
+  svar:'12,68 %, ikke 12 %.',
+  forkl:'Renten legges til hver måned, og måneden etter betaler du rente på renten: 1,01 opphøyd i 12 er 1,1268. Gebyrer kommer i tillegg, og derfor kan et lån med 12 % nominell rente ha 15 % effektiv.'},
+ {d:7, kort:28, tittel:'Et fall på 50 % krever 100 % opp', bydel:'Rentetorget',
+  oppgave:'Fondet ditt faller 40 %. Hvor mye må det stige for å komme tilbake dit det var?',
+  svar:'66,7 %.',
+  forkl:'Fra 100 til 60 er et fall på 40. Fra 60 tilbake til 100 er en økning på 40 av 60, altså to tredjedeler. Tap og gevinst er ikke symmetriske, og derfor er det viktigst å unngå de store tapene.'},
+ {d:8, kort:27, tittel:'Fisher, ikke fratrekk', bydel:'Rentetorget',
+  oppgave:'Sparekontoen gir 4 % rente, og prisene stiger 3 %. Hva er realrenten?',
+  svar:'0,97 %.',
+  forkl:'1,04 delt på 1,03 er 1,0097. Å trekke 3 fra 4 gir 1 %, og feilen vokser jo høyere tallene er. Skatten på renten er ikke regnet med ennå, og den gjør det verre.'},
+ {d:9, kort:8, tittel:'Rentefradraget er 22 %', bydel:'Bankgata',
+  oppgave:'Du betaler 60 000 kr i renter på boliglånet i 2026. Hvor mye lavere blir skatten?',
+  svar:'13 200 kr.',
+  forkl:'Renter trekkes fra i alminnelig inntekt, som beskattes med 22 %. Av hver rentekrone betaler du altså 78 øre selv.'},
+ {d:10, kort:9, tittel:'BSU: 2 750 kr i året', bydel:'Bankgata',
+  oppgave:'Du er 25 år og setter 27 500 kr inn på BSU i 2026. Hvor mye lavere blir skatten?',
+  svar:'2 750 kr.',
+  forkl:'Du får 10 % i fradrag av inntil 27 500 kr i året, og du kan spare høyst 300 000 kr totalt. Pengene må stå på kontoen innen 31. desember for å telle for 2026, og ordningen gjelder til og med året du fyller 33.'},
+ {d:11, kort:11, tittel:'Egenkapitalkravet er 10 %', bydel:'Boligfeltet',
+  oppgave:'Du vil kjøpe en selveierleilighet til 4 000 000 kr. Hvor mye må du ha selv?',
+  svar:'501 090 kr.',
+  forkl:'Banken krever 10 % egenkapital: 400 000 kr. I tillegg kommer dokumentavgift på 2,5 % (100 000 kr) og tinglysing av skjøte og pantedokument (545 kr hver), og de må betales med egne penger.'},
+ {d:12, kort:14, tittel:'Fellesgjeld er din gjeld', bydel:'Boligfeltet',
+  oppgave:'En borettslagsleilighet har prisantydning 2 800 000 kr og 900 000 kr i fellesgjeld. Hva er totalprisen, og hvor mye egenkapital trenger du?',
+  svar:'Totalprisen er 3 700 000 kr. Du trenger 371 090 kr.',
+  forkl:'Banken regner fellesgjelden med: lånet ditt og fellesgjelden kan til sammen være høyst 90 % av totalprisen. Det gir 10 % av 3,7 millioner, pluss tinglysing (1 090 kr). Borettslag har ingen dokumentavgift.'},
+ {d:13, kort:13, tittel:'Dokumentavgift: 2,5 %', bydel:'Boligfeltet',
+  oppgave:'Hva koster dokumentavgiften på en selveierleilighet til 5 000 000 kr, og på en borettslagsleilighet til samme pris?',
+  svar:'125 000 kr på selveierleiligheten, 0 kr på borettslagsleiligheten.',
+  forkl:'Dokumentavgiften er 2,5 % av markedsverdien når skjøtet tinglyses. En borettslagsandel har ikke skjøte og er utenfor ordningen.'},
+ {d:14, kort:16, tittel:'Aksjeskatten er 37,84 %', bydel:'Skattekvartalet',
+  oppgave:'Du selger aksjefond utenfor aksjesparekonto med 20 000 kr i gevinst. Hvor mye skatt betaler du, før skjermingsfradraget?',
+  svar:'7 568 kr.',
+  forkl:'Gevinsten ganges med 1,72 og beskattes med 22 %. Det blir 37,84 %. Skjermingsfradraget trekker fra en risikofri del av avkastningen, så den faktiske skatten blir litt lavere.'},
+ {d:15, kort:18, tittel:'ASK utsetter, den fritar ikke', bydel:'Skattekvartalet',
+  oppgave:'Inne på aksjesparekontoen selger du et fond med 20 000 kr i gevinst og kjøper et annet. Hvor mye skatt betaler du nå?',
+  svar:'0 kr.',
+  forkl:'Bytter inne på kontoen gir ingen skatt. Tar du ut penger senere, regnes uttaket først som tilbakebetaling av det du har satt inn. Skatten kommer når du tar ut mer enn du har satt inn.'},
+ {d:16, kort:20, tittel:'IPS: 25 000 kr i 2026', bydel:'Skattekvartalet',
+  oppgave:'Du setter 25 000 kr inn på IPS i 2026. Hvor mye lavere blir skatten?',
+  svar:'5 500 kr.',
+  forkl:'Innskuddet trekkes fra i alminnelig inntekt (22 %). Pengene er låst til du er 62, og utbetalingene beskattes med 22 % igjen. Fordelen er at pengene vokser uten skatt og uten formuesskatt underveis.'},
+ {d:17, kort:21, tittel:'18,1 prosent, hver måned', bydel:'Pensjonshøyden',
+  oppgave:'Du tjener 550 000 kr i 2026. Hvor mye legges til pensjonsbeholdningen din i folketrygden?',
+  svar:'99 550 kr.',
+  forkl:'18,1 % av inntekten, opp til 7,1 ganger gjennomsnittlig grunnbeløp (954 375 kr i 2026). Over det taket tjener du ikke opp mer.'},
+ {d:18, kort:22, tittel:'Arbeidsgiver må spare minst 2 %', bydel:'Pensjonshøyden',
+  oppgave:'Du tjener 550 000 kr, og arbeidsgiveren sparer minstekravet til tjenestepensjon. Hvor mye er det i året?',
+  svar:'11 000 kr.',
+  forkl:'Minst 2 % av lønna, fra første krone. Mange arbeidsgivere sparer mer, så sjekk hva din faktisk gjør.'},
+ {d:19, kort:24, tittel:'Tid er den eneste innsatsfaktoren du ikke kan kjøpe', bydel:'Pensjonshøyden',
+  oppgave:'Ida begynner å spare 1 000 kr i måneden når hun er 25, Jonas når han er 35. Begge sparer til de er 67, og pengene vokser med 7 % i året. Hvor mye har hver av dem?',
+  svar:'Ida har rundt 2,86 millioner, Jonas rundt 1,36 millioner.',
+  forkl:'Ida har satt inn 120 000 kr mer enn Jonas, men har over dobbelt så mye. De første årene gjør mest arbeid, fordi de får lengst tid til å vokse.'},
+ {d:20, kort:33, tittel:'Ett prosentpoeng i gebyr koster nesten en femtedel', bydel:'Børstorget',
+  oppgave:'Du sparer 30 000 kr i året i 30 år, og fondet går 7 % i året før kostnader. Indeksfondet koster 0,25 % i året, det aktive fondet 1,3 %. Hvor mye mer har du med indeksfondet?',
+  svar:'Rundt 514 000 kr mer: 2,89 millioner mot 2,38 millioner.',
+  forkl:'Gebyret trekkes hvert år, også av avkastningen fra årene før. Litt over ett prosentpoeng spiser 17,8 % av sluttbeløpet, og gebyret er det eneste du vet sikkert på forhånd.'},
+ {d:21, kort:37, tittel:'Banken ber deg aldri flytte penger', bydel:'Bakgata',
+  oppgave:'Telefonen ringer: «Hei, dette er banken. Kontoen din er utsatt for svindel, og du må flytte pengene til en trygg konto nå.» Hva gjør du?',
+  svar:'Legg på.',
+  forkl:'Banken ber deg aldri flytte penger, og det gjør ikke politiet heller. Ring banken selv, på nummeret som står på kortet eller nettsiden, ikke nummeret som ringte deg.'},
+ {d:22, kort:39, tittel:'Uoppfordret + pågående + hastverk', bydel:'Bakgata',
+  oppgave:'En du ikke kjenner skriver til deg om en kryptoplattform som gir 3 % i uka, og tilbudet gjelder bare i dag. Hvor mye blir 3 % i uka på ett år, og hva er galt?',
+  svar:'Rundt 365 % i året. Og alle tre kjennetegnene er der: uoppfordret, pågående og hastverk.',
+  forkl:'1,03 opphøyd i 52 er 4,65. Ingen lovlig investering lover noe i nærheten. Sjekk Finanstilsynets virksomhetsregister før du sender en krone, og står de ikke der, er svaret nei.'},
+ {d:23, kort:31, tittel:'Globale aksjer: ca. 5 % realt', bydel:'Børstorget',
+  oppgave:'Du setter 100 000 kr i et globalt indeksfond og lar dem stå i 30 år. Globale aksjer har gitt 5,2 % i året etter inflasjon fra 1900 til 2024. Hva er pengene verdt i dagens kroner, hvis det fortsetter?',
+  svar:'Rundt 458 000 kr.',
+  forkl:'1,052 opphøyd i 30 er 4,58. Det er et snitt over 125 år med kriger og krakk, og enkelte tiår har gitt null eller mindre. Bruk tallet til å forstå mekanikken, ikke til å spå.'},
+ {d:24, kort:35, tittel:'Tid i markedet, ikke timing av det', bydel:'Børstorget',
+  oppgave:'Besteforeldrene gir barnebarnet 1 000 kr i et globalt indeksfond hver jul, fra den første julen til den siste før 18-årsdagen: 18 gaver. Med 5,2 % i året etter inflasjon, hva er gavene verdt på 18-årsdagen, i dagens kroner?',
+  svar:'Rundt 30 150 kr, for 18 000 kr i gaver.',
+  forkl:'Den første tusenlappen har stått i 18 år og er blitt til rundt 2 490 kr. Ingen timing, bare tid. God jul!'}
+];
+
+// Rekkefølgen på veggen (spredt, som på en julekalender) og hvilke bokser som er store.
+const VEGG = [13,4,24,9,1, 20,7,12, 17,5,22,10,15,3, 11,18,6,23, 2,14,19,8,16,21];
+const STOR = {24:'s2', 1:'', 12:'b2', 18:'b2', 17:'h2'};
+const MND = 'desember';
+
+// Dagens dato i Norge, uansett hvor nettleseren tror den er. 'sv-SE' gir ÅÅÅÅ-MM-DD.
+function iDag(){
+  return new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Oslo',year:'numeric',month:'2-digit',day:'2-digit'})
+    .format(new Date());
+}
+const datoFor = d => '2026-12-' + String(d).padStart(2,'0');
+const erAapen = (d, idag) => idag >= datoFor(d);
+// Mellomrom i tall og foran «kr» og «%» blir hardt, så tallene ikke brekkes over to linjer.
+const hardt = s => s.replace(/(\d) (?=\d{3}\b)/g,'$1 ').replace(/(\d) (kr|%|millioner)/g,'$1 $2');
+
+function dagerMellom(a, b){ return Math.round((Date.parse(b) - Date.parse(a)) / 864e5); }
+
+function tegnStatus(idag){
+  const s = document.getElementById('status');
+  if (idag < '2026-12-01'){
+    const n = dagerMellom(idag, '2026-12-01');
+    s.innerHTML = 'Hvelvet åpner <b>1. desember</b>, ' + (n === 1 ? 'i morgen.' : 'om ' + n + ' dager.');
+  } else if (idag <= '2026-12-23'){
+    const d = +idag.slice(8);
+    s.innerHTML = 'I dag er det <b>' + d + '. desember</b>. ' + (d === 1 ? 'Luke 1 er åpen.' : 'Luke 1 til ' + d + ' er åpne.');
+  } else if (idag === '2026-12-24'){
+    s.innerHTML = '<b>Julaften.</b> Alle 24 luker er åpne. God jul!';
+  } else if (idag < '2027-01-01'){
+    s.innerHTML = 'Alle 24 luker er åpne. <b>God jul!</b>';
+  } else {
+    s.innerHTML = 'Julekalenderen fra 2026. Alle luker er åpne, og tallene gjelder <b>2026</b>.';
+  }
+}
+
+function tegnVegg(){
+  const idag = iDag(), hvelv = document.getElementById('hvelv');
+  tegnStatus(idag);
+  hvelv.textContent = '';
+  for (const d of VEGG){
+    const aapen = erAapen(d, idag), dagen = idag === datoFor(d);
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'boks ' + (aapen ? 'aapen' : 'laast') + (dagen ? ' idag' : '') + (STOR[d] ? ' ' + STOR[d] : '');
+    b.dataset.dag = d;
+    const merke = aapen ? (dagen ? 'I DAG · ÅPNE' : 'ÅPNE') : 'LÅST<span class="mdato"> · ' + d + '. DES.</span>';
+    b.innerHTML = '<span class="skilt">' + d + '</span><span class="merke">' + merke + '</span>';
+    b.setAttribute('aria-label', 'Luke ' + d + (aapen ? (dagen ? ', dagens luke, åpne' : ', åpne') : ', låst til ' + d + '. ' + MND));
+    if (!aapen) b.setAttribute('aria-disabled', 'true');
+    b.addEventListener('click', () => trykk(b, d));
+    hvelv.appendChild(b);
+  }
+}
+
+function trykk(b, d){
+  const melding = document.getElementById('melding');
+  // Datoen sjekkes på nytt ved klikket: siden kan ha stått åpen over midnatt.
+  if (!erAapen(d, iDag())){
+    melding.textContent = 'Luke ' + d + ' åpner ' + d + '. ' + MND + '.';
+    return;
+  }
+  melding.textContent = '';
+  const l = LUKER.find(x => x.d === d);
+  document.getElementById('lkode').textContent = 'LUKE ' + d + ' · ' + d + '. ' + MND.toUpperCase();
+  document.getElementById('ltit').textContent = l.tittel;
+  document.getElementById('lkilde').textContent = 'Kunnskapskort ' + l.kort + ' i Renteriket, i ' + l.bydel + '.';
+  document.getElementById('loppg').textContent = hardt(l.oppgave);
+  document.getElementById('lsvar').textContent = hardt(l.svar);
+  document.getElementById('lforkl').textContent = hardt(l.forkl);
+  document.getElementById('ldet').open = false;
+  const dlg = document.getElementById('luke');
+  const vis = () => { b.classList.remove('gaar-opp'); dlg.showModal(); };
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) vis();
+  else { b.classList.add('gaar-opp'); setTimeout(vis, 220); }
+}
+
+tegnVegg();
+// Står siden åpen over midnatt, skal neste luke åpne seg uten at noen laster på nytt.
+setInterval(() => { if (document.getElementById('status').dataset.dag !== iDag()){
+  document.getElementById('status').dataset.dag = iDag(); tegnVegg(); } }, 60000);
+document.getElementById('status').dataset.dag = iDag();
+</script>
+</body>
+</html>

@@ -321,9 +321,23 @@ overskrive elevens fremgang og heller ikke starte midt i den. Merkelappen LÆRER
 står i HUD-en på skrivebord og over MENY-knappen på berøringsskjerm: på 360 px med gjeld
 synlig er HUD-en tre rader høy, og der havnet den oppå oppdragsboksen.
 
+## Julekalenderen
+
+`julekalender.html` (evers.no/renteriket/julekalender.html) er sesongvare for desember
+2026: 24 bankbokser i hvelvet i Bankgata, én luke hver morgen fram til julaften. Hver luke
+er et kunnskapskort fra spillet og en oppgave med fasit bak «Vis svaret». Lukene åpner
+etter **norsk** dato (`Europe/Oslo`), uansett hvilken tidssone maskinen står i, og en side
+som står åpen over midnatt åpner neste luke av seg selv. Etter nyttår er alle åpne, og
+siden sier at tallene gjelder 2026. Ingenting lagres, og ingenting sendes.
+
+Status bæres av tekst og form, ikke av farge: en låst boks har nøkkelhull og «LÅST · 5.
+DES.», en åpen har håndtak og «ÅPNE», og dagens luke sier «I DAG». Fasiten regnes ut på
+nytt av `test-jul.js` med egne formler og satsene for 2026 skrevet inn i testen; så lenge
+spillet står på 2026, sjekkes det i tillegg at satsene er like spillets.
+
 ## Testing
 
-Ni filer, 1213 sjekker. `bash test-alle.sh` kjører alt over `file://`,
+Ti filer, 1310 sjekker. `bash test-alle.sh` kjører alt over `file://`,
 `bash test-alle.sh --http` starter en lokal server og kjører alt på nytt over HTTP.
 Begge må være grønne: siden serveres over HTTPS i produksjon, og `file://` har sitt
 eget origo-oppsett for `localStorage`.
@@ -338,6 +352,7 @@ eget origo-oppsett for `localStorage`.
 | `test-lagring.js` | Fremgang overlever omlasting; 294 kombinasjoner av ødelagt lagring tar ikke ned spillet; nullstilling rydder minne så vel som lagring og skriver ikke tilbake etterpå; lagring skjer på timer. |
 | `test-laerer.js` | At lærersiden følger spillet: én rad per oppdrag i spillets rekkefølge og med spillets navn, riktig tallord for antall oppdrag, at hvert tall i fasiten regnes ut på nytt, at siden ikke har skript eller eksterne ressurser og bare lenker ut til Udir, og at lenken til lærermodus bruker parameteren spillet leser. At lærermodus **verken leser eller skriver** elevens lagring (localStorage er byte-likt før og etter en økt der oppdrag løses og «nullstill» trykkes), at alle seksten åpnes med et ekte klikk på Åpne og menyen lukker seg, at vanlig modus låser som før, og at merkelappen ikke overlapper noe på 390×844 og 360×640, også med gjeld synlig. At lenken «Er du lærer?» står i «Om spillet», peker på `laerer.html`, åpner i ny fane med et ekte klikk mens spillet blir stående, er understreket, har minst 4,5:1 mot kortet, nås med Tab og får fokusringen. Fjorten mutanter felt (17.11.2026), og seks til på lenken (18.11.2026). |
 | `test-tilgjengelighet.js` | Kontrast regnet ut fra de **faktiske** fargene i DOM-en, ikke fra CSS-en man tror står der: 22 elementer mot WCGA 2.1 AA. At alle klikkbare elementer i alle seksten oppdrag kan nås med Tab, at brikkene er ekte knapper, at det finnes en `:focus-visible`-regel, at **hvert statuselement i alle seksten minispillene bærer symbol OG ord** og ikke bare farge — malt etter at det første valgkortet er trykket, siden fasit-boksen og «feil»-merket ikke finnes før spilleren har svart. Og at **statusfargene faktisk skilles under deuteranopi og protanopi** (Viénot 1999-simulering + CIE76 ΔE på de levende fargene): den gamle grønn/rød-paletten lå på ΔE 19,0 på tekst og 2,7 på flater — praktisk talt samme farge — og oppfylte likevel 4,5:1 hele veien. Kontrast og fargeblindhet er to forskjellige krav. Til slutt at spillet starter med `prefers-reduced-motion`. |
+| `test-jul.js` | At julekalenderen følger spillet: 24 luker og 24 ulike kort, hvert med spillets tittel og bydel, og at **hver fasit regnes ut på nytt** med testens egne formler (lønnsskatt trinn for trinn, sparing summert ledd for ledd). At lukene åpner på norsk dato: ingen før 1. desember, én kl. 00:05 første dag, fem når klokka er 23:30 UTC 4. desember, alle på julaften og etter nyttår, og at neste luke åpner over midnatt uten omlasting. Med mus og tastatur: at Tab følger veggen, at Enter åpner, at svaret er skjult til man ber om det, at Esc lukker og gir fokus tilbake, at en låst luke ikke åpner men sier når den gjør det, og at hver boks sier status i tekst. Kontrast mot de mørkeste stoppene i gradientene, ingen sideveis rulling og ingen overlapp på 390 og 360 px, ingen dør-animasjon med `prefers-reduced-motion`, og at siden verken laster, sender eller lagrer noe. |
 | `test-fps.js` | Fps per bydel med musikk på, i løp, om natta, og med hvert graftunge minispill åpent. Måler også spillets egen rammetid og at et skyvedrag i oppdrag G — som kjører 3 × 1 200 simuleringer — tar under 400 ms. |
 
 ### Fire spillfeil funnet av testene, ikke av øyet
