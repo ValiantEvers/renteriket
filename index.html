@@ -169,7 +169,7 @@ input:focus{outline:none;border-color:var(--gro)}
    må se hvor man står. :focus-visible, så musebrukere ikke får ringen. */
 .knapp:focus-visible,.valgkort:focus-visible,.brikke:focus-visible,
 .fane button:focus-visible,#ctl button:focus-visible,#pauseknapp:focus-visible,
-#startknapp:focus-visible{outline:3px solid #7cc7ff;outline-offset:2px}
+#startknapp:focus-visible,.tips a:focus-visible{outline:3px solid #7cc7ff;outline-offset:2px}
 input[type=range]:focus-visible{outline:3px solid #7cc7ff;outline-offset:4px;border-radius:99px}
 .knapp:disabled{opacity:.4;cursor:not-allowed}
 .knapp.sek{background:transparent;color:var(--tekst);border:1.5px solid var(--line)}
@@ -204,6 +204,7 @@ canvas.graf{width:100%;height:auto;display:block;border-radius:9px;background:#0
   border:1px solid var(--line);margin:4px 0 10px}
 .tips{font-size:12.5px;color:var(--dim);line-height:1.55;margin-top:9px}
 .tips b{color:#c3ceda}
+.tips a{color:#c3ceda;text-decoration:underline;text-underline-offset:2px}
 
 /* dra-og-slipp (budsjett, kurv, konto) */
 .brikker{display:flex;flex-wrap:wrap;gap:7px;min-height:46px}
@@ -547,7 +548,20 @@ if (ER_TOUCH) document.body.classList.add('touch');
 // På telefon finnes ingen mellomromstast — knappen heter HANDLE.
 const OKORD = ER_TOUCH ? 'HANDLE' : 'mellomrom';
 
-const store={
+// Lærermodus (?laerer i adressen, lenket fra laerer.html): alle oppdrag er åpne, og
+// spillet verken leser fra eller skriver til nettleserens lagring. Lagringen bor i
+// minnet og forsvinner med fanen. Grunnen er delte maskiner: en lærer som åpner
+// oppdrag N på en elev-PC, skal ikke overskrive elevens fremgang, og skal heller
+// ikke starte midt i den.
+const LAERER = new URLSearchParams(location.search).has('laerer');
+const store = LAERER ? (()=>{
+  const m=new Map();
+  return {
+    get(k){ return m.has(k) ? JSON.parse(m.get(k)) : null; },
+    set(k,v){ m.set(k,JSON.stringify(v)); },
+    del(k){ m.delete(k); }
+  };
+})() : {
   get(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } },
   set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} },
   del(k){ try{ localStorage.removeItem(k); }catch(e){} }
@@ -1754,7 +1768,10 @@ const OPPDRAG=[
    kron:'Den billige borettslagsleiligheten kostet det samme som selveieren. Fellesgjelden var bare lagt et annet sted, og avdragene på den kom to år senere.'}
 ];
 const oppdrag=(id)=>OPPDRAG.find(o=>o.id===id);
-function laastOpp(o){ return o.krav.every(k=>lostGjort.has(k)); }
+// I lærermodus er alt åpent. Alle veier inn i et oppdrag går gjennom denne, så det
+// holder å åpne her (se kjørereglene: «Alt som slipper inn i et oppdrag skal stå bak
+// laastOpp()»).
+function laastOpp(o){ return LAERER || o.krav.every(k=>lostGjort.has(k)); }
 function gjort(id){ return lostGjort.has(id); }
 function neste(){ return OPPDRAG.find(o=>!gjort(o.id)&&laastOpp(o)) || null; }
 function alleGjort(){ return OPPDRAG.every(o=>gjort(o.id)); }
@@ -5898,9 +5915,20 @@ function tegnPause(){
         '<b>'+o.id+' — '+o.navn+'</b> <span class="pill '+(st==='ok'?'g':st==='naa'?'y':'')+'">'+
         (st==='ok'?'løst':st==='naa'?'åpen':'låst')+'</span><br>'+
         '<span style="color:#9aa8b8;font-size:13px">'+o.tema+' · '+bygg(o.bygg).navn+'</span></span>';
+      // Lærermodus: rett inn i oppdraget, samme vei som når en figur gir det (pratMed).
+      if (LAERER){
+        const kn=U.knapp('Åpne '+o.id,()=>{
+          pauseEl.style.display='none'; dempMusikk(false);
+          aktivt=o.id; oppdaterHud(); aapneMinispill(o.id,MINI[o.id]);
+        },'sek');
+        kn.setAttribute('aria-label','Åpne oppdrag '+o.id+': '+o.navn);
+        kn.style.marginLeft='auto'; kn.style.flex='none';
+        li.appendChild(kn);
+      }
       l.appendChild(li);
     });
-    k.appendChild(U.kort('SEKSTEN OPPDRAG — '+lostGjort.size+' LØST',l));
+    k.appendChild(U.kort('SEKSTEN OPPDRAG — '+lostGjort.size+' LØST'+
+      (LAERER?' · LÆRERMODUS: ALLE ÅPNE, INGENTING LAGRES':''),l));
   }
   if (pauseFane==='kort'){
     const vegg=U.el('div','kortvegg');
@@ -6016,7 +6044,11 @@ function tegnPause(){
       '<br><br>Simuleringene bruker historisk avkastning og volatilitet. '+
       'Virkeligheten har fetere haler enn en normalfordeling: de virkelig dårlige årene er '+
       'verre og kommer oftere enn modellen tror. Bruk tallene til å forstå mekanikken, '+
-      'ikke til å spå.')));
+      'ikke til å spå.'+
+      // Ny fane: spillet lagrer hvert sjette sekund, så å forlate fanen kan koste det siste.
+      '<br><br><b>Er du lærer?</b> <a href="laerer.html" target="_blank" rel="noopener" id="laererlenke">'+
+      'Lærersiden</a> kobler hvert oppdrag til et kompetansemål, har et opplegg for én skoletime '+
+      'og forklarer lærermodus, der alt er åpent og ingenting lagres.')));
   }
   const av=U.knapp('Tilbake til byen',()=>vekslePause());
   pauseInner.appendChild(U.fot(av));
@@ -6192,7 +6224,27 @@ function start(){
   if (!bakkeLerret) byggBakke();
   oppdaterHud(); tegnMinikart();
   settTema('start');
-  if (!harJobb && !lostGjort.size){
+  if (LAERER){
+    // Skrivebord: sist i HUD-en. Berøringsskjerm: øverst i knappekolonnen nede til
+    // høyre, over MENY. HUD-en på mobil er to rader, og tre når gjeld vises; en
+    // merkelapp der havnet oppå oppdragsboksen på 360 px (målt i test-laerer.js).
+    // På mobil står bare ordet; at ingenting lagres, har velkomsten sagt.
+    if (!document.getElementById('laererchip')){
+      const c=U.el('span','chip',ER_TOUCH?'<b>LÆRERMODUS</b>':'<b>LÆRERMODUS</b> · lagres ikke');
+      c.id='laererchip';
+      if (ER_TOUCH) document.querySelector('#ctl .hoy').prepend(c);
+      else document.getElementById('hud').appendChild(c);
+    }
+    setTimeout(()=>{
+      snakk('LÆRERMODUS','#f0b429',[
+        'Alle seksten oppdrag er åpne, og ingenting lagres: lukker du fanen, er alt borte. '+
+        'Fremgangen som ligger lagret på denne maskinen, er ikke rørt.',
+        'Raskeste vei til et oppdrag: åpne menyen (<b>'+(ER_TOUCH?'MENY':'Esc')+'</b>), '+
+        'og trykk <b>Åpne</b> ved oppdraget. Figurene med utropstegn over hodet gir deg det også.',
+        'Gå med <b>WASD</b> eller piltastene. Trykk <b>'+OKORD+'</b> når noe står i stripa nederst.'
+      ]);
+    },500);
+  } else if (!harJobb && !lostGjort.size){
     setTimeout(()=>{
       snakk('RENTERIKET','#2fbf7a',[
         'Du står i <b>Startgata</b> med tom lommebok. Byen har åtte bydeler, '+

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Renteriket i klasserommet</title>
+<meta name="description" content="Lærerside for Renteriket: hvilke kompetansemål i LK20 hvert oppdrag dekker, og et opplegg for én skoletime.">
+<style>
+:root{
+  --ink:#0d1117; --paper:#f4f1e8; --paper2:#e8e3d5; --line:#cfc8b6;
+  --dim:#4a5563; --aksent:#7a5a00; --kode:#1f3a5f;
+}
+*{box-sizing:border-box}
+html{background:var(--paper);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  font-size:17px;line-height:1.6}
+body{margin:0 auto;max-width:960px;padding:40px 22px 80px}
+h1{font-size:2.1rem;line-height:1.15;margin:0 0 8px}
+h2{font-size:1.35rem;margin:46px 0 10px;padding-top:14px;border-top:2px solid var(--ink)}
+h3{font-size:1.05rem;margin:26px 0 6px}
+p,li{max-width:70ch}
+.lead{font-size:1.12rem;color:var(--dim);margin:0 0 22px}
+a{color:var(--kode)}
+.fakta{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:22px 0}
+.fakta div{background:var(--paper2);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.fakta b{display:block;font-size:.8rem;letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
+table{width:100%;border-collapse:collapse;margin:14px 0 6px;font-size:.93rem}
+th,td{text-align:left;vertical-align:top;padding:9px 10px;border-bottom:1px solid var(--line)}
+th{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);border-bottom:2px solid var(--ink)}
+td.id{font-weight:800;font-size:1.05rem;white-space:nowrap}
+.mal{display:block;margin:0 0 6px}
+.mal code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.8rem;
+  background:#fff;border:1px solid var(--line);border-radius:4px;padding:1px 5px;color:var(--kode);white-space:nowrap}
+.ny{font-size:.75rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;
+  border:1px solid var(--aksent);color:var(--aksent);border-radius:4px;padding:0 5px;margin-left:6px}
+.tid{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-weight:700;white-space:nowrap}
+.oppg{background:#fff;border:1px solid var(--line);border-radius:8px;padding:14px 18px;margin:12px 0}
+.oppg ol{margin:6px 0 0;padding-left:22px}
+details{margin-top:10px}
+summary{cursor:pointer;font-weight:700}
+.merk{border-left:4px solid var(--aksent);padding:4px 14px;margin:16px 0;color:var(--ink)}
+footer{margin-top:60px;font-size:.85rem;color:var(--dim)}
+@media print{
+  html{background:#fff;font-size:12pt}
+  body{max-width:none;padding:0}
+  a{color:var(--ink);text-decoration:none}
+  h2{break-after:avoid}
+  tr,.oppg{break-inside:avoid}
+  details{display:block}
+  details>summary{list-style:none}
+  .ikke-utskrift{display:none}
+}
+</style>
+</head>
+<body>
+
+<p><a href="/renteriket/" class="ikke-utskrift">← Til spillet</a></p>
+<h1>Renteriket i klasserommet</h1>
+<p class="lead">For lærere på ungdomstrinnet og vg1. Hvilke kompetansemål hvert oppdrag
+treffer, og et opplegg for én skoletime.</p>
+
+<div class="fakta">
+  <div><b>Pris</b>Gratis. Spilles i nettleseren på evers.no/renteriket.</div>
+  <div><b>Innlogging</b>Ingen. Elevene trenger ikke konto.</div>
+  <div><b>Personvern</b>Spillet sender ingen data. Fremgangen lagres bare i nettleseren på maskinen eleven bruker.</div>
+  <div><b>Utstyr</b>PC, Chromebook eller nettbrett. På berøringsskjerm får eleven et styrekors.</div>
+</div>
+
+<p>Renteriket er en by med seksten oppdrag om privatøkonomi. Hvert oppdrag er et
+minispill der eleven må gjøre noe som krever forståelse, ikke svare på en flervalgsprøve,
+og hvert av dem avsluttes med en forklaring av <i>hvorfor</i>. Alle norske satser i spillet
+står ett sted i koden, med årstall og kilde.</p>
+
+<div class="merk"><b>For elevene låses oppdragene opp i rekkefølge.</b> Rentetrappa (D) krever
+at A, B og C er løst. Du som lærer kan hoppe over rekkefølgen med
+<a href="/renteriket/?laerer">lærermodus</a>: alle seksten oppdrag er åpne, og menyen (Esc) har
+en <b>Åpne</b>-knapp ved hvert av dem. Ingenting lagres i lærermodus, så det rører ikke
+fremgangen til en elev som bruker samme maskin. Spill likevel gjennom de første som elev før
+timen, så vet du hvor lang tid klassen trenger. Vi har ikke målt det.</div>
+
+<h2>Oppdragene og læreplanen</h2>
+<p>Kompetansemålene er sitert fra planene som gjelder fra 1. august 2026:
+<a href="https://www.udir.no/lk20/MAT01-06">matematikk 1.–10. trinn (MAT01-06)</a>,
+<a href="https://www.udir.no/lk20/SAF01-05">samfunnsfag (SAF01-05)</a> og
+<a href="https://www.udir.no/lk20/MAT08-01">matematikk P på vg1 (MAT08-01)</a>.
+Koblingen mellom oppdrag og mål er vår vurdering, ikke Udirs.</p>
+
+<table>
+<thead><tr><th></th><th>Oppdrag</th><th>Eleven gjør</th><th>Kompetansemål</th></tr></thead>
+<tbody>
+<tr><td class="id">A</td><td>Den første lønnsslippen</td><td>Gjetter nettolønna før slippen åpnes, og finner ut hva den neste tusenlappen er verdt</td>
+<td><span class="mal"><code>SAF 10.</code> vurdere hvordan arbeid, inntekt og forbruk kan påvirke personlig økonomi, levestandard og livskvalitet</span>
+<span class="mal"><code>MAT P</code> tolke og bruke formler som gjelder samfunnsliv og arbeidsliv</span></td></tr>
+<tr><td class="id">B</td><td>Budsjettet som holder</td><td>Setter opp et månedsbudsjett som sparer minst 20 % uten å kutte alt som gir livskvalitet</td>
+<td><span class="mal"><code>MAT 7.</code> estimere, gjøre overslag, forklare tenkemåter og vurdere kritisk egne og andres modeller og løsninger knyttet til praktiske situasjoner i arbeid med økonomi</span>
+<span class="mal"><code>SAF 10.</code> vurdere hvordan arbeid, inntekt og forbruk kan påvirke personlig økonomi, levestandard og livskvalitet</span></td></tr>
+<tr><td class="id">C</td><td>Bufferstormen</td><td>Velger størrelsen på bufferen og lever gjennom tolv måneder med uhell</td>
+<td><span class="mal"><code>MAT 10.</code> modellere situasjoner, presentere resultatene og vurdere hvor gyldige modellene er</span></td></tr>
+<tr><td class="id">D</td><td>Rentetrappa</td><td>Finner beløpet Bodil må spare for å ende likt med Ada, som startet ti år før</td>
+<td><span class="mal"><code>MAT 10.</code> utforske og forklare sammenhengen mellom konstant prosentvis endring, vekstfaktor og eksponentialfunksjoner</span>
+<span class="mal"><code>MAT P</code> bruke prosent, prosentpoeng, promille og vekstfaktor i utregninger og presentere og begrunne løsninger</span></td></tr>
+<tr><td class="id">E</td><td>Gjeldsraset</td><td>Bestemmer rekkefølgen fire lån skal betales ned i</td>
+<td><span class="mal"><code>MAT 10.</code> hente ut og tolke relevant informasjon og reflektere over mulige konsekvenser ved kjøp og salg, renter på sparing, lån og kredittkjøp</span>
+<span class="mal"><code>MAT 1P-Y</code> vurdere valg knyttet til personlig økonomi og reflektere over konsekvenser av å ta opp lån og å bruke kredittkort</span></td></tr>
+<tr><td class="id">F</td><td>Inflasjonstyven</td><td>Følger kjøpekraften til pengene i 25 år, fire steder å legge dem</td>
+<td><span class="mal"><code>MAT 10.</code> utforske og forklare sammenhengen mellom konstant prosentvis endring, vekstfaktor og eksponentialfunksjoner</span></td></tr>
+<tr><td class="id">G</td><td>Kurven som lurer</td><td>Velger aksjeandel for tre sparemål med ulik tidshorisont</td>
+<td><span class="mal"><code>MAT P</code> utforske hvordan ulike premisser vil kunne påvirke hvordan matematiske problemer fra samfunnsliv og arbeidsliv løses</span></td></tr>
+<tr><td class="id">H</td><td>Ikke alt i én kurv</td><td>Fordeler hundre brikker og ser hva fem år med uhell gjør</td>
+<td><span class="mal"><code>MAT 10.</code> modellere situasjoner, presentere resultatene og vurdere hvor gyldige modellene er</span></td></tr>
+<tr><td class="id">I</td><td>Gebyrlekkasjen</td><td>Finner året da gebyrforskjellen har spist 100 000 kroner</td>
+<td><span class="mal"><code>MAT P</code> bruke prosent, prosentpoeng, promille og vekstfaktor i utregninger og presentere og begrunne løsninger</span></td></tr>
+<tr><td class="id">J</td><td>Panikkprøven</td><td>Sitter gjennom fire krakk på tretti år, med tre valg hver gang</td>
+<td><span class="mal"><code>MAT P</code> utforske hvordan ulike premisser vil kunne påvirke hvordan matematiske problemer fra samfunnsliv og arbeidsliv løses</span></td></tr>
+<tr><td class="id">K</td><td>Kontoen som sparer skatt</td><td>Plasserer fem sparere i riktig kontotype</td>
+<td><span class="mal"><code>MAT P</code> tolke og bruke formler som gjelder samfunnsliv og arbeidsliv</span></td></tr>
+<tr><td class="id">L</td><td>Nøkkelen til boligen</td><td>Finner ut hvilket av kravene til boliglån som faktisk stopper kjøpet</td>
+<td><span class="mal"><code>MAT 10.</code> hente ut og tolke relevant informasjon og reflektere over mulige konsekvenser ved kjøp og salg, renter på sparing, lån og kredittkjøp</span></td></tr>
+<tr><td class="id">M</td><td>Svindelsjekken</td><td>Skiller fjorten meldinger i svindel og helt vanlige beskjeder</td>
+<td><span class="mal"><code>SAF 7.</code> reflektere over hvordan kommersiell påvirkning kan virke inn på forbruk, personlig økonomi og selvbilde</span></td></tr>
+<tr><td class="id">N</td><td>Tidsmaskinen</td><td>Tar seks valg og ser førti år på én gang</td>
+<td><span class="mal"><code>MAT 10.</code> planlegge, utføre og presentere et utforskende arbeid knyttet til personlig økonomi</span></td></tr>
+<tr><td class="id">O</td><td>Budrunden<span class="ny">ny</span></td><td>Regner ut smertegrensen før en budrunde, og holder den</td>
+<td><span class="mal"><code>MAT 10.</code> hente ut og tolke relevant informasjon og reflektere over mulige konsekvenser ved kjøp og salg, renter på sparing, lån og kredittkjøp</span></td></tr>
+<tr><td class="id">P</td><td>Fellesgjelden<span class="ny">ny</span></td><td>Regner på en borettslagsleilighet med lav prisantydning og avdragsfri fellesgjeld</td>
+<td><span class="mal"><code>MAT 10.</code> hente ut og tolke relevant informasjon og reflektere over mulige konsekvenser ved kjøp og salg, renter på sparing, lån og kredittkjøp</span></td></tr>
+</tbody>
+</table>
+<p style="font-size:.85rem;color:var(--dim)">Kodene: <code>MAT 7.</code> og <code>MAT 10.</code> er mål etter 7. og
+10. trinn i MAT01-06. <code>SAF 7.</code> og <code>SAF 10.</code> er mål etter 7. og 10. trinn i SAF01-05.
+<code>MAT P</code> er mål etter matematikk 1P, og <code>MAT 1P-Y</code> er målet som står i alle de
+yrkesfaglige 1P-Y-variantene i MAT08-01. Udir publiserer planene på nynorsk; sitatene er fra
+den bokmålsoversettelsen Udir selv har lagt ut.</p>
+
+<h2>Opplegg for én skoletime: fra lønnsslipp til rentetrappa</h2>
+<p><b>10. trinn, matematikk, 45 minutter.</b> Mål: <i>utforske og forklare sammenhengen mellom
+konstant prosentvis endring, vekstfaktor og eksponentialfunksjoner</i> (MAT01-06, etter 10. trinn).</p>
+
+<table>
+<thead><tr><th>Tid</th><th>Hva</th></tr></thead>
+<tbody>
+<tr><td class="tid">0–5</td><td>Still klassen ett spørsmål og la alle gjette, skriftlig: <i>«Ada sparer et fast beløp i måneden fra hun er 25 til hun er 35, og slutter. Bodil begynner når hun er 35 og sparer til hun er 67. Begge ender med like mye. Hvor mye mer enn Ada har Bodil satt inn til sammen?»</i> Ikke svar ennå.</td></tr>
+<tr><td class="tid">5–30</td><td>Elevene spiller oppdrag A, B og C, og så D (Rentetrappa) i spillet. Rentetrappa gir svaret på spørsmålet over. Den som blir ferdig først, går videre til F (Inflasjonstyven).</td></tr>
+<tr><td class="tid">30–40</td><td>Regneoppgavene under, med penn og papir. Ingen kalkulator på oppgave 3.</td></tr>
+<tr><td class="tid">40–45</td><td>Tilbake til gjettingen fra starten: hvor langt unna var klassen? Bommet de fleste i samme retning, og i så fall hvorfor?</td></tr>
+</tbody>
+</table>
+<p>Rekker ikke klassen D, kan dere stoppe etter C og ta regneoppgavene likevel. De står på
+egne bein. Vil du vise Rentetrappa på storskjermen først, åpner du den rett fra menyen i
+<a href="/renteriket/?laerer">lærermodus</a>.</p>
+
+<div class="oppg">
+<b>Regneoppgaver</b>
+<ol>
+  <li>Du setter 10 000 kr på en konto med 4 % rente i året. Hva er vekstfaktoren? Hvor mye står på kontoen etter 10 år?</li>
+  <li>Pengene vokser med 7 % i året. Hvor mange hele år tar det før de har doblet seg?</li>
+  <li>Renta på et lån stiger fra 4 % til 5 %. Hvor mange prosentpoeng har den steget? Hvor mange prosent?</li>
+  <li>Prisene stiger 3 % i året i fem år. Hva er 25 000 kr i dag verdt om fem år, målt i dagens kroner?</li>
+</ol>
+<details>
+<summary>Fasit</summary>
+<ol>
+  <li>Vekstfaktoren er 1,04. Etter 10 år: 10 000 · 1,04<sup>10</sup> ≈ 14 802 kr.</li>
+  <li>11 år. 1,07<sup>10</sup> ≈ 1,967 (ikke helt doblet), 1,07<sup>11</sup> ≈ 2,105.</li>
+  <li>1 prosentpoeng, men 25 % (1 av 4).</li>
+  <li>25 000 / 1,03<sup>5</sup> ≈ 21 565 kr. Pengene er de samme, men de kjøper mindre.</li>
+</ol>
+</details>
+</div>
+
+<h3>Til samtalen</h3>
+<ul>
+  <li>Ada setter inn under halvparten av det Bodil setter inn, og ender likt. Hva er det Ada har som Bodil ikke har?</li>
+  <li>Oppgave 3: hvilket av de to svarene tror dere banken helst bruker i en reklame, og hvilket bruker en avis?</li>
+  <li>Spillet regner med en avkastning det sier er et anslag. Hva skjer med svaret i Rentetrappa hvis avkastningen er lavere?</li>
+</ul>
+
+<h2>Praktisk</h2>
+<ul>
+  <li><b>Delte maskiner:</b> fremgangen ligger i nettleseren. Bytter elevene maskin, starter de på nytt. I menyen (Esc) finnes «Nullstill all fremgang», slik at neste elev får en tom by.</li>
+  <li><b>Lyd:</b> spillet har musikk. M slår den av og på.</li>
+  <li><b>Hvor står satsene?</b> I menyen under «Satser og kilder». Alle tall med årstall og kilde.</li>
+</ul>
+
+<footer>
+Renteriket er laget av Valiant Evers. Alle figurer, firmaer og steder i spillet er oppdiktet.
+Kompetansemålene er lest hos Udir 17. november 2026. Spillet gir ikke økonomisk rådgivning.
+</footer>
+</body>
+</html>

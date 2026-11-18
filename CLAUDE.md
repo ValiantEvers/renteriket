@@ -132,12 +132,21 @@ byggesteg. Playwright er kun testavhengighet.
   **Spillet har egen stemme og beholder den.** Ingen test pinner tekst med strek,
   så en konvertering ville vært gratis teknisk — den er avvist av innholdsgrunner,
   ikke tekniske. Ikke «rett opp» dette, og ikke flagg det som inkonsistens.
+- **Lærermodus (`?laerer`) skal aldri røre nettleserens lagring.** Alt går gjennom
+  `store`, som i lærermodus er et kart i minnet. Legger du til lagring utenom `store`,
+  lekker lærermodus inn i elevens fremgang på en delt maskin; `test-laerer.js` sammenligner
+  hele localStorage før og etter. Ny lagringsnøkkel: legg den også i `RR.nullstill()`.
+- **`laerer.html` omtaler spillet og leses mot det.** Får et oppdrag nytt navn, kommer
+  det et nytt oppdrag, eller endres antallet, feller `test-laerer.js` til lærersiden er
+  oppdatert: ny rad i tabellen, tallordet («seksten») og kompetansemål sitert ordrett fra
+  Udir. Kompetansemålene kan ikke sjekkes uten nett; les dem hos Udir og oppdater datoen i
+  bunnteksten.
 - **Ingen `Co-Authored-By`-trailer i commits. Push aldri uten godkjenning.**
 
 ## Før noe skrives av som ferdig
 
 `bash test-alle.sh` **og** `bash test-alle.sh --http` skal begge være helt grønne:
-åtte filer, 1128 sjekker. HTTP-modus er ikke pynt: siden serveres over HTTPS i
+ni filer, 1213 sjekker. HTTP-modus er ikke pynt: siden serveres over HTTPS i
 produksjon, og `file://` har sitt eget origo-oppsett for `localStorage`.
 
 Legger du til innhold, legg til sjekken som beviser at det virker. Fire spillfeil i

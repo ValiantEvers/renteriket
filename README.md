@@ -292,7 +292,7 @@ ikke at spilleren regner etter.
 - Auto-pause ved fanebytte, `prefers-reduced-motion` respekteres, indekshistorikken
   er begrenset til 180 punkter.
 - **Minispillene er ekte DOM, og det er også et tilgjengelighetsvalg.** Alle
-  klikkbare elementer i alle fjorten oppdrag kan nås med Tab, brikkene i
+  klikkbare elementer i alle seksten oppdrag kan nås med Tab, brikkene i
   budsjettpuslespillet er `<button>` og ikke `<div>`, og det finnes en
   `:focus-visible`-regel så man ser hvor man står. Lerretet har en
   alternativtekst som sier hvordan man kommer til innholdet, siden et canvas
@@ -303,9 +303,27 @@ ikke at spilleren regner etter.
   trenger det for at gassknappen ikke skal zoome, men det hindrer knipezoom.
   `test-tilgjengelighet.js` skriver det ut ved hver kjøring i stedet for å skjule det.
 
+## For lærere
+
+`laerer.html` (evers.no/renteriket/laerer.html) er en egen side for lærere: hvilke
+kompetansemål i LK20 hvert oppdrag treffer, sitert ordrett fra Udirs bokmålsoversettelse
+(MAT01-06, SAF01-05, MAT08-01, lest 17.11.2026), og et opplegg for én skoletime med
+regneoppgaver og fasit. Koblingen mellom oppdrag og mål er vår vurdering, og siden sier det.
+Spillet lenker til den fra kortet «Om spillet» under «Satser og kilder» i menyen («Er du
+lærer?»). Lenken åpner i ny fane, fordi spillet lagrer hvert sjette sekund og det siste
+ellers kunne gått tapt.
+
+**Lærermodus:** `?laerer` i adressen (evers.no/renteriket/?laerer) åpner alle seksten
+oppdrag, og menyen (Esc / MENY) får en **Åpne**-knapp ved hvert av dem. Ingenting leses
+fra eller skrives til nettleserens lagring i lærermodus: `store` bytter til et kart i
+minnet som forsvinner med fanen. Grunnen er delte maskiner, der en lærer ikke skal
+overskrive elevens fremgang og heller ikke starte midt i den. Merkelappen LÆRERMODUS
+står i HUD-en på skrivebord og over MENY-knappen på berøringsskjerm: på 360 px med gjeld
+synlig er HUD-en tre rader høy, og der havnet den oppå oppdragsboksen.
+
 ## Testing
 
-Åtte filer, 1128 sjekker. `bash test-alle.sh` kjører alt over `file://`,
+Ni filer, 1213 sjekker. `bash test-alle.sh` kjører alt over `file://`,
 `bash test-alle.sh --http` starter en lokal server og kjører alt på nytt over HTTP.
 Begge må være grønne: siden serveres over HTTPS i produksjon, og `file://` har sitt
 eget origo-oppsett for `localStorage`.
@@ -318,6 +336,7 @@ eget origo-oppsett for `localStorage`.
 | `test-oppdrag.js` | **Alle seksten oppdrag spilles gjennom med ekte klikk.** For hvert av dem sjekkes også at et *feil* svar ikke gir seier, og at fasitteksten sier det den skal. Til slutt: at seksten oppdrag gir nivå 13, og at alt løst pluss alle kort gir INVESTOR. Siden juli 2026 også: at oppdrag J-banen faktisk henter seg inn igjen fire ganger og treffer spillets egen avkastning, at oppdrag N dømmer på medianen av 500 løp og at tabellen går opp krone for krone, at oppdrag H ikke kan klares med flaks og gir de samme fem årene ved omstart, at oppdrag D regner 42 år, at spillerens gjeld spiser av gjeldstaket i oppdrag L, at **ingenting skriver «NaN», «undefined» eller «Infinity»** i noen av de seksten oppdragene eller de 25 bygningsskjermene, verken for en fersk eller en ferdig spiller; at **ingen oppdrag er løst i det det åpnes** og at ingen (unntatt D, som er ett tall) løses ved å flytte én enkelt skyver; at **ingen bygning tilbyr et oppdrag før kravene er løst**; og at oppdrag C sitt eget regnskap bunner ut der teksten sier at det gjør. Fra november 2026: at oppdrag O starter på fella (lån + egenkapital), at verken et bud over grensen eller å gå ut mens neste bud er innenfor gir seier, og at ingen av de tre stegene gir seier alene; og at oppdrag P starter på budet uten fellesgjeld, og at ingen av de tre gale felleskostnadene gir seier. |
 | `test-mobil.js` | Ingen HUD-overlapp på tre skjermstørrelser, ingen flate utenfor skjermen, alle knapper minst 44×44, at styrekorset faktisk flytter spilleren, og at MENY lukker minispillet i stedet for å legge menyen oppå det. |
 | `test-lagring.js` | Fremgang overlever omlasting; 294 kombinasjoner av ødelagt lagring tar ikke ned spillet; nullstilling rydder minne så vel som lagring og skriver ikke tilbake etterpå; lagring skjer på timer. |
+| `test-laerer.js` | At lærersiden følger spillet: én rad per oppdrag i spillets rekkefølge og med spillets navn, riktig tallord for antall oppdrag, at hvert tall i fasiten regnes ut på nytt, at siden ikke har skript eller eksterne ressurser og bare lenker ut til Udir, og at lenken til lærermodus bruker parameteren spillet leser. At lærermodus **verken leser eller skriver** elevens lagring (localStorage er byte-likt før og etter en økt der oppdrag løses og «nullstill» trykkes), at alle seksten åpnes med et ekte klikk på Åpne og menyen lukker seg, at vanlig modus låser som før, og at merkelappen ikke overlapper noe på 390×844 og 360×640, også med gjeld synlig. At lenken «Er du lærer?» står i «Om spillet», peker på `laerer.html`, åpner i ny fane med et ekte klikk mens spillet blir stående, er understreket, har minst 4,5:1 mot kortet, nås med Tab og får fokusringen. Fjorten mutanter felt (17.11.2026), og seks til på lenken (18.11.2026). |
 | `test-tilgjengelighet.js` | Kontrast regnet ut fra de **faktiske** fargene i DOM-en, ikke fra CSS-en man tror står der: 22 elementer mot WCGA 2.1 AA. At alle klikkbare elementer i alle seksten oppdrag kan nås med Tab, at brikkene er ekte knapper, at det finnes en `:focus-visible`-regel, at **hvert statuselement i alle seksten minispillene bærer symbol OG ord** og ikke bare farge — malt etter at det første valgkortet er trykket, siden fasit-boksen og «feil»-merket ikke finnes før spilleren har svart. Og at **statusfargene faktisk skilles under deuteranopi og protanopi** (Viénot 1999-simulering + CIE76 ΔE på de levende fargene): den gamle grønn/rød-paletten lå på ΔE 19,0 på tekst og 2,7 på flater — praktisk talt samme farge — og oppfylte likevel 4,5:1 hele veien. Kontrast og fargeblindhet er to forskjellige krav. Til slutt at spillet starter med `prefers-reduced-motion`. |
 | `test-fps.js` | Fps per bydel med musikk på, i løp, om natta, og med hvert graftunge minispill åpent. Måler også spillets egen rammetid og at et skyvedrag i oppdrag G — som kjører 3 × 1 200 simuleringer — tar under 400 ms. |
 
