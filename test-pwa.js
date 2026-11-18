@@ -145,6 +145,11 @@ const utgave = (p) => p.evaluate(() => document.querySelector('meta[name=rr-utga
   sant('julekalenderen (besøkt før) lastes uten nett', jul && !(jul instanceof Error) && jul.ok());
   const q = await p.goto(BASE + '?ref=delt').catch((e) => e);
   sant('lenke med spørrestreng lastes uten nett', q && !(q instanceof Error) && q.ok());
+  // Lærersiden er aldri åpnet i denne konteksten. Den skal feile, ikke vise spillet.
+  const ukjent = await p.goto(BASE + 'laerer.html').then(async (r) => (r && r.ok() ? await p.title() : 'feilet')).catch(() => 'feilet');
+  sant('en side man aldri har åpnet, viser ikke spillet uten nett', ukjent === 'feilet', ukjent);
+  // Den feilede navigasjonen går videre til Chromes feilside; vent den ut før neste side.
+  await p.waitForTimeout(500); await p.goto('about:blank');
 
   console.log('\n=== NY UTGAVE NÅR NETTET ER TILBAKE ===');
   nyUtgave('2');

@@ -41,7 +41,8 @@ self.addEventListener('fetch', (e) => {
       e.waitUntil(caches.open(VERSJON).then((c) => c.put(url.href, kopi)));
     }
     return svar;
-  }).catch(() => caches.match(url.href)
-    .then((t) => t || (r.mode === 'navigate' ? caches.match('./') : undefined))
-    .then((t) => t || Response.error())));
+  // Uten nett: bare det som faktisk ligger i kopien. En side man aldri har åpnet, skal feile
+  // ærlig, ikke vise spillet under feil adresse (lærersiden og julekalenderen gjorde det med en
+  // «send spillet»-reserve, målt på evers.no 18.11).
+  }).catch(() => caches.match(url.href).then((t) => t || Response.error())));
 });

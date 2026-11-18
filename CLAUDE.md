@@ -154,12 +154,15 @@ byggesteg. Playwright er kun testavhengighet.
   utgaven (`test-pwa.js` måler det mot en server med samme hoder). Lærermodus registrerer ingen
   service worker og `?laerer` lagres ikke. Endres `FORHAAND`-lista, bytt `VERSJON`; ved activate
   slettes bare cacher som begynner på `renteriket-`, fordi evers.no deler origo med andre apper.
+  Uten nett svarer den bare med det som ligger i kopien: **ingen «send spillet»-reserve** for ukjente
+  sider. Den første utgaven hadde det, og lærersiden og julekalenderen viste spillet under sin egen
+  adresse for den som aldri hadde åpnet dem (funnet på evers.no etter push, 18.11).
 - **Ingen `Co-Authored-By`-trailer i commits. Push aldri uten godkjenning.**
 
 ## Før noe skrives av som ferdig
 
 `bash test-alle.sh` **og** `bash test-alle.sh --http` skal begge være helt grønne:
-elleve filer, 1349 sjekker. HTTP-modus er ikke pynt: siden serveres over HTTPS i
+elleve filer, 1350 sjekker. HTTP-modus er ikke pynt: siden serveres over HTTPS i
 produksjon, og `file://` har sitt eget origo-oppsett for `localStorage`.
 
 Legger du til innhold, legg til sjekken som beviser at det virker. Fire spillfeil i
