@@ -147,6 +147,10 @@ byggesteg. Playwright er kun testavhengighet.
   inn der; når `SATSER` går over til 2027 i januar, gjelder kalenderen fortsatt 2026
   og testen slutter å sammenligne satsene (den sier hvorfor). Ny julekalender for 2027
   er en ny fil, ikke en redigering av denne.
+- **`budrunden.html` har kopier av fire satser og av `F.maksBud`.** Siden er frittstående (øvingsrommet til
+  oppdrag O) og kan ikke laste spillets `F`. `test-budrunden.js` feller den når `SATS` skiller seg fra `SATSER`
+  eller `maksBud` gir et annet svar enn `F.maksBud`. Endrer du regnestykket i spillet, endre kopien. Motbyderne
+  (`MODELL`) er anslag og står som det på siden; ikke gjør dem om til «statistikk» uten en kilde.
 - **`sw.js` henter fra nettet først, alltid.** Spillet kan installeres og spilles uten nett,
   men den lagrede kopien skal bare svare når nettet svikter: satsene skifter hver januar, og en
   «lagret kopi først»-strategi ville latt spillere sitte med fjorårets tall. `cache: 'no-cache'`
@@ -162,7 +166,7 @@ byggesteg. Playwright er kun testavhengighet.
 ## Før noe skrives av som ferdig
 
 `bash test-alle.sh` **og** `bash test-alle.sh --http` skal begge være helt grønne:
-elleve filer, 1350 sjekker. HTTP-modus er ikke pynt: siden serveres over HTTPS i
+tolv filer, 1413 sjekker. HTTP-modus er ikke pynt: siden serveres over HTTPS i
 produksjon, og `file://` har sitt eget origo-oppsett for `localStorage`.
 
 Legger du til innhold, legg til sjekken som beviser at det virker. Fire spillfeil i

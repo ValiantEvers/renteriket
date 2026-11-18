@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Budrunden: øvingsrommet · Renteriket</title>
+<meta name="description" content="Øv på budrunden: regn ut smertegrensen, by mot motbydere som er ulike hver gang, og hold grensen når fristen går. Ingenting lagres.">
+<link rel="canonical" href="https://www.evers.no/renteriket/budrunden.html">
+<meta property="og:title" content="Budrunden: øvingsrommet">
+<meta property="og:description" content="Regn ut smertegrensen, og hold den når budrunden går fort.">
+<meta property="og:url" content="https://www.evers.no/renteriket/budrunden.html">
+<meta name="theme-color" content="#0d1117">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d1117'/%3E%3Cpath d='M16 26V12' stroke='%232fbf7a' stroke-width='3' stroke-linecap='round'/%3E%3Cpath d='M16 17c0-4 3-7 7-7 0 4-3 7-7 7zM16 13c0-3.5-2.6-6-6-6 0 3.5 2.6 6 6 6z' fill='%232fbf7a'/%3E%3C/svg%3E">
+<style>
+/* Same palette as the game. Status is always symbol + word (the owner is red-green colour-blind):
+   --ok blue and --feil orange are the game's own, chosen to survive deuteranopia. */
+:root{
+  --ink:#0d1117; --ink2:#151d27; --staal:#1b2430; --kant:#334152;
+  --tekst:#e9eef4; --dim:#9aa8b8; --lapp:#f3d77a; --lapp-ink:#2a2208;
+  --ok:#5ab0ef; --feil:#f08050; --fokus:#7cc7ff; --gro:#2fbf7a;
+  --serif:'Iowan Old Style','Palatino Linotype','Book Antiqua',Palatino,Georgia,serif;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,'Cascadia Mono','Consolas',monospace;
+}
+*{box-sizing:border-box}
+html{background:var(--ink);color:var(--tekst);font-family:var(--sans);font-size:17px;line-height:1.55}
+body{margin:0}
+main{max-width:1060px;margin:0 auto;padding:28px 18px 60px}
+a{color:#c3ceda;text-decoration:underline;text-underline-offset:2px}
+:focus-visible{outline:3px solid var(--fokus);outline-offset:2px}
+.topp{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.topp a{font-size:15px}
+h1{margin:6px 0 4px;font-family:var(--serif);font-size:clamp(32px,5.6vw,54px);line-height:1.05;letter-spacing:-.5px}
+.ingress{color:var(--dim);max-width:40em;margin:0 0 22px}
+h2{font-family:var(--serif);font-size:24px;margin:0 0 10px}
+.kort{background:var(--ink2);border:1px solid var(--kant);border-radius:14px;padding:18px 20px;margin:0 0 18px}
+.sak dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px 18px;margin:0 0 14px}
+.sak dt{color:var(--dim);font-size:14px}
+.sak dd{margin:0;font-family:var(--mono);font-size:18px;font-variant-numeric:tabular-nums}
+label{display:block;font-weight:600;margin:6px 0}
+input[type=text]{font:inherit;font-family:var(--mono);font-size:18px;background:var(--ink);color:var(--tekst);
+  border:1px solid var(--kant);border-radius:8px;padding:9px 11px;width:min(100%,15em)}
+button{font:inherit;font-weight:600;cursor:pointer;border-radius:9px;border:1px solid var(--kant);
+  background:var(--staal);color:var(--tekst);padding:10px 15px;min-height:44px}
+button:hover{border-color:var(--dim)}
+button.primaer{background:var(--gro);border-color:var(--gro);color:#06210f}
+button.ut{border-color:var(--feil)}
+button[disabled]{opacity:.5;cursor:not-allowed}
+.rad{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:10px 0}
+.melding{margin:10px 0 0;padding:10px 12px;border-radius:8px;background:var(--staal)}
+.ok{border-left:4px solid var(--ok)}
+.feil{border-left:4px solid var(--feil)}
+.regn{font-family:var(--mono);font-size:15px;white-space:pre-wrap;color:var(--dim);margin:8px 0 0}
+
+/* The round: the agent's message stream, and the yellow note with your limit beside it. */
+.arena{display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:18px;align-items:start}
+.strom{background:#0a0e14;border:1px solid var(--kant);border-radius:18px;padding:14px;min-height:280px;
+  max-height:440px;overflow-y:auto}
+.sms{max-width:92%;margin:0 0 9px;padding:9px 12px;border-radius:14px 14px 14px 4px;background:var(--staal)}
+.sms.deg{margin-left:auto;border-radius:14px 14px 4px 14px;background:#1d3550}
+.sms .tid{display:block;font-family:var(--mono);font-size:13px;color:var(--dim)}
+.lapp{background:var(--lapp);color:var(--lapp-ink);padding:16px 16px 18px;border-radius:3px;
+  transform:rotate(-1.6deg);box-shadow:0 10px 24px rgba(0,0,0,.45);font-family:var(--serif)}
+.lapp .lbl{font-family:var(--sans);font-size:13px;font-weight:700;letter-spacing:.06em}
+.lapp .tall{display:block;font-family:var(--mono);font-size:26px;font-weight:700;margin:2px 0 8px}
+.lapp p{margin:0;font-size:15px;line-height:1.35}
+.hoyeste{font-family:var(--mono);font-size:20px;margin:12px 0 0}
+.frist{margin:6px 0 0;font-size:15px;color:var(--dim)}
+.frist b{color:var(--tekst);font-family:var(--mono)}
+.bar{height:6px;background:var(--staal);border-radius:3px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;background:var(--ok);width:100%}
+.utfall{font-family:var(--serif);font-size:22px;margin:0 0 8px}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--kant)}
+td.r,th.r{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.rull{overflow-x:auto}
+details summary{cursor:pointer;font-weight:600}
+.liten{font-size:14px;color:var(--dim)}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+[hidden]{display:none!important}
+@media (max-width:720px){
+  .arena{grid-template-columns:1fr}
+  .lapp{transform:none;order:-1}
+}
+@media (prefers-reduced-motion:reduce){ .lapp{transform:none} }
+</style>
+</head>
+<body>
+<main>
+<div class="topp"><a href="./">← Tilbake til Renteriket</a><span class="liten" id="saknr"></span></div>
+<h1>Budrunden: øvingsrommet</h1>
+<p class="ingress">Oppdrag O i spillet lærer deg å regne ut smertegrensen. Her øver du på det vanskelige: å
+<b>holde</b> den når budrundene er ulike hver gang, med hoppbud og korte frister. Ingenting lagres, og
+ingenting sendes.</p>
+
+<section class="kort sak" id="sak" aria-labelledby="sak-h">
+  <h2 id="sak-h">1. Saken</h2>
+  <dl id="sakfakta"></dl>
+  <label for="grensefelt">Ditt høyeste bud (smertegrensen), i kroner</label>
+  <div class="rad">
+    <input type="text" id="grensefelt" inputmode="numeric" autocomplete="off" placeholder="f.eks. 3 550 000">
+    <button type="button" id="sjekkgrense" class="primaer">Sett grensen</button>
+  </div>
+  <details><summary>Hint</summary>
+    <p class="liten" id="hint"></p>
+  </details>
+  <div id="grensesvar" aria-live="polite"></div>
+</section>
+
+<section class="kort" id="runde" aria-labelledby="runde-h" hidden>
+  <h2 id="runde-h">2. Budrunden</h2>
+  <div class="arena">
+    <div>
+      <div class="strom" id="strom" role="log" aria-live="polite" aria-label="Meldinger fra megleren"></div>
+      <p class="hoyeste" id="hoyeste"></p>
+      <div id="valg">
+        <div class="rad" id="knapper">
+          <button type="button" data-pluss="25000">By +25 000</button>
+          <button type="button" data-pluss="50000">By +50 000</button>
+          <button type="button" data-pluss="100000">By +100 000</button>
+          <button type="button" class="ut" id="gaaut">Gå ut</button>
+        </div>
+        <div class="rad">
+          <label for="egetbud" class="vh">Eget bud i kroner</label>
+          <input type="text" id="egetbud" inputmode="numeric" autocomplete="off" placeholder="Eget bud">
+          <button type="button" id="byeget">By dette</button>
+        </div>
+        <p class="frist" id="frist"></p>
+        <p class="frist" id="budfeil" aria-live="polite"></p>
+        <div class="bar" id="bar" aria-hidden="true"><i></i></div>
+      </div>
+      <div class="rad">
+        <input type="checkbox" id="utenpress"><label for="utenpress" style="display:inline;font-weight:400">Uten tidspress (ingen nedtelling)</label>
+      </div>
+    </div>
+    <aside class="lapp" aria-label="Grensen din">
+      <span class="lbl">GRENSEN MIN</span>
+      <span class="tall" id="lapptall"></span>
+      <p>Ikke ett bud over. Og ikke gi opp før neste bud er over.</p>
+    </aside>
+  </div>
+</section>
+
+<section class="kort" id="etterpaa" aria-labelledby="etter-h" hidden>
+  <h2 id="etter-h">3. Etterpå</h2>
+  <p class="utfall" id="utfall"></p>
+  <p id="forklaring"></p>
+  <h3>Budjournalen</h3>
+  <p class="liten">Slik du får den som budgiver når budrunden er over (eiendomsmeglingsforskriften § 6-4):
+  budgiverne er anonymisert.</p>
+  <div class="rull"><table id="journal"><thead><tr><th>Kl.</th><th>Budgiver</th><th class="r">Bud</th><th>Frist</th></tr></thead><tbody></tbody></table></div>
+  <div class="rad">
+    <button type="button" class="primaer" id="nysak">Ny sak</button>
+    <button type="button" id="sammesak">Samme sak igjen</button>
+  </div>
+</section>
+
+<section class="kort" id="logg" aria-labelledby="logg-h" hidden>
+  <h2 id="logg-h">Øvingsloggen</h2>
+  <p id="loggsum"></p>
+  <div class="rull"><table id="loggtab"><thead><tr><th>Sak</th><th class="r">Grense</th><th class="r">Solgt for</th><th>Utfall</th></tr></thead><tbody></tbody></table></div>
+  <p class="liten">Bare i denne fanen. Lukker du den, er loggen borte.</p>
+</section>
+
+<details class="kort" id="modell">
+  <summary>Slik er motbyderne laget (en modell, ikke statistikk)</summary>
+  <p class="liten" id="modelltekst"></p>
+</details>
+</main>
+
+<script>
+'use strict';
+// --- Tall og regler ------------------------------------------------------------------------
+// Kopi av fire satser i SATSER i index.html. test-budrunden.js feller siden hvis de skiller seg.
+const SATS = {dokumentavgift: 0.025, tinglysingSkjote: 545, tinglysingPant: 545, belaaningsgrad: 0.90};
+
+// Kopi av F.maksBud i index.html (testen sammenligner dem over mange tilfeller): høyeste bud når
+// egenkapitalen først skal betale dokumentavgift (selveier) og tinglysing, og lånet er det banken gir.
+function maksBud(laan, egenkapital, selveier, fellesgjeld) {
+  const d = selveier ? SATS.dokumentavgift : 0, fg = fellesgjeld || 0, b = SATS.belaaningsgrad;
+  const t = SATS.tinglysingSkjote + SATS.tinglysingPant;
+  const avFinansiering = Math.max(0, (laan + egenkapital - t - d * fg) / (1 + d));
+  const avEgenkapital = Math.max(0, (egenkapital - t - d * fg - (1 - b) * fg) / (1 + d - b));
+  const bud = Math.min(avFinansiering, avEgenkapital);
+  return {bud, avFinansiering, avEgenkapital,
+    bindende: avFinansiering <= avEgenkapital ? 'finansiering' : 'egenkapital',
+    dokumentavgift: (bud + fg) * d, tinglysing: t};
+}
+
+// Modellen for motbyderne. Anslag, ikke statistikk: siden sier det (modelltekst under).
+const MODELL = {
+  antall: [1, 3],                 // motbydere
+  grense: [-0.04, 0.12],          // deres skjulte grense mot prisantydningen
+  aapning: [0.93, 0.98],          // åpningsbudet mot prisantydningen
+  spiller: [0.98, 1.10],          // din riktige grense mot prisantydningen
+  hopp: [100000, 150000],         // hoppbud: første høyning
+  steg: [25000, 50000],           // vanlige høyninger
+  frist: {kort: 15, vanlig: 30, lang: 60},  // akseptfrist i minutter
+  neste: 25000,                   // «neste bud» når vi dømmer om du ga opp for tidlig
+  sekunder: 20,                   // betenkningstid per bud med tidspress
+};
+
+const TRINN = 10000;
+const ned = (x) => Math.floor(x / TRINN) * TRINN;
+const opp = (x) => Math.ceil(x / TRINN) * TRINN;
+const nf = new Intl.NumberFormat('nb-NO', {maximumFractionDigits: 0});
+const kr = (x) => nf.format(Math.round(x)) + ' kr';
+const pst = (x) => (x >= 0 ? '+' : '−') + new Intl.NumberFormat('nb-NO', {maximumFractionDigits: 1}).format(Math.abs(x * 100)) + ' %';
+const klokke = (min) => { const t = 12 * 60 + min; return String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0'); };
+const tolk = (s) => { const n = Number(String(s).replace(/[\s .]/g, '').replace(/kr$/i, '').replace(',', '.')); return Number.isFinite(n) ? Math.round(n) : NaN; };
+
+// Et frø gir alltid samme sak og samme motbydere (mulberry32).
+function rng(frø) {
+  let a = frø >>> 0;
+  return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+const mellom = (r, [a, b]) => a + r() * (b - a);
+
+function lagSak(frø) {
+  const r = rng(frø);
+  const selveier = r() < 0.6;
+  const prisantydning = opp(mellom(r, [2800000, 4400000]));
+  const fellesgjeld = selveier ? 0 : opp(prisantydning * mellom(r, [0.08, 0.45]));
+  const d = selveier ? SATS.dokumentavgift : 0, b = SATS.belaaningsgrad;
+  const t = SATS.tinglysingSkjote + SATS.tinglysingPant;
+  const maal = ned(prisantydning * mellom(r, MODELL.spiller));
+  // Egenkapital som rekker til målet, og et lån som gjør at finansieringen binder ved målet.
+  const ekKrav = t + d * fellesgjeld + (1 - b) * fellesgjeld + maal * (1 + d - b);
+  const egenkapital = opp(Math.max(ekKrav, prisantydning * mellom(r, [0.12, 0.22])));
+  const laan = opp(maal * (1 + d) + t + d * fellesgjeld - egenkapital);
+  const m = maksBud(laan, egenkapital, selveier, fellesgjeld);
+  const n = MODELL.antall[0] + Math.floor(r() * (MODELL.antall[1] - MODELL.antall[0] + 1));
+  const typer = ['trinnvis', 'hoppbud', 'fristpresser'];
+  const motbydere = [];
+  for (let i = 0; i < n; i++) {
+    motbydere.push({navn: 'Budgiver ' + (i + 2), maks: ned(prisantydning * (1 + mellom(r, MODELL.grense))),
+      type: typer[Math.floor(r() * typer.length)], steg: r() < 0.5 ? MODELL.steg[0] : MODELL.steg[1],
+      hoppet: false});
+  }
+  const aapning = Math.min(ned(prisantydning * mellom(r, MODELL.aapning)), motbydere[0].maks);
+  return {frø, selveier, prisantydning, fellesgjeld, egenkapital, laan, maks: m, grense: ned(m.bud),
+    motbydere, aapning, tikk: r};
+}
+
+// --- Budrunden som tilstandsmaskin -----------------------------------------------------------
+// Tid er minutter etter kl. 12:00. Hver gang du ikke leder, venter runden på ditt valg.
+function nyRunde(sak) {
+  const s = {sak, tid: 0, hoyeste: 0, leder: null, frist: 0, journal: [], meldinger: [],
+    ute: new Set(), spillerUte: false, spillerBud: [], ferdig: false, vinner: null, tidsavbrudd: false,
+    venter: false, sistOvergrense: false};
+  const m0 = sak.motbydere[0];
+  melding(s, 'Bente (megler)', 'Hei! Budrunden er i gang. Første bud er kommet inn.');
+  legg(s, 0, sak.aapning, MODELL.frist.lang);
+  s.venter = true;
+  return s;
+}
+function melding(s, fra, tekst) { s.meldinger.push({tid: s.tid, fra, tekst}); }
+function legg(s, hvem, belop, fristMin) {
+  s.hoyeste = belop; s.leder = hvem; s.frist = s.tid + fristMin;
+  const navn = hvem === 'deg' ? 'Du' : s.sak.motbydere[hvem].navn;
+  s.journal.push({tid: s.tid, navn, belop, frist: s.frist});
+  if (hvem !== 'deg') {
+    const mb = s.sak.motbydere[hvem];
+    const hopp = mb.type === 'hoppbud' && s.journal.filter((j) => j.navn === mb.navn).length === 1 && s.journal.length > 1;
+    melding(s, 'Bente (megler)', (hopp ? 'Hoppbud! ' : '') + `${navn} har budt ${kr(belop)}, akseptfrist kl. ${klokke(s.frist)}.` +
+      (s.spillerUte ? '' : s.spillerBud.length ? ' Vil du øke?' : ' Vil du by?'));
+  }
+}
+// Neste motbyder som kan og vil høyne over det som leder nå.
+function motbyderSvarer(s) {
+  const r = s.sak.tikk;
+  const n = s.sak.motbydere.length;
+  for (let k = 0; k < n; k++) {
+    const i = (s.journal.length + k) % n;
+    const mb = s.sak.motbydere[i];
+    if (s.ute.has(i) || s.leder === i) continue;
+    let steg = mb.steg;
+    if (mb.type === 'hoppbud' && !mb.hoppet) steg = ned(mellom(r, MODELL.hopp));
+    let nytt = s.hoyeste + steg;
+    if (nytt > mb.maks) nytt = s.hoyeste + MODELL.steg[0];
+    if (nytt > mb.maks) {
+      s.ute.add(i);
+      melding(s, 'Bente (megler)', `${mb.navn} har meldt at de ikke byr mer.`);
+      continue;
+    }
+    if (mb.type === 'hoppbud') mb.hoppet = true;
+    s.tid += 3 + Math.floor(r() * 10);
+    legg(s, i, nytt, mb.type === 'fristpresser' ? MODELL.frist.kort : MODELL.frist.vanlig);
+    return true;
+  }
+  return false;
+}
+// Kjør motbyderne til det er din tur, eller til ingen vil mer.
+function fortsett(s) {
+  while (!s.ferdig) {
+    if (!s.spillerUte && s.leder !== 'deg') { s.venter = true; return; }
+    if (!motbyderSvarer(s)) { avslutt(s); return; }
+  }
+}
+function avslutt(s) {
+  s.ferdig = true; s.venter = false; s.vinner = s.leder;
+  s.tid = Math.max(s.tid, s.frist);
+  const navn = s.leder === 'deg' ? 'deg' : s.sak.motbydere[s.leder].navn;
+  melding(s, 'Bente (megler)', s.leder === 'deg'
+    ? `Gratulerer! Selger har akseptert budet ditt på ${kr(s.hoyeste)}.`
+    : `Selger har akseptert ${navn}s bud på ${kr(s.hoyeste)}. Takk for at du var med.`);
+}
+function by(s, belop) {
+  if (s.ferdig || !s.venter || s.spillerUte) return 'ikke din tur';
+  if (!(belop >= s.hoyeste + TRINN) || belop % 1000 !== 0) return `Budet må være minst ${kr(s.hoyeste + TRINN)}, i hele tusen.`;
+  s.venter = false;
+  s.tid += 2;
+  s.spillerBud.push(belop);
+  legg(s, 'deg', belop, MODELL.frist.vanlig);
+  melding(s, 'Du', `Jeg byr ${kr(belop)}.`);
+  fortsett(s);
+  return null;
+}
+function gaaUt(s, tidsavbrudd) {
+  if (s.ferdig || s.spillerUte) return;
+  s.spillerUte = true; s.venter = false; s.tidsavbrudd = !!tidsavbrudd;
+  s.utVed = s.hoyeste;
+  melding(s, tidsavbrudd ? 'Bente (megler)' : 'Du', tidsavbrudd
+    ? 'Vi hørte ikke fra deg før fristen, så du er ute av budrunden.'
+    : 'Jeg byr ikke mer.');
+  fortsett(s);
+}
+
+// Dommen. Grensen er en grense, ikke et mål du skal holde deg langt unna.
+function dom(s) {
+  const L = s.sak.grense;
+  const over = s.spillerBud.filter((b) => b > L);
+  if (over.length) return {kode: 'over', symbol: '✗', tittel: '✗ Du bød over grensen',
+    tekst: `Du bød ${kr(Math.max(...over))}, ${kr(Math.max(...over) - L)} over grensen. Et bud er bindende når det har kommet fram til megleren; hadde selger akseptert, hadde du kjøpt noe egenkapitalen ikke rekker til.`};
+  if (s.vinner === 'deg') return {kode: 'kjopt', symbol: '✓', tittel: '✓ Kjøpt innenfor grensen',
+    tekst: `Du fikk den for ${kr(s.hoyeste)}, ${kr(L - s.hoyeste)} under grensen din.`};
+  if (s.spillerUte && s.utVed + MODELL.neste <= L) return {kode: 'tidlig', symbol: '⚠', tittel: '⚠ Du ga opp før grensen',
+    tekst: `Du gikk ut ved ${kr(s.utVed)}, men ${kr(s.utVed + MODELL.neste)} var fortsatt innenfor grensen din på ${kr(L)}. ` +
+      (s.hoyeste <= L ? `Den ble solgt for ${kr(s.hoyeste)}: en bolig du hadde råd til.` : `Den gikk til slutt for ${kr(s.hoyeste)}, så denne gangen kostet det deg ingenting, men neste gang kan det.`)};
+  return {kode: 'riktig', symbol: '✓', tittel: '✓ Riktig å tape',
+    tekst: `Den gikk for ${kr(s.hoyeste)}, over grensen din på ${kr(L)}. Å tape en budrunde du ikke har råd til å vinne, er det grensen er til for.`};
+}
+
+// --- Siden ----------------------------------------------------------------------------------
+const $ = (id) => document.getElementById(id);
+const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+let sak = null, s = null, forsok = 0, nedtelling = null, sluttTid = 0;
+const LOGG = [];
+
+function visSak(frø) {
+  sak = lagSak(frø); s = null; forsok = 0;
+  $('saknr').textContent = 'Sak ' + frø;
+  const fakta = [
+    ['Eierform', sak.selveier ? 'Selveier' : 'Borettslag'],
+    ['Prisantydning', kr(sak.prisantydning)],
+    ...(sak.selveier ? [] : [['Andel fellesgjeld', kr(sak.fellesgjeld)]]),
+    ['Finansieringsbevis (lån inntil)', kr(sak.laan)],
+    ['Egenkapital', kr(sak.egenkapital)],
+  ];
+  $('sakfakta').innerHTML = fakta.map(([a, b]) => `<div><dt>${esc(a)}</dt><dd>${esc(b)}</dd></div>`).join('');
+  $('hint').textContent = (sak.selveier
+    ? `Egenkapitalen betaler først dokumentavgift (${new Intl.NumberFormat('nb-NO').format(SATS.dokumentavgift * 100)} % av budet) og tinglysing (${kr(SATS.tinglysingSkjote + SATS.tinglysingPant)}). Det som er igjen, pluss lånet, er det budet kan være.`
+    : `Borettslag har ingen dokumentavgift, men fellesgjelden er en del av prisen: lånet ditt pluss fellesgjelden kan ikke være mer enn ${new Intl.NumberFormat('nb-NO').format(SATS.belaaningsgrad * 100)} % av budet pluss fellesgjelden. Tinglysingen (${kr(SATS.tinglysingSkjote + SATS.tinglysingPant)}) betales også av egenkapitalen.`) +
+    ' Rund ned til nærmeste 10 000.';
+  $('grensefelt').value = ''; $('grensesvar').innerHTML = '';
+  $('grensefelt').disabled = false; $('sjekkgrense').disabled = false;
+  $('runde').hidden = true; $('etterpaa').hidden = true;
+  $('modelltekst').textContent = modellTekst();
+}
+function regnestykke() {
+  const m = sak.maks, t = m.tinglysing;
+  return sak.selveier
+    ? `(lån ${kr(sak.laan)} + egenkapital ${kr(sak.egenkapital)} − tinglysing ${kr(t)}) / (1 + ${new Intl.NumberFormat('nb-NO').format(SATS.dokumentavgift * 100)} %)\n= ${kr(m.avFinansiering)} → grense ${kr(sak.grense)}`
+    : `Av finansieringen: lån + egenkapital − tinglysing = ${kr(m.avFinansiering)}\nAv egenkapitalkravet: ${kr(m.avEgenkapital)}\nDet laveste binder (${m.bindende}) → grense ${kr(sak.grense)}`;
+}
+function sjekkGrense() {
+  const v = tolk($('grensefelt').value);
+  const eksakt = sak.maks.bud;
+  const boks = $('grensesvar');
+  if (!Number.isFinite(v) || v <= 0) { boks.innerHTML = '<p class="melding feil">⚠ Skriv et beløp i kroner, for eksempel 3 550 000.</p>'; return; }
+  forsok++;
+  let tekst, kl, ferdig = false;
+  if (v > eksakt) { tekst = `✗ For høyt. ${kr(v)} er mer enn egenkapitalen rekker til når omkostningene er betalt.`; kl = 'feil'; }
+  else if (v < eksakt - TRINN) { tekst = `✗ For lavt. Med ${kr(v)} som grense gir du fra deg boliger du har råd til.`; kl = 'feil'; }
+  else { tekst = `✓ Riktig. Grensen din er ${kr(sak.grense)}.`; kl = 'ok'; ferdig = true; }
+  if (!ferdig && forsok >= 2) { tekst += ` Fasiten: ${kr(sak.grense)}.`; ferdig = true; }
+  boks.innerHTML = `<p class="melding ${kl}">${esc(tekst)}</p>` + (ferdig || forsok >= 1 ? `<p class="regn">${esc(regnestykke())}</p>` : '');
+  if (ferdig) startRunde();
+}
+function startRunde() {
+  $('grensefelt').disabled = true; $('sjekkgrense').disabled = true;
+  $('lapptall').textContent = kr(sak.grense);
+  sak = lagSak(sak.frø);           // fresh bidders: the hint step must not have used the dice
+  s = nyRunde(sak);
+  $('runde').hidden = false; $('etterpaa').hidden = true;
+  tegn();
+  $('runde-h').scrollIntoView({block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'});
+}
+function tegn() {
+  $('strom').innerHTML = s.meldinger.map((m) => `<p class="sms${m.fra === 'Du' ? ' deg' : ''}"><span class="tid">${klokke(m.tid)} · ${esc(m.fra)}</span>${esc(m.tekst)}</p>`).join('');
+  $('strom').scrollTop = $('strom').scrollHeight;
+  $('hoyeste').textContent = s.ferdig ? '' : `Høyeste bud: ${kr(s.hoyeste)} (${s.leder === 'deg' ? 'ditt' : 'ikke ditt'})`;
+  const aktiv = s.venter && !s.ferdig;
+  $('valg').hidden = !aktiv;
+  stoppNedtelling();
+  if (aktiv) {
+    $('frist').innerHTML = `Akseptfrist kl. <b>${klokke(s.frist)}</b>.`;
+    if (!$('utenpress').checked) startNedtelling();
+    else { $('bar').hidden = true; }
+  }
+  if (s.ferdig) visEtterpaa();
+}
+function startNedtelling() {
+  sluttTid = Date.now() + MODELL.sekunder * 1000;
+  $('bar').hidden = false;
+  const steg = () => {
+    const igjen = Math.max(0, sluttTid - Date.now());
+    $('frist').innerHTML = `Akseptfrist kl. <b>${klokke(s.frist)}</b> · <b>${Math.ceil(igjen / 1000)} s</b> igjen til å svare.`;
+    $('bar').firstElementChild.style.width = (igjen / (MODELL.sekunder * 10)) + '%';
+    if (igjen <= 0) { stoppNedtelling(); gaaUt(s, true); tegn(); }
+  };
+  steg();
+  nedtelling = setInterval(steg, 250);
+}
+function stoppNedtelling() { if (nedtelling) { clearInterval(nedtelling); nedtelling = null; } }
+function visEtterpaa() {
+  if (s.logget) return;
+  s.logget = true;
+  const d = dom(s);
+  $('utfall').textContent = d.tittel;
+  $('utfall').className = 'utfall';
+  $('forklaring').textContent = d.tekst + ` Sluttprisen var ${pst(s.hoyeste / sak.prisantydning - 1)} mot prisantydningen.`;
+  $('journal').tBodies[0].innerHTML = s.journal.map((j) => `<tr><td>${klokke(j.tid)}</td><td>${esc(j.navn)}</td><td class="r">${esc(kr(j.belop))}</td><td>${klokke(j.frist)}</td></tr>`).join('');
+  $('etterpaa').hidden = false;
+  LOGG.push({frø: sak.frø, grense: sak.grense, pris: s.hoyeste, d});
+  const holdt = LOGG.filter((l) => l.d.kode === 'kjopt' || l.d.kode === 'riktig').length;
+  $('loggsum').textContent = `${LOGG.length} ${LOGG.length === 1 ? 'runde' : 'runder'}, grensen holdt i ${holdt}.`;
+  $('loggtab').tBodies[0].innerHTML = LOGG.map((l) => `<tr><td>${l.frø}</td><td class="r">${esc(kr(l.grense))}</td><td class="r">${esc(kr(l.pris))}</td><td>${esc(l.d.tittel)}</td></tr>`).join('');
+  $('logg').hidden = false;
+  $('utfall').setAttribute('tabindex', '-1');
+  $('utfall').focus();
+}
+function modellTekst() {
+  const p = (x) => new Intl.NumberFormat('nb-NO', {maximumFractionDigits: 0}).format(x * 100) + ' %';
+  return `Hver sak har ${MODELL.antall[0]}–${MODELL.antall[1]} motbydere. Hver av dem har en skjult grense mellom ` +
+    `${p(MODELL.grense[0])} og +${p(MODELL.grense[1])} mot prisantydningen. Noen byr i trinn på ${kr(MODELL.steg[0])} eller ` +
+    `${kr(MODELL.steg[1])}, noen åpner med et hoppbud på ${kr(MODELL.hopp[0])}–${kr(MODELL.hopp[1])}, og noen setter korte ` +
+    `akseptfrister (${MODELL.frist.kort} minutter). Første bud er ${p(MODELL.aapning[0])}–${p(MODELL.aapning[1])} av prisantydningen, ` +
+    `og selger tar høyeste bud når budene stopper. Alt dette er anslag for å øve på, ikke statistikk over budrunder i Oslo. ` +
+    `Poenget er grensen din, ikke hvor høyt andre går. Budrunden starter kl. 12.00, tidligst første virkedag etter siste ` +
+    `visning (eiendomsmeglingsforskriften § 6-3). Du er «ute» når du sier det, eller når du ikke svarer før nedtellingen.`;
+}
+
+$('sjekkgrense').addEventListener('click', sjekkGrense);
+$('grensefelt').addEventListener('keydown', (e) => { if (e.key === 'Enter') sjekkGrense(); });
+document.querySelectorAll('#knapper button[data-pluss]').forEach((b) => b.addEventListener('click', () => {
+  const feil = by(s, s.hoyeste + Number(b.dataset.pluss)); if (!feil) tegn();
+}));
+$('byeget').addEventListener('click', () => {
+  const feil = by(s, tolk($('egetbud').value));
+  if (feil) { $('budfeil').textContent = '⚠ ' + feil; return; }
+  $('budfeil').textContent = ''; $('egetbud').value = ''; tegn();
+});
+$('egetbud').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('byeget').click(); });
+$('gaaut').addEventListener('click', () => { gaaUt(s, false); tegn(); });
+$('utenpress').addEventListener('change', () => { if (s && !s.ferdig) tegn(); });
+$('nysak').addEventListener('click', () => { visSak(1 + Math.floor(Math.random() * 99999)); $('sak-h').scrollIntoView(); $('grensefelt').focus(); });
+$('sammesak').addEventListener('click', () => { visSak(sak.frø); $('grensefelt').focus(); });
+
+const fraLenke = Number(new URLSearchParams(location.search).get('sak'));
+visSak(Number.isInteger(fraLenke) && fraLenke > 0 ? fraLenke : 1 + Math.floor(Math.random() * 99999));
+
+// For testene: motoren, uten siden.
+window.BR = {SATS, MODELL, maksBud, lagSak, nyRunde, by, gaaUt, dom, tolk,
+  get sak() { return sak; }, get runde() { return s; }};
+</script>
+</body>
+</html>

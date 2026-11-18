@@ -171,7 +171,7 @@ input:focus{outline:none;border-color:var(--gro)}
    må se hvor man står. :focus-visible, så musebrukere ikke får ringen. */
 .knapp:focus-visible,.valgkort:focus-visible,.brikke:focus-visible,
 .fane button:focus-visible,#ctl button:focus-visible,#pauseknapp:focus-visible,
-#startknapp:focus-visible,.tips a:focus-visible{outline:3px solid #7cc7ff;outline-offset:2px}
+#startknapp:focus-visible,.tips a:focus-visible,.fasit a:focus-visible{outline:3px solid #7cc7ff;outline-offset:2px}
 input[type=range]:focus-visible{outline:3px solid #7cc7ff;outline-offset:4px;border-radius:99px}
 .knapp:disabled{opacity:.4;cursor:not-allowed}
 .knapp.sek{background:transparent;color:var(--tekst);border:1.5px solid var(--line)}
@@ -206,7 +206,7 @@ canvas.graf{width:100%;height:auto;display:block;border-radius:9px;background:#0
   border:1px solid var(--line);margin:4px 0 10px}
 .tips{font-size:12.5px;color:var(--dim);line-height:1.55;margin-top:9px}
 .tips b{color:#c3ceda}
-.tips a{color:#c3ceda;text-decoration:underline;text-underline-offset:2px}
+.tips a,.fasit a{color:#c3ceda;text-decoration:underline;text-underline-offset:2px}
 
 /* dra-og-slipp (budsjett, kurv, konto) */
 .brikker{display:flex;flex-wrap:wrap;gap:7px;min-height:46px}
@@ -4095,7 +4095,11 @@ MINI.O=(v)=>{
       'I borettslag er det ingen dokumentavgift, men fellesgjelden er en del av prisen: '+
       'by på totalprisen, ikke på prisantydningen. Se BORETTSLAGET.<br><br>'+
       'Og et bud du har gitt, kan du ikke trekke når det passer deg. Er du i tvil, er svaret '+
-      'å la være å by, ikke å by og håpe.'));
+      'å la være å by, ikke å by og håpe.<br><br>'+
+      // Ny fane: spillet lagrer hvert sjette sekund, så å forlate fanen kan koste det siste.
+      'Vil du øve på å <i>holde</i> grensen når budrundene er ulike hver gang? '+
+      '<a href="budrunden.html" target="_blank" rel="noopener" id="budrundelenke">Øvingsrommet for '+
+      'budrunden</a> gir deg en ny sak og nye motbydere hver gang.'));
     seier(svar,'O','','',0);
   }
 };
